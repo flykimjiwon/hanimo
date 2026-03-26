@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+# dev-anywhere — Terminal AI coding assistant
+# This wrapper ensures tsx is always found from the package's node_modules
+
+DIR="$(cd "$(dirname "$(readlink -f "$0" 2>/dev/null || echo "$0")")/.." && pwd)"
+exec "$DIR/node_modules/.bin/tsx" "$DIR/src/cli.ts" "$@"
