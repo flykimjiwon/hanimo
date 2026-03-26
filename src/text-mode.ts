@@ -1,4 +1,4 @@
-import { createInterface } from 'node:readline/promises';
+import { createInterface, type Interface as RLInterface } from 'node:readline/promises';
 import { stdin, stdout } from 'node:process';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
@@ -22,23 +22,14 @@ const yellow = (s: string): string => `\x1b[33m${s}\x1b[0m`;
 const red = (s: string): string => `\x1b[31m${s}\x1b[0m`;
 const bold = (s: string): string => `\x1b[1m${s}\x1b[0m`;
 const magenta = (s: string): string => `\x1b[35m${s}\x1b[0m`;
+const inverse = (s: string): string => `\x1b[7m${s}\x1b[0m`;
 
-// All slash commands for tab completion
-const SLASH_COMMANDS = [
-  '/help', '/h',
-  '/model', '/m',
-  '/models',
-  '/provider', '/p',
-  '/providers',
-  '/tools', '/t',
-  '/config',
-  '/usage', '/u',
-  '/clear',
-  '/lang',
-  '/system',
-  '/setup',
-  '/exit', '/quit', '/q',
-];
+// Known models per cloud provider
+const KNOWN_MODELS: Record<string, string[]> = {
+  openai: ['gpt-4o', 'gpt-4o-mini', 'gpt-4.1', 'gpt-4.1-mini', 'gpt-4.1-nano', 'o3-mini'],
+  anthropic: ['claude-sonnet-4-20250514', 'claude-haiku-4-20250414', 'claude-opus-4-20250514'],
+  google: ['gemini-2.0-flash', 'gemini-2.5-pro', 'gemini-2.5-flash'],
+};
 
 const LANGUAGES: Record<string, string> = {
   ko: '한국어로 응답해주세요.',
@@ -46,6 +37,120 @@ const LANGUAGES: Record<string, string> = {
   ja: '日本語で応答してください。',
   zh: '请用中文回答。',
 };
+
+// ────────────────────────────────────────────────
+// Arrow-key interactive menu (raw mode)
+// ────────────────────────────────────────────────
+function selectMenu(
+  title: string,
+  items: { label: string; value: string; active?: boolean }[],
+): Promise<string | null> {
+  return new Promise((resolve) => {
+    if (items.length === 0) { resolve(null); return; }
+
+    let cursor = items.findIndex(i => i.active);
+    if (cursor < 0) cursor = 0;
+    const maxVisible = Math.min(items.length, 12);
+    let drawnLines = 0;
+
+    function draw(clear: boolean): void {
+      if (clear && drawnLines > 0) {
+        process.stdout.write(`\x1b[${drawnLines}A\x1b[J`);
+      }
+      let lines = 0;
+
+      console.log();
+      console.log(`  ${bold(title)} ${dim('↑↓ 이동 · Enter 선택 · Esc 취소')}`);
+      lines += 2;
+
+      let start = 0;
+      if (items.length > maxVisible) {
+        start = Math.max(0, cursor - Math.floor(maxVisible / 2));
+        if (start + maxVisible > items.length) start = items.length - maxVisible;
+      }
+      const end = Math.min(start + maxVisible, items.length);
+
+      if (start > 0) { console.log(`  ${dim('  ↑ ...')}`); lines++; }
+
+      for (let i = start; i < end; i++) {
+        const item = items[i];
+        if (!item) continue;
+        const tag = item.active ? green(' ●') : '  ';
+        if (i === cursor) {
+          console.log(`  ${cyan('❯')}${tag} ${inverse(` ${item.label} `)}`);
+        } else {
+          console.log(`   ${tag} ${item.label}`);
+        }
+        lines++;
+      }
+
+      if (end < items.length) { console.log(`  ${dim('  ↓ ...')}`); lines++; }
+      console.log(); lines++;
+      drawnLines = lines;
+    }
+
+    draw(false);
+
+    const wasRaw = stdin.isRaw;
+    stdin.setRawMode(true);
+    stdin.resume();
+
+    function cleanup(): void {
+      stdin.removeListener('data', onKey);
+      stdin.setRawMode(wasRaw ?? false);
+      if (drawnLines > 0) {
+        process.stdout.write(`\x1b[${drawnLines}A\x1b[J`);
+      }
+    }
+
+    function onKey(buf: Buffer): void {
+      const key = buf.toString();
+
+      // Ctrl+C or Escape → cancel
+      if (key === '\x03' || key === '\x1b' || key === 'q') {
+        cleanup(); resolve(null); return;
+      }
+      // Enter → select
+      if (key === '\r' || key === '\n') {
+        const picked = items[cursor];
+        cleanup(); resolve(picked?.value ?? null); return;
+      }
+      // Up
+      if (key === '\x1b[A' || key === 'k') {
+        if (cursor > 0) { cursor--; draw(true); }
+        return;
+      }
+      // Down
+      if (key === '\x1b[B' || key === 'j') {
+        if (cursor < items.length - 1) { cursor++; draw(true); }
+        return;
+      }
+      // Number quick-select
+      const num = parseInt(key, 10);
+      if (num >= 1 && num <= Math.min(9, items.length)) {
+        cursor = num - 1;
+        const picked = items[cursor];
+        cleanup(); resolve(picked?.value ?? null); return;
+      }
+    }
+
+    stdin.on('data', onKey);
+  });
+}
+
+// Main menu items
+const MAIN_MENU = [
+  { label: '모델 변경',       value: 'model' },
+  { label: '프로바이더 변경',  value: 'provider' },
+  { label: '도구 토글',       value: 'tools' },
+  { label: '응답 언어',       value: 'lang' },
+  { label: '설정 보기',       value: 'config' },
+  { label: '대화 초기화',     value: 'clear' },
+  { label: '도움말',          value: 'help' },
+  { label: '종료',            value: 'exit' },
+];
+
+// ────────────────────────────────────────────────
 
 interface TextModeOptions {
   provider: string;
@@ -82,7 +187,6 @@ export async function startTextMode(options: TextModeOptions): Promise<void> {
   let baseSystemPrompt = options.systemPrompt;
   const { tools, initialPrompt } = options;
 
-  // State
   let toolsEnabled = !LOCAL_PROVIDERS.has(currentProvider);
   let langSuffix = '';
   let cachedOllamaModels: string[] = [];
@@ -90,7 +194,6 @@ export async function startTextMode(options: TextModeOptions): Promise<void> {
   const messages: Message[] = [];
   const totalUsage: TokenUsage = { promptTokens: 0, completionTokens: 0, totalTokens: 0 };
 
-  // Pre-cache Ollama models for tab completion
   if (currentProvider === 'ollama') {
     listOllamaModels().then(m => { cachedOllamaModels = m; }).catch(() => {});
   }
@@ -99,78 +202,53 @@ export async function startTextMode(options: TextModeOptions): Promise<void> {
     return langSuffix ? `${baseSystemPrompt}\n\n${langSuffix}` : baseSystemPrompt;
   }
 
-  // Tab completion
+  // Tab completer for slash commands
   function completer(line: string): [string[], string] {
-    // Slash command completion
-    if (line.startsWith('/')) {
-      const parts = line.split(' ');
-
-      // Complete sub-arguments
-      if (parts.length >= 2) {
-        const cmd = parts[0];
-        const partial = parts.slice(1).join(' ');
-
-        if (cmd === '/provider' || cmd === '/p') {
-          const hits = PROVIDER_NAMES
-            .filter(p => p.startsWith(partial))
-            .map(p => `${cmd} ${p}`);
-          return [hits.length ? hits : PROVIDER_NAMES.map(p => `${cmd} ${p}`), line];
-        }
-
-        if (cmd === '/model' || cmd === '/m') {
-          if (cachedOllamaModels.length > 0) {
-            const hits = cachedOllamaModels
-              .filter(m => m.startsWith(partial))
-              .map(m => `${cmd} ${m}`);
-            return [hits.length ? hits : cachedOllamaModels.map(m => `${cmd} ${m}`), line];
-          }
-          return [[], line];
-        }
-
-        if (cmd === '/tools' || cmd === '/t') {
-          const opts = ['on', 'off'];
-          const hits = opts.filter(o => o.startsWith(partial)).map(o => `${cmd} ${o}`);
-          return [hits, line];
-        }
-
-        if (cmd === '/lang') {
-          const langs = Object.keys(LANGUAGES);
-          const hits = langs.filter(l => l.startsWith(partial)).map(l => `/lang ${l}`);
-          return [hits.length ? hits : langs.map(l => `/lang ${l}`), line];
-        }
-
-        return [[], line];
+    if (!line.startsWith('/')) return [[], line];
+    const cmds = ['/help', '/model', '/models', '/provider', '/providers',
+      '/tools', '/lang', '/system', '/config', '/setup', '/clear', '/usage', '/exit', '/quit', '/menu'];
+    const parts = line.split(' ');
+    if (parts.length >= 2) {
+      const cmd = parts[0];
+      const partial = parts.slice(1).join(' ');
+      if (cmd === '/provider' || cmd === '/p') {
+        const hits = PROVIDER_NAMES.filter(p => p.startsWith(partial)).map(p => `${cmd} ${p}`);
+        return [hits.length ? hits : PROVIDER_NAMES.map(p => `${cmd} ${p}`), line];
       }
-
-      // Complete command name
-      const hits = SLASH_COMMANDS.filter(c => c.startsWith(line));
-      return [hits.length ? hits : SLASH_COMMANDS, line];
+      if (cmd === '/model' || cmd === '/m') {
+        if (cachedOllamaModels.length > 0) {
+          const hits = cachedOllamaModels.filter(m => m.startsWith(partial)).map(m => `${cmd} ${m}`);
+          return [hits.length ? hits : cachedOllamaModels.map(m => `${cmd} ${m}`), line];
+        }
+      }
+      if (cmd === '/tools' || cmd === '/t') {
+        return [['on', 'off'].filter(o => o.startsWith(partial)).map(o => `${cmd} ${o}`), line];
+      }
+      if (cmd === '/lang') {
+        const langs = Object.keys(LANGUAGES);
+        return [langs.filter(l => l.startsWith(partial)).map(l => `/lang ${l}`), line];
+      }
+      return [[], line];
     }
-
-    return [[], line];
+    return [cmds.filter(c => c.startsWith(line)), line];
   }
 
   function printBanner(): void {
     console.log();
     console.log(`  ${bold('devany')} v0.1.0  ${dim('(')}${green(currentProvider)}${dim('/')}${cyan(currentModel)}${dim(')')}`);
     const toolsTag = toolsEnabled ? green('tools:ON') : dim('tools:OFF');
-    console.log(`  ${dim('종료: Ctrl+C  |  Tab: 자동완성  |')} ${toolsTag}`);
+    console.log(`  ${dim('Esc: 메뉴 | Tab: 자동완성 | Ctrl+C: 취소/종료 |')} ${toolsTag}`);
     console.log(dim('─'.repeat(50)));
     console.log();
   }
 
   printBanner();
 
-  const rl = createInterface({
-    input: stdin,
-    output: stdout,
-    completer,
-  });
+  const rl = createInterface({ input: stdin, output: stdout, completer });
 
   let isRunning = false;
   let abortController: AbortController | null = null;
 
-  // Ctrl+C handling
   process.on('SIGINT', () => {
     if (isRunning && abortController) {
       abortController.abort();
@@ -184,27 +262,25 @@ export async function startTextMode(options: TextModeOptions): Promise<void> {
     }
   });
 
-  async function switchModel(newModel: string): Promise<boolean> {
+  // ── Model / Provider switching ──
+  async function switchModel(newModel: string): Promise<void> {
     try {
       const config = await loadConfig();
       const providerConfig = config.providers?.[currentProvider] ?? {};
       clearProviderCache();
       currentModelInstance = getModel(currentProvider as ProviderName, newModel, providerConfig);
       currentModel = newModel;
-      console.log(`  ${green('✓')} 모델 변경: ${cyan(newModel)}`);
-      return true;
+      console.log(`  ${green('✓')} 모델: ${cyan(newModel)}`);
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
-      console.log(`  ${red('✗')} 모델 변경 실패: ${msg}`);
-      return false;
+      console.log(`  ${red('✗')} ${msg}`);
     }
   }
 
-  async function switchProvider(newProvider: string, newModel?: string): Promise<boolean> {
+  async function switchProvider(newProvider: string, newModel?: string): Promise<void> {
     if (!PROVIDER_NAMES.includes(newProvider as ProviderName)) {
       console.log(`  ${red('✗')} 알 수 없는 프로바이더: ${newProvider}`);
-      console.log(`  ${dim('사용 가능:')} ${PROVIDER_NAMES.join(', ')}`);
-      return false;
+      return;
     }
     try {
       const config = await loadConfig();
@@ -215,22 +291,92 @@ export async function startTextMode(options: TextModeOptions): Promise<void> {
       currentProvider = newProvider;
       currentModel = modelId;
       toolsEnabled = !LOCAL_PROVIDERS.has(newProvider);
-
-      // Refresh Ollama model cache
       if (newProvider === 'ollama') {
         listOllamaModels().then(m => { cachedOllamaModels = m; }).catch(() => {});
       }
-
-      console.log(`  ${green('✓')} ${green(newProvider)}/${cyan(modelId)}`);
-      console.log(`  ${dim('도구:')} ${toolsEnabled ? green('ON') : red('OFF')}`);
-      return true;
+      console.log(`  ${green('✓')} ${green(newProvider)}/${cyan(modelId)} ${dim('tools:')}${toolsEnabled ? green('ON') : red('OFF')}`);
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
-      console.log(`  ${red('✗')} 프로바이더 변경 실패: ${msg}`);
-      return false;
+      console.log(`  ${red('✗')} ${msg}`);
     }
   }
 
+  // ── Interactive menus ──
+  async function openModelMenu(): Promise<void> {
+    let modelList: string[] = [];
+    if (currentProvider === 'ollama') {
+      modelList = cachedOllamaModels.length > 0
+        ? cachedOllamaModels
+        : await listOllamaModels();
+      cachedOllamaModels = modelList;
+    } else {
+      modelList = KNOWN_MODELS[currentProvider] ?? [];
+    }
+
+    if (modelList.length === 0) {
+      console.log(`  ${dim('모델 목록 없음 — /model <name> 으로 직접 입력')}`);
+      return;
+    }
+
+    const items = modelList.map(m => ({
+      label: m,
+      value: m,
+      active: m === currentModel,
+    }));
+
+    const picked = await selectMenu(`모델 선택 (${currentProvider})`, items);
+    if (picked) await switchModel(picked);
+  }
+
+  async function openProviderMenu(): Promise<void> {
+    const items = PROVIDER_NAMES.map(p => ({
+      label: `${p}${LOCAL_PROVIDERS.has(p) ? dim(' (로컬)') : ''}`,
+      value: p,
+      active: p === currentProvider,
+    }));
+    const picked = await selectMenu('프로바이더 선택', items);
+    if (picked) await switchProvider(picked);
+  }
+
+  async function openLangMenu(): Promise<void> {
+    const names: Record<string, string> = { ko: '한국어', en: 'English', ja: '日本語', zh: '中文', off: '자동 (해제)' };
+    const items = [...Object.keys(LANGUAGES), 'off'].map(l => ({
+      label: names[l] ?? l,
+      value: l,
+      active: l === 'off' ? !langSuffix : langSuffix === LANGUAGES[l],
+    }));
+    const picked = await selectMenu('응답 언어', items);
+    if (picked === 'off') {
+      langSuffix = '';
+      console.log(`  ${green('✓')} 언어 제한 해제`);
+    } else if (picked && LANGUAGES[picked]) {
+      langSuffix = LANGUAGES[picked];
+      console.log(`  ${green('✓')} 언어: ${names[picked] ?? picked}`);
+    }
+  }
+
+  async function openMainMenu(): Promise<void> {
+    const picked = await selectMenu('메뉴', MAIN_MENU);
+    if (!picked) return;
+    switch (picked) {
+      case 'model':    await openModelMenu(); break;
+      case 'provider': await openProviderMenu(); break;
+      case 'tools':
+        toolsEnabled = !toolsEnabled;
+        console.log(`  ${green('✓')} 도구 ${toolsEnabled ? green('ON') : red('OFF')}`);
+        break;
+      case 'lang':     await openLangMenu(); break;
+      case 'config':   await handleInput('/config'); break;
+      case 'clear':
+        messages.length = 0;
+        console.log(`  ${green('✓')} 대화 초기화됨.`);
+        break;
+      case 'help':     await handleInput('/help'); break;
+      case 'exit':     rl.close(); process.exit(0);
+    }
+  }
+
+  // ── Input handler ──
   async function handleInput(input: string): Promise<boolean> {
     const trimmed = input.trim();
     if (!trimmed) return true;
@@ -241,106 +387,59 @@ export async function startTextMode(options: TextModeOptions): Promise<void> {
       const args = parts.slice(1);
 
       switch (cmd) {
-        // ── 도움말 ──
         case 'help':
         case 'h':
           console.log();
-          console.log(`  ${bold('명령어')} ${dim('(Tab으로 자동완성)')}`);
+          console.log(`  ${bold('명령어')} ${dim('(Tab 자동완성 | Esc 메뉴)')}`);
           console.log();
           console.log(`  ${magenta('모델 & 프로바이더')}`);
-          console.log(`    ${cyan('/model')} <name>        ${dim('모델 변경 (즉시 적용)')}`);
-          console.log(`    ${cyan('/models')}              ${dim('설치된 모델 목록 (Ollama)')}`);
-          console.log(`    ${cyan('/provider')} <name>     ${dim('프로바이더 변경')}`);
-          console.log(`    ${cyan('/providers')}           ${dim('프로바이더 목록')}`);
+          console.log(`    ${cyan('/model')} [name]       ${dim('모델 선택/변경')}`);
+          console.log(`    ${cyan('/provider')} [name]    ${dim('프로바이더 선택/변경')}`);
           console.log();
           console.log(`  ${magenta('설정')}`);
-          console.log(`    ${cyan('/tools')} [on|off]      ${dim('도구(파일/Git/셸) 토글')}`);
-          console.log(`    ${cyan('/lang')} <ko|en|ja|zh>  ${dim('응답 언어 변경')}`);
-          console.log(`    ${cyan('/system')} <text>       ${dim('시스템 프롬프트 추가')}`);
-          console.log(`    ${cyan('/config')}              ${dim('현재 설정 보기')}`);
-          console.log(`    ${cyan('/setup')}               ${dim('초기 설정 다시 실행')}`);
+          console.log(`    ${cyan('/tools')} [on|off]     ${dim('도구(파일/Git/셸) 토글')}`);
+          console.log(`    ${cyan('/lang')} [ko|en|ja|zh] ${dim('응답 언어')}`);
+          console.log(`    ${cyan('/system')} [text]      ${dim('시스템 프롬프트')}`);
+          console.log(`    ${cyan('/config')}             ${dim('현재 설정')}`);
           console.log();
           console.log(`  ${magenta('대화')}`);
-          console.log(`    ${cyan('/clear')}               ${dim('대화 초기화')}`);
-          console.log(`    ${cyan('/usage')}               ${dim('토큰 사용량')}`);
+          console.log(`    ${cyan('/clear')}              ${dim('대화 초기화')}`);
+          console.log(`    ${cyan('/usage')}              ${dim('토큰 사용량')}`);
+          console.log(`    ${cyan('/exit')}               ${dim('종료')}`);
           console.log();
-          console.log(`  ${magenta('종료')}`);
-          console.log(`    ${cyan('/exit')}                ${dim('프로그램 종료')}`);
-          console.log(`    ${dim('Ctrl+C')}               ${dim('응답 취소 / 종료')}`);
-          console.log();
-          console.log(`  ${dim('단축: /m=/model /p=/provider /t=/tools /u=/usage /q=/exit')}`);
+          console.log(`  ${dim('키: Esc=메뉴 Tab=완성 Ctrl+C=취소/종료')}`);
+          console.log(`  ${dim('단축: /m /p /t /u /q')}`);
           console.log();
           return true;
 
-        // ── 모델 ──
         case 'model':
         case 'm':
+        case 'models':
           if (args.length > 0) {
             await switchModel(args.join(' '));
           } else {
-            console.log(`  현재 모델: ${cyan(currentModel)}`);
-            console.log(`  ${dim('변경: /model <name> | Tab으로 자동완성')}`);
+            await openModelMenu();
           }
           return true;
 
-        case 'models': {
-          if (currentProvider === 'ollama') {
-            console.log(`  ${dim('Ollama 모델 조회 중...')}`);
-            const models = await listOllamaModels();
-            cachedOllamaModels = models;
-            if (models.length > 0) {
-              console.log();
-              for (const [i, m] of models.entries()) {
-                const marker = m === currentModel ? green(' ●') : '  ';
-                console.log(`  ${marker} ${dim(String(i + 1) + ')')} ${m}`);
-              }
-              console.log();
-              console.log(`  ${dim('/model <name> 으로 변경 | Tab으로 자동완성')}`);
-            } else {
-              console.log(`  ${red('모델 없음')} — ${dim('ollama pull <model> 로 설치')}`);
-            }
-          } else {
-            console.log(`  ${dim('Ollama 외 프로바이더는 /model <name> 으로 직접 변경')}`);
-          }
-          console.log();
-          return true;
-        }
-
-        // ── 프로바이더 ──
         case 'provider':
         case 'p':
-          if (args.length > 0) {
-            const newProvider = args[0] ?? '';
-            await switchProvider(newProvider, args[1]);
-          } else {
-            console.log(`  현재: ${green(currentProvider)}/${cyan(currentModel)}`);
-            console.log(`  ${dim('변경: /provider <name> [model] | Tab으로 자동완성')}`);
-          }
-          return true;
-
         case 'providers':
-          console.log();
-          for (const p of PROVIDER_NAMES) {
-            const marker = p === currentProvider ? green(' ●') : '  ';
-            const local = LOCAL_PROVIDERS.has(p) ? dim(' (로컬)') : '';
-            console.log(`  ${marker} ${p}${local}`);
+          if (args.length > 0) {
+            await switchProvider(args[0] ?? '', args[1]);
+          } else {
+            await openProviderMenu();
           }
-          console.log();
           return true;
 
-        // ── 도구 ──
         case 'tools':
         case 't': {
           const arg = args[0]?.toLowerCase();
-          if (arg === 'on') {
-            toolsEnabled = true;
-          } else if (arg === 'off') {
-            toolsEnabled = false;
-          } else {
-            toolsEnabled = !toolsEnabled;
-          }
+          if (arg === 'on') toolsEnabled = true;
+          else if (arg === 'off') toolsEnabled = false;
+          else toolsEnabled = !toolsEnabled;
           if (toolsEnabled) {
-            console.log(`  ${green('✓')} 도구 ${green('ON')} — 파일 읽기/쓰기, Git, 셸 명령 사용 가능`);
+            console.log(`  ${green('✓')} 도구 ${green('ON')} — 파일, Git, 셸 사용 가능`);
             if (LOCAL_PROVIDERS.has(currentProvider)) {
               console.log(`  ${yellow('⚠')} ${dim('로컬 모델은 tool calling 미지원일 수 있음')}`);
             }
@@ -350,98 +449,82 @@ export async function startTextMode(options: TextModeOptions): Promise<void> {
           return true;
         }
 
-        // ── 언어 ──
-        case 'lang': {
-          const lang = args[0]?.toLowerCase();
-          if (lang && LANGUAGES[lang]) {
-            langSuffix = LANGUAGES[lang];
-            const names: Record<string, string> = { ko: '한국어', en: 'English', ja: '日本語', zh: '中文' };
-            console.log(`  ${green('✓')} 응답 언어: ${names[lang] ?? lang}`);
-          } else if (lang === 'off' || lang === 'auto') {
-            langSuffix = '';
-            console.log(`  ${green('✓')} 언어 제한 해제 (모델 기본)`);
-          } else {
-            console.log(`  사용법: ${cyan('/lang')} <${Object.keys(LANGUAGES).join('|')}|off>`);
-            if (langSuffix) {
-              console.log(`  ${dim('현재:')} ${langSuffix}`);
+        case 'lang':
+          if (args.length > 0) {
+            const lang = args[0]?.toLowerCase() ?? '';
+            if (lang === 'off' || lang === 'auto') {
+              langSuffix = '';
+              console.log(`  ${green('✓')} 언어 제한 해제`);
+            } else if (LANGUAGES[lang]) {
+              langSuffix = LANGUAGES[lang];
+              console.log(`  ${green('✓')} 언어: ${lang}`);
+            } else {
+              console.log(`  ${dim('사용:')} /lang <ko|en|ja|zh|off>`);
             }
+          } else {
+            await openLangMenu();
           }
           return true;
-        }
 
-        // ── 시스템 프롬프트 ──
         case 'system':
           if (args.length > 0) {
-            const extra = args.join(' ');
-            baseSystemPrompt = `${options.systemPrompt}\n\n${extra}`;
-            console.log(`  ${green('✓')} 시스템 프롬프트 추가됨`);
-            console.log(`  ${dim(extra.length > 80 ? extra.slice(0, 80) + '...' : extra)}`);
-          } else {
-            console.log(`  ${bold('시스템 프롬프트:')}`);
-            const preview = getSystemPrompt();
-            const lines = preview.split('\n').slice(0, 8);
-            for (const line of lines) {
-              console.log(`  ${dim(line)}`);
+            if (args[0] === 'reset') {
+              baseSystemPrompt = options.systemPrompt;
+              console.log(`  ${green('✓')} 시스템 프롬프트 초기화`);
+            } else {
+              baseSystemPrompt = `${options.systemPrompt}\n\n${args.join(' ')}`;
+              console.log(`  ${green('✓')} 시스템 프롬프트 추가됨`);
             }
-            if (preview.split('\n').length > 8) console.log(`  ${dim('...')}`);
-            console.log();
-            console.log(`  ${dim('/system <text> 로 추가 | /system reset 으로 초기화')}`);
+          } else {
+            console.log(`  ${dim(getSystemPrompt().split('\n').slice(0, 5).join('\n  '))}`);
           }
           return true;
 
-        // ── 설정 보기 ──
         case 'config':
           console.log();
-          console.log(`  ${bold('현재 설정:')}`);
+          console.log(`  ${bold('설정')}`);
           console.log(`    프로바이더  ${green(currentProvider)}`);
           console.log(`    모델        ${cyan(currentModel)}`);
           console.log(`    도구        ${toolsEnabled ? green('ON') : red('OFF')}`);
           console.log(`    언어        ${langSuffix ? dim(langSuffix) : dim('auto')}`);
-          console.log(`    대화        ${messages.length}개 메시지`);
+          console.log(`    대화        ${messages.length}개`);
           console.log(`    토큰        ${totalUsage.totalTokens.toLocaleString()}`);
           console.log();
           return true;
 
-        // ── 초기 설정 ──
-        case 'setup':
-          console.log(`  ${dim('devany --setup 으로 재실행하세요.')}`);
-          return true;
-
-        // ── 토큰 ──
         case 'usage':
         case 'u':
           console.log();
-          console.log(`  ${bold('토큰 사용량:')}`);
-          console.log(`    prompt      ${totalUsage.promptTokens.toLocaleString()}`);
-          console.log(`    completion  ${totalUsage.completionTokens.toLocaleString()}`);
-          console.log(`    total       ${totalUsage.totalTokens.toLocaleString()}`);
-          console.log(`    대화        ${messages.length}개 메시지`);
+          console.log(`  ${bold('토큰')} prompt ${totalUsage.promptTokens.toLocaleString()} + completion ${totalUsage.completionTokens.toLocaleString()} = ${bold(totalUsage.totalTokens.toLocaleString())}`);
           console.log();
           return true;
 
-        // ── 대화 초기화 ──
         case 'clear':
           messages.length = 0;
           console.log(`  ${green('✓')} 대화 초기화됨.`);
           return true;
 
-        // ── 종료 ──
-        case 'exit':
-        case 'quit':
-        case 'q':
+        case 'menu':
+          await openMainMenu();
+          return true;
+
+        case 'setup':
+          console.log(`  ${dim('devany --setup 으로 재실행')}`);
+          return true;
+
+        case 'exit': case 'quit': case 'q':
           return false;
 
         default:
-          console.log(`  ${dim('알 수 없는 명령어:')} /${cmd ?? ''} ${dim('— /help 참고')}`);
+          console.log(`  ${dim('? /' + (cmd ?? '') + ' — /help 참고')}`);
           return true;
       }
     }
 
-    // ── 일반 메시지 → 에이전트 호출 ──
+    // ── 일반 메시지 → LLM ──
     messages.push({ role: 'user', content: trimmed });
     isRunning = true;
     abortController = new AbortController();
-
     process.stdout.write(`\n  ${cyan('▌')} `);
 
     const onEvent = (event: AgentEvent): void => {
@@ -453,9 +536,7 @@ export async function startTextMode(options: TextModeOptions): Promise<void> {
           process.stdout.write(`\n  ${yellow('⚡')} ${dim(event.toolName + '...')}`);
           break;
         case 'tool-result': {
-          const preview = event.result.length > 200
-            ? event.result.slice(0, 200) + '...'
-            : event.result;
+          const preview = event.result.length > 200 ? event.result.slice(0, 200) + '...' : event.result;
           const lines = preview.split('\n').slice(0, 5);
           process.stdout.write(`\n  ${dim('┃')} ${dim(lines.join('\n  ┃ '))}\n  ${cyan('▌')} `);
           break;
@@ -481,43 +562,57 @@ export async function startTextMode(options: TextModeOptions): Promise<void> {
         onEvent,
         abortSignal: abortController.signal,
       });
-
       if (result.response) {
         messages.push({ role: 'assistant', content: result.response });
       } else {
         console.log(`\n  ${yellow('⚠')} 빈 응답`);
         if (currentProvider === 'ollama') {
-          console.log(`  ${dim('ollama ps 로 모델 상태 확인 | /models 로 목록 보기')}`);
+          console.log(`  ${dim('ollama ps | /model 로 확인')}`);
         }
       }
     } catch (err) {
       if (err instanceof Error && err.name === 'AbortError') {
-        // User cancelled
+        // cancelled
       } else {
         const msg = err instanceof Error ? err.message : String(err);
         console.error(`\n  ${red('✗')} ${msg}`);
-        if (msg.includes('ECONNREFUSED')) {
-          console.error(`  ${dim('→ ollama serve 로 서버 시작')}`);
-        } else if (msg.includes('not found')) {
-          console.error(`  ${dim('→ /models 로 사용 가능한 모델 확인')}`);
-        }
+        if (msg.includes('ECONNREFUSED')) console.error(`  ${dim('→ ollama serve')}`);
       }
     } finally {
       isRunning = false;
       abortController = null;
       console.log('\n');
     }
-
     return true;
+  }
+
+  // ── Esc key detection on empty input ──
+  function setupEscHandler(rl_: RLInterface): void {
+    const origWrite = stdin.write.bind(stdin);
+    stdin.on('keypress', (_ch: string | undefined, key: { name?: string; ctrl?: boolean; sequence?: string }) => {
+      if (key?.name === 'escape' && !isRunning) {
+        // Clear current line and open menu
+        rl_.write(null, { ctrl: true, name: 'u' }); // clear input
+        openMainMenu().then(() => {
+          // Re-display prompt
+          rl_.prompt();
+        }).catch(() => {});
+      }
+    });
+    void origWrite; // prevent unused
+  }
+
+  // Enable keypress events
+  if (typeof stdin.setRawMode === 'function') {
+    const { emitKeypressEvents } = await import('node:readline');
+    emitKeypressEvents(stdin);
+    setupEscHandler(rl);
   }
 
   // Handle initial prompt
   if (initialPrompt) {
     const shouldContinue = await handleInput(initialPrompt);
-    if (!shouldContinue) {
-      rl.close();
-      return;
-    }
+    if (!shouldContinue) { rl.close(); return; }
   }
 
   // Interactive loop
@@ -528,7 +623,6 @@ export async function startTextMode(options: TextModeOptions): Promise<void> {
     } catch {
       break;
     }
-
     const shouldContinue = await handleInput(input);
     if (!shouldContinue) break;
   }
