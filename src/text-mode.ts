@@ -270,10 +270,11 @@ export async function startTextMode(options: TextModeOptions): Promise<void> {
       clearProviderCache();
       currentModelInstance = getModel(currentProvider as ProviderName, newModel, providerConfig);
       currentModel = newModel;
+      debug('model switched to:', newModel, '| provider:', currentProvider);
       console.log(`  ${green('✓')} 모델: ${cyan(newModel)}`);
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
-      console.log(`  ${red('✗')} ${msg}`);
+      console.log(`  ${red('✗')} 모델 변경 실패: ${msg}`);
     }
   }
 
@@ -672,20 +673,27 @@ export async function startTextMode(options: TextModeOptions): Promise<void> {
     return true;
   }
 
+  function getPrompt(): string {
+    return `  ${dim(currentProvider + '/' + currentModel)} ${bold('❯')} `;
+  }
+
   // ── Esc key detection on empty input ──
+  let menuResolve: (() => void) | null = null;
+
   function setupEscHandler(rl_: RLInterface): void {
-    const origWrite = stdin.write.bind(stdin);
     stdin.on('keypress', (_ch: string | undefined, key: { name?: string; ctrl?: boolean; sequence?: string }) => {
       if (key?.name === 'escape' && !isRunning) {
         // Clear current line and open menu
         rl_.write(null, { ctrl: true, name: 'u' }); // clear input
         openMainMenu().then(() => {
-          // Re-display prompt
-          rl_.prompt();
+          // Signal the main loop to re-prompt with updated model/provider
+          if (menuResolve) {
+            menuResolve();
+            menuResolve = null;
+          }
         }).catch(() => {});
       }
     });
-    void origWrite; // prevent unused
   }
 
   // Enable keypress events
@@ -705,10 +713,25 @@ export async function startTextMode(options: TextModeOptions): Promise<void> {
   while (true) {
     let input: string;
     try {
-      input = await rl.question(`  ${dim(currentProvider + '/' + currentModel)} ${bold('❯')} `);
+      // Use AbortController to cancel question when menu changes model
+      const questionAc = new AbortController();
+      menuResolve = () => questionAc.abort();
+
+      try {
+        input = await rl.question(getPrompt(), { signal: questionAc.signal });
+      } catch (e) {
+        if (e instanceof Error && e.name === 'AbortError') {
+          // Menu triggered re-prompt — loop again with updated prompt
+          menuResolve = null;
+          continue;
+        }
+        throw e;
+      }
+      menuResolve = null;
     } catch {
       break;
     }
+    if (!input.trim()) continue;
     const shouldContinue = await handleInput(input);
     if (!shouldContinue) break;
   }
