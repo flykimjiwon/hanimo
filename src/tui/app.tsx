@@ -1,10 +1,13 @@
-import React, { useEffect, useCallback } from 'react';
-import { render, Box, useApp, useInput, useStdout } from 'ink';
+import React, { useEffect, useCallback, useState } from 'react';
+import { render, Box, Text, useApp, useInput, useStdout } from 'ink';
 import type { LanguageModelV1, ToolSet } from 'ai';
 import { StatusBar } from './components/status-bar.js';
 import { ChatView } from './components/chat-view.js';
 import { InputBar } from './components/input-bar.js';
 import { useAgent } from './hooks/use-agent.js';
+import { colors } from './theme.js';
+import { LOCAL_PROVIDERS } from '../providers/types.js';
+import type { ProviderName } from '../providers/types.js';
 
 interface AppProps {
   provider: string;
@@ -13,6 +16,18 @@ interface AppProps {
   systemPrompt: string;
   tools?: ToolSet;
   initialPrompt?: string;
+}
+
+function KeyHints({ isLoading }: { isLoading: boolean }): React.ReactElement {
+  return (
+    <Box width="100%" paddingX={1} justifyContent="center">
+      <Text color={colors.hint}>
+        {isLoading
+          ? 'Ctrl+C cancel  |  Ctrl+C Ctrl+C exit'
+          : 'Enter send  |  Ctrl+C exit  |  /help commands'}
+      </Text>
+    </Box>
+  );
 }
 
 function App({
@@ -25,11 +40,12 @@ function App({
 }: AppProps): React.ReactElement {
   const app = useApp();
   const { stdout } = useStdout();
+  const [toolsEnabled] = useState(!LOCAL_PROVIDERS.has(provider as ProviderName));
 
   const agent = useAgent({
     model: modelInstance,
     systemPrompt,
-    tools,
+    tools: toolsEnabled ? tools : undefined,
   });
 
   // Handle Ctrl+C to exit — double-tap Ctrl+C always exits
@@ -77,9 +93,9 @@ function App({
       ? ('thinking' as const)
       : ('idle' as const);
 
-  // Calculate height: leave room for status bar and input
+  // Calculate height: leave room for status bar (2) + input (3) + hints (1)
   const rows = stdout?.rows ?? 24;
-  const chatHeight = Math.max(rows - 6, 5);
+  const chatHeight = Math.max(rows - 7, 5);
 
   return (
     <Box flexDirection="column" width="100%">
@@ -88,6 +104,7 @@ function App({
         model={model}
         status={status}
         currentTool={agent.currentTool ?? undefined}
+        toolsEnabled={toolsEnabled}
         usage={agent.usage}
       />
 
@@ -103,6 +120,8 @@ function App({
         onSubmit={agent.sendMessage}
         isDisabled={agent.isLoading}
       />
+
+      <KeyHints isLoading={agent.isLoading} />
     </Box>
   );
 }

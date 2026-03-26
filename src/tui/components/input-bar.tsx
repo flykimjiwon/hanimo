@@ -1,5 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { Box, Text, useInput } from 'ink';
+import { colors } from '../theme.js';
 
 interface InputBarProps {
   onSubmit: (text: string) => void;
@@ -59,13 +60,13 @@ export function InputBar({ onSubmit, isDisabled }: InputBarProps): React.ReactEl
   );
 
   const prompt = isDisabled ? '\u23F3 ' : '\u276F ';
-  const promptColor = isDisabled ? 'gray' : 'green';
+  const promptColor = isDisabled ? colors.promptDisabled : colors.prompt;
 
   return (
-    <Box borderStyle="single" borderColor="gray" paddingX={1} width="100%">
+    <Box borderStyle="round" borderColor={isDisabled ? colors.border : colors.borderFocus} paddingX={1} width="100%">
       <Text color={promptColor}>{prompt}</Text>
-      <Text>{value}</Text>
-      {!isDisabled && <Text color="gray">{'_'}</Text>}
+      <Text color={colors.userText}>{value}</Text>
+      {!isDisabled && <Text color={colors.dimText}>{'\u2588'}</Text>}
     </Box>
   );
 }

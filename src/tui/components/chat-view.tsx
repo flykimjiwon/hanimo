@@ -1,6 +1,7 @@
 import React from 'react';
-import { Box, Text } from 'ink';
+import { Box, Text, Static } from 'ink';
 import { Spinner } from './spinner.js';
+import { colors } from '../theme.js';
 
 export interface DisplayMessage {
   role: 'user' | 'assistant' | 'tool-call' | 'tool-result';
@@ -28,26 +29,26 @@ function MessageBubble({ message }: { message: DisplayMessage }): React.ReactEle
   switch (message.role) {
     case 'user':
       return (
-        <Box marginY={0}>
-          <Text color="cyan" bold>
-            You:{' '}
+        <Box marginTop={1} paddingX={1}>
+          <Text color={colors.userText} bold>
+            {'\u276F'}{' '}
           </Text>
-          <Text color="cyan">{message.content}</Text>
+          <Text color={colors.userText}>{message.content}</Text>
         </Box>
       );
 
     case 'assistant':
       return (
-        <Box marginY={0} flexDirection="column">
-          <Text color="white">{message.content}</Text>
+        <Box paddingX={1} flexDirection="column">
+          <Text color={colors.assistantText}>{message.content}</Text>
         </Box>
       );
 
     case 'tool-call':
       return (
-        <Box marginY={0}>
-          <Text dimColor>
-            {'\u26A1'} Calling {message.toolName ?? 'tool'}...
+        <Box paddingX={1}>
+          <Text color={colors.toolCall}>
+            {'\u26A1'} {message.toolName ?? 'tool'}
           </Text>
         </Box>
       );
@@ -56,11 +57,15 @@ function MessageBubble({ message }: { message: DisplayMessage }): React.ReactEle
       const truncated = truncateLines(message.content, MAX_TOOL_RESULT_LINES);
       const isError = message.content.startsWith('Error:');
       return (
-        <Box marginY={0} flexDirection="column">
-          <Text dimColor bold>
-            {'\u2500'} {message.toolName ?? 'tool'} result:
+        <Box paddingX={1} flexDirection="column">
+          <Text color={colors.toolCall} dimColor>
+            {'\u2514'} {message.toolName ?? 'tool'}
           </Text>
-          <Text color={isError ? 'red' : 'gray'}>{truncated}</Text>
+          <Box paddingLeft={2}>
+            <Text color={isError ? colors.error : colors.toolResult}>
+              {truncated}
+            </Text>
+          </Box>
         </Box>
       );
     }
@@ -72,27 +77,40 @@ export function ChatView({
   streamingText,
   isLoading,
 }: ChatViewProps): React.ReactElement {
+  // Split: completed messages go to <Static>, active goes to live render
+  const completedMessages = streamingText.length > 0 || isLoading
+    ? messages.slice(0, -0 || messages.length) // all completed when streaming
+    : messages;
+
   return (
-    <Box flexDirection="column" flexGrow={1} paddingX={1} overflow="hidden">
+    <Box flexDirection="column" flexGrow={1} overflow="hidden">
+      {/* Completed messages — never re-rendered */}
+      <Static items={completedMessages}>
+        {(msg, index) => (
+          <MessageBubble key={index} message={msg} />
+        )}
+      </Static>
+
+      {/* Empty state */}
       {messages.length === 0 && !isLoading && (
-        <Box justifyContent="center" marginY={1}>
-          <Text dimColor>Type a message to start...</Text>
+        <Box justifyContent="center" marginY={1} paddingX={1}>
+          <Text color={colors.dimText}>
+            Type a message to start... {'\u2502'} Ctrl+C to exit
+          </Text>
         </Box>
       )}
 
-      {messages.map((msg, index) => (
-        <MessageBubble key={index} message={msg} />
-      ))}
-
+      {/* Active streaming text */}
       {streamingText.length > 0 && (
-        <Box marginY={0} flexDirection="column">
-          <Text color="white">{streamingText}</Text>
+        <Box paddingX={1} flexDirection="column">
+          <Text color={colors.assistantText}>{streamingText}</Text>
         </Box>
       )}
 
+      {/* Thinking indicator */}
       {isLoading && streamingText.length === 0 && (
-        <Box marginY={0}>
-          <Spinner label="Thinking..." />
+        <Box paddingX={1}>
+          <Spinner label="Thinking..." color={colors.statusThinking} />
         </Box>
       )}
     </Box>

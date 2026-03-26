@@ -6,9 +6,10 @@ const INTERVAL_MS = 80;
 
 interface SpinnerProps {
   label?: string;
+  color?: string;
 }
 
-export function Spinner({ label }: SpinnerProps): React.ReactElement {
+export function Spinner({ label, color = 'cyan' }: SpinnerProps): React.ReactElement {
   const [frameIndex, setFrameIndex] = useState(0);
 
   useEffect(() => {
@@ -25,7 +26,7 @@ export function Spinner({ label }: SpinnerProps): React.ReactElement {
 
   return (
     <Text>
-      <Text color="cyan">{frame}</Text>
+      <Text color={color}>{frame}</Text>
       {label ? <Text> {label}</Text> : null}
     </Text>
   );
