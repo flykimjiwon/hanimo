@@ -1,142 +1,294 @@
-# dev_anywhere
+# devany
 
-> **어디서든 개발하는 터미널 멀티에이전트 AI 코딩 시스템**
->
-> Windows, macOS, Linux — 내부망, 외부망 — Ollama, OpenAI, Claude, Gemini, GLM 등 모든 LLM 연결
+> **Terminal AI coding assistant that works with any LLM — cloud or local**
 
----
-
-## 프로젝트 목표
-
-자체 터미널 기반 멀티에이전트 AI 개발 시스템을 구축하여:
-
-- **크로스 플랫폼**: Windows, macOS, Linux 모두 지원
-- **멀티 LLM**: OpenAI, Claude, Gemini, Ollama, GLM/Zhipu, vLLM, 커스텀 엔드포인트 통합
-- **내부망/외부망**: 에어갭 사내망(자체 모델 서버) + 일반 인터넷(클라우드 API) 모두 동작
-- **멀티에이전트**: 복수 AI 에이전트가 협업하여 코딩, 리뷰, 테스트 수행
+[한국어](README.ko.md)
 
 ---
 
-## 리서치 보고서
+## What is devany?
 
-| # | 문서 | 내용 |
-|---|------|------|
-| 1 | [도구 전수 조사](docs/01-tools-survey.md) | 35+ 터미널 AI 코딩 도구, IDE 확장, 멀티에이전트 프레임워크 서베이 |
-| 2 | [구축 타당성 분석](docs/02-feasibility.md) | 아키텍처, 언어 선택, 필수 컴포넌트, 타임라인, 난이도 |
-| 3 | [라이선스/저작권 분석](docs/03-license-analysis.md) | 20개 도구별 포크 가능 여부, 상용화 조건, 특허, 트레이드마크 |
-| 4 | [내부망/외부망 배포](docs/04-deployment.md) | 클라우드 API vs 에어갭 환경, 프로바이더 비용, 로컬 모델 성능 |
+devany is a terminal-based AI coding assistant similar to Claude Code, Cursor, or Aider. It connects to **14 LLM providers** (cloud APIs + local servers) and lets AI read, write, search, and execute code in your project — all from the terminal.
+
+Key differentiators:
+- **14 providers, one interface** — OpenAI, Anthropic, Google, DeepSeek, Groq, Ollama, and 8 more
+- **Ollama-first** — optimized for local models, zero API cost, full offline support
+- **Smart role detection** — automatically assigns Agent/Assistant/Chat role based on model capabilities
+- **Zero native deps** — pure JavaScript, `npm install` just works (no C++ builds)
 
 ---
 
-## 핵심 결론
+## Quick Start
 
-### 만들 수 있는가? — YES
+```bash
+# Clone & install
+git clone https://github.com/flykimjiwon/dev_anywhere.git
+cd dev_anywhere
+npm install
 
-| 판단 | 결론 |
-|------|------|
-| 기술적 타당성 | **높음** — OpenCode(120K stars), aider(40K stars) 등 레퍼런스 존재 |
-| 다중 LLM 통합 | **쉬움** — LiteLLM/Vercel AI SDK로 100+ 프로바이더 한 줄 통합 |
-| 크로스 플랫폼 | **가능** — Go/Node.js 모두 Win+Mac+Linux 지원 |
-| 내부망 배포 | **가능** — Ollama/vLLM 100% 오프라인 동작 |
-| 포크 저작권 | **19/20 도구 상용 포크 가능** (Claude Code만 금지) |
+# Run (first launch opens setup wizard)
+npm run dev
 
-### 추천 전략
-
-```
-OpenCode 포크 (Go, MIT)
-├── TUI + LSP + SQLite 세션 — 이미 완성됨
-├── 75+ 모델 지원 구조
-├── + 커스텀 프로바이더 추가 (GLM, 자체 엔드포인트)
-├── + 멀티에이전트 오케스트레이션 레이어
-├── + MCP 서버 통합
-└── + providers.yaml 환경 전환 (내부망 ↔ 외부망)
+# Or with specific provider/model
+npm run dev -- -p ollama -m qwen3:8b
+npm run dev -- -p openai -m gpt-4o
 ```
 
-### MVP 타임라인
-
-| 전략 | 기간 |
-|------|------|
-| OpenCode 포크 + 확장 | ~5주 |
-| 처음부터 구축 (TypeScript) | ~7주 MVP / ~15주 Full |
+**Requirements**: Node.js >= 20.0.0
 
 ---
 
-## 기술 스택 후보
+## Installation
 
-| 선택지 | 점수 | TUI | LLM 에코시스템 |
-|--------|------|-----|---------------|
-| **Go** (Bubbletea) | 7.6/10 | **최고** (OpenCode 검증) | 보통 |
-| **TypeScript** (Ink) | 8.2/10 | 좋음 | **최고** (Vercel AI SDK) |
-| **Python** (Textual) | 7.7/10 | 보통 | 좋음 (LiteLLM 100+) |
-| **Rust** (Ratatui) | 6.8/10 | 좋음 | 부족 |
+```bash
+# Development mode (tsx, hot reload)
+npm run dev
 
----
+# Build & run
+npm run build
+npm start
 
-## LLM 프로바이더 맵
-
-```
-┌──────────────────────────────────────────────────┐
-│           통합 LLM 추상화 레이어                    │
-│    (LiteLLM / Vercel AI SDK / 직접 구현)           │
-├─────────┬────────┬────────┬────────┬──────┬──────┤
-│ OpenAI  │ Claude │ Gemini │  GLM   │Ollama│ vLLM │
-│ (직접)  │ (SDK)  │ (SDK)  │(OAI호환)│(로컬)│(로컬) │
-└─────────┴────────┴────────┴────────┴──────┴──────┘
-
-외부망: api.openai.com / api.anthropic.com / gemini API
-내부망: internal-vllm:8000 / internal-ollama:11434
-전환:   OPENAI_BASE_URL 환경변수 하나로
+# Global install (use `devany` anywhere)
+npm link
+devany
 ```
 
 ---
 
-## 도구 인기순 (GitHub Stars, 2026.03)
+## Usage
 
-| # | 도구 | Stars | 언어 | 라이선스 | 포크 안전 |
-|---|------|-------|------|---------|----------|
-| 1 | OpenCode | ~120K | Go | MIT | **안전** |
-| 2 | Claude Code | ~82K | TS | Proprietary | **금지** |
-| 3 | OpenHands | ~69K | Python | MIT* | 주의 |
-| 4 | Codex CLI | ~67K | Rust | Apache 2.0 | **안전** |
-| 5 | Cline | ~59K | TS | Apache 2.0 | **안전** |
-| 6 | Zed | ~55K | Rust | GPL/AGPL | 주의 |
-| 7 | AutoGen | ~55K | Python | MIT | **안전** |
-| 8 | GPT-Engineer | ~54K | Python | MIT | **안전** |
-| 9 | MetaGPT | ~47K | Python | MIT | **안전** |
-| 10 | CrewAI | ~45K | Python | MIT | **안전** |
+```bash
+# Text mode (default — readline-based interactive)
+devany
+
+# TUI mode (fullscreen Ink-based)
+devany --tui
+
+# With initial prompt
+devany "explain the project structure"
+
+# Specify provider & model
+devany -p ollama -m qwen3:8b
+devany -p anthropic -m claude-sonnet-4-20250514
+devany -p deepseek -m deepseek-chat
+
+# Custom endpoint (any OpenAI-compatible server)
+devany -u http://my-server:8000/v1 -m my-model
+
+# Session management
+devany --list-sessions          # List saved sessions
+devany --resume                 # Resume latest session
+devany --resume abc12345        # Resume specific session
+
+# Re-run setup
+devany --setup
+```
 
 ---
 
-## 배포 시나리오
+## Supported Providers (14)
 
-| 시나리오 | 스택 | 비용 | 프라이버시 |
-|---------|------|------|----------|
-| 소규모 팀, 인터넷 OK | Gemini Flash + 포크 도구 | $0.40/M | API=학습 안 함 |
-| 최고 품질 | Claude Sonnet 4 via Bedrock | $15/M | VPC 격리 |
-| 한국 엔터프라이즈 | Azure OpenAI (Korea Central) | 엔터프라이즈 | VPC 격리 |
-| 에어갭 프로덕션 | vLLM + DeepSeek R1 70B | HW만 | 100% 온프레미스 |
-| 에어갭 개인 개발 | Ollama + DeepSeek-Coder | 무료 | 100% 로컬 |
+### Cloud APIs
+
+| Provider | Default Model | Models | Auth |
+|----------|--------------|--------|------|
+| **OpenAI** | gpt-4o-mini | 7 | API key |
+| **Anthropic** | claude-sonnet-4 | 3 | API key |
+| **Google** | gemini-2.5-flash | 3 | API key |
+| **DeepSeek** | deepseek-chat | 3 | API key |
+| **Groq** | qwen-qwq-32b | 4 | API key |
+| **Together** | Qwen2.5-Coder-32B | 4 | API key |
+| **OpenRouter** | deepseek-chat-v3 (free) | 4 | API key |
+| **Fireworks** | qwen2p5-coder-32b | 3 | API key |
+| **Mistral** | codestral-latest | 3 | API key |
+| **GLM/Zhipu** | glm-4-plus | 3 | API key |
+
+### Local / Self-hosted
+
+| Provider | Default URL | Auth |
+|----------|-----------|------|
+| **Ollama** | localhost:11434 | None |
+| **vLLM** | localhost:8000 | None |
+| **LM Studio** | localhost:1234 | None |
+| **Custom** | (user-specified) | Optional |
 
 ---
 
-## 프로젝트 구조
+## AI Tools (9)
+
+| Tool | Description |
+|------|-------------|
+| `read_file` | Read file contents |
+| `write_file` | Create or overwrite files |
+| `edit_file` | Edit specific lines in a file |
+| `glob_search` | Find files by pattern (.gitignore aware) |
+| `grep_search` | Search file contents with regex (.gitignore aware) |
+| `shell_exec` | Execute shell commands (22 dangerous patterns blocked) |
+| `git_status` | Check git status |
+| `git_diff` | View git changes |
+| `git_commit` | Create git commits |
+
+---
+
+## Smart Model Role Detection
+
+devany automatically detects model capabilities and assigns roles:
+
+| Role | Badge | Tools Available | Example Models |
+|------|-------|----------------|----------------|
+| **Agent** | `[A]` green | All 9 tools | qwen3:8b+, all cloud APIs |
+| **Assistant** | `[R]` yellow | Read-only (3) | qwen3.5:4b, mistral:7b |
+| **Chat** | `[C]` gray | None | gemma3:1b, codegemma |
+
+30+ models registered with 4-tier matching: exact name → prefix → cloud provider → safe default.
+
+---
+
+## Slash Commands
+
+| Command | Shortcut | Description |
+|---------|----------|-------------|
+| `/help` | `/h` | Show help |
+| `/model [name]` | `/m` | Switch model (no arg = menu) |
+| `/provider [name]` | `/p` | Switch provider |
+| `/tools [on\|off]` | `/t` | Toggle tools |
+| `/models` | | List models with role badges |
+| `/endpoint url` | `/e` | Connect custom endpoint |
+| `/lang [ko\|en\|ja\|zh]` | | Set response language |
+| `/config` | | Show current config |
+| `/usage` | `/u` | Token usage & cost |
+| `/clear` | | Clear conversation |
+| `/exit` | `/q` | Exit |
+
+**Keyboard**: `Esc` = menu, `Tab` = autocomplete, `Ctrl+C` = cancel/exit
+
+---
+
+## Security
+
+- **Path sandboxing** — file operations blocked outside CWD + sensitive paths (.ssh, .aws, .env)
+- **Shell filter** — 22 dangerous patterns blocked (rm -rf, sudo, curl|bash, eval, DROP TABLE, etc.)
+- **Config protection** — `~/.dev-anywhere/config.json` saved with `0600` permissions
+- **.gitignore** — glob/grep searches respect .gitignore automatically
+
+---
+
+## Project Instructions
+
+Create a `.devany.md` file in your project root to give AI project-specific context:
+
+```markdown
+# My Project
+- This is a Next.js 15 app with TypeScript strict
+- Use Tailwind CSS for styling
+- API routes are in app/api/
+- Never use `any` type
+```
+
+This is automatically injected into the system prompt on every session.
+
+---
+
+## Architecture
 
 ```
 dev_anywhere/
-├── README.md                    # 이 파일
-├── docs/
-│   ├── 01-tools-survey.md       # 35+ 도구 전수 조사
-│   ├── 02-feasibility.md        # 구축 타당성 분석
-│   ├── 03-license-analysis.md   # 라이선스/저작권 분석
-│   └── 04-deployment.md         # 내부망/외부망 배포
-└── (향후 소스 코드)
+├── src/
+│   ├── cli.ts                    # CLI entrypoint (commander)
+│   ├── text-mode.ts              # Text mode (readline-based)
+│   ├── onboarding.ts             # First-run setup wizard
+│   ├── core/
+│   │   ├── agent-loop.ts         # LLM agent loop (Vercel AI SDK streamText)
+│   │   ├── system-prompt.ts      # System prompt builder (.devany.md loader)
+│   │   ├── permission.ts         # Path sandboxing + permission gate
+│   │   ├── markdown.ts           # ANSI terminal markdown renderer
+│   │   └── types.ts              # Shared types (Message, AgentEvent)
+│   ├── providers/
+│   │   ├── registry.ts           # Provider factory + cache
+│   │   ├── types.ts              # 14 providers + KNOWN_MODELS
+│   │   └── model-capabilities.ts # 30+ model capability registry
+│   ├── tools/
+│   │   ├── registry.ts           # Tool registry (full + read-only)
+│   │   ├── file-ops.ts           # read/write/edit (sandboxed)
+│   │   ├── shell-exec.ts         # Shell exec (danger filter)
+│   │   ├── grep-search.ts        # Regex content search
+│   │   ├── glob-search.ts        # File pattern search
+│   │   └── git-tools.ts          # Git operations
+│   ├── session/
+│   │   └── store.ts              # JSON file-based session storage
+│   ├── tui/
+│   │   ├── app.tsx               # TUI main app (Ink + React)
+│   │   ├── components/           # ChatView, InputBar, StatusBar, SelectMenu
+│   │   └── hooks/                # useAgent, useCommands, useStream
+│   └── config/
+│       ├── loader.ts             # Config loader (env → file → defaults)
+│       └── schema.ts             # Config schema
+├── tests/                        # 5 test files, 43 tests
+├── vitest.config.ts
+├── eslint.config.js
+├── .prettierrc
+└── tsconfig.json
 ```
 
 ---
 
-## 조사 날짜
+## Tech Stack
 
-2026-03-26 기준. 모든 데이터(Stars, 가격, 라이선스)는 이 시점의 스냅샷입니다.
+| Category | Technology |
+|----------|-----------|
+| **Runtime** | Node.js >= 20 |
+| **Language** | TypeScript (strict, ES2022, NodeNext) |
+| **LLM Integration** | Vercel AI SDK v4 (streamText, tool calling) |
+| **Provider SDKs** | @ai-sdk/openai, @ai-sdk/anthropic, @ai-sdk/google |
+| **TUI** | Ink 5 + React 18 |
+| **CLI** | Commander |
+| **Validation** | Zod |
+| **Shell** | Execa |
+| **File Search** | Globby (gitignore support) |
+| **Git** | simple-git |
+| **Testing** | Vitest (43 tests) |
+| **Linting** | ESLint + typescript-eslint |
+| **Formatting** | Prettier |
+
+**Zero native dependencies** — no C++ builds, no Python, no Rust. Pure JavaScript.
+
+---
+
+## Data Storage
+
+| Path | Contents |
+|------|----------|
+| `~/.dev-anywhere/config.json` | Provider, model, API keys (0600 perms) |
+| `~/.dev-anywhere/sessions/*.json` | Conversation sessions (auto-saved) |
+| `.devany.md` (project root) | Project-specific AI instructions |
+
+---
+
+## Development
+
+```bash
+npm run dev            # Run with tsx
+npm run build          # TypeScript build
+npm test               # Run 43 tests
+npm run test:watch     # Watch mode
+npm run lint           # tsc --noEmit + eslint
+npm run lint:fix       # Auto-fix lint issues
+npm run format         # Prettier format
+npm run format:check   # Check formatting
+```
+
+---
+
+## Research Documents
+
+The initial research that informed this project:
+
+| # | Document | Contents |
+|---|----------|----------|
+| 1 | [Tools Survey](docs/01-tools-survey.md) | 35+ terminal AI coding tools survey |
+| 2 | [Feasibility](docs/02-feasibility.md) | Architecture, language choice, timeline |
+| 3 | [License Analysis](docs/03-license-analysis.md) | Fork legality for 20 tools |
+| 4 | [Deployment](docs/04-deployment.md) | Cloud vs air-gap deployment scenarios |
 
 ---
 
