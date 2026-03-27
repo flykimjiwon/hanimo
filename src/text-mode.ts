@@ -17,7 +17,7 @@ import type { RoleDefinition } from './roles/types.js';
 
 const execFileAsync = promisify(execFile);
 
-// DEBUG=1 devany → stderr에 디버그 로그 출력
+// DEBUG=1 modol → stderr에 디버그 로그 출력
 const DEBUG = !!process.env['DEBUG'];
 function debug(...args: unknown[]): void {
   if (DEBUG) console.error('[debug]', ...args);
@@ -336,7 +336,7 @@ export async function startTextMode(options: TextModeOptions): Promise<void> {
   function printBanner(): void {
     console.log();
     const roleTag = currentRoleObj ? `${currentRoleObj.icon} ${currentRoleObj.name}` : '';
-    console.log(`  ${bold('devany')} v0.1.0  ${dim('(')}${green(currentProvider)}${dim('/')}${cyan(currentModel)}${dim(')')}${roleTag ? `  ${magenta(roleTag)}` : ''}`);
+    console.log(`  ${bold('modol')} v0.1.0  ${dim('(')}${green(currentProvider)}${dim('/')}${cyan(currentModel)}${dim(')')}${roleTag ? `  ${magenta(roleTag)}` : ''}`);
     const toolsTag = toolsEnabled ? green('tools:ON') : dim('tools:OFF');
     console.log(`  ${dim('Esc: 메뉴 | Tab: 자동완성 | Ctrl+C: 취소/종료 |')} ${toolsTag}`);
     console.log(dim('─'.repeat(50)));
@@ -739,7 +739,7 @@ export async function startTextMode(options: TextModeOptions): Promise<void> {
           return true;
 
         case 'setup':
-          console.log(`  ${dim('devany --setup 으로 재실행')}`);
+          console.log(`  ${dim('modol --setup 으로 재실행')}`);
           return true;
 
         case 'exit': case 'quit': case 'q':

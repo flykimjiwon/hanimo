@@ -7,13 +7,13 @@ import type {
   Message,
 } from './types.js';
 
-// Max messages to keep in conversation history to avoid exceeding context window.
-// Keeps system + first 2 messages + last N messages.
+import { compactMessages } from './compaction.js';
+
+// Max messages before triggering compaction
 const MAX_CONTEXT_MESSAGES = 40;
 
 /**
- * Truncate messages to fit within context window limits.
- * Preserves the first 2 messages (initial context) and the most recent messages.
+ * Simple synchronous truncation fallback.
  */
 function truncateMessages(messages: Message[]): Message[] {
   if (messages.length <= MAX_CONTEXT_MESSAGES) return messages;
@@ -93,8 +93,17 @@ export async function runAgentLoop(
   let fullResponse = '';
   const updatedMessages: Message[] = [...messages];
 
-  // Truncate if conversation is too long
-  const contextMessages = truncateMessages(updatedMessages);
+  // Smart compaction: use LLM summary if possible, fallback to truncation
+  let contextMessages: Message[];
+  if (updatedMessages.length > MAX_CONTEXT_MESSAGES) {
+    try {
+      contextMessages = await compactMessages(model, updatedMessages, 8);
+    } catch {
+      contextMessages = truncateMessages(updatedMessages);
+    }
+  } else {
+    contextMessages = updatedMessages;
+  }
 
   try {
     const result = streamText({

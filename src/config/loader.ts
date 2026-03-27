@@ -51,7 +51,7 @@ function getEnvOverrides(): Record<string, unknown> {
   const overrides: Record<string, unknown> = {};
   const providerOverrides: Record<string, Record<string, string>> = {};
 
-  // Explicit devany env vars
+  // Explicit modol env vars
   const provider = process.env['DEV_ANYWHERE_PROVIDER'];
   if (provider) {
     overrides['provider'] = provider;
@@ -117,16 +117,16 @@ export async function loadConfig(cwd?: string): Promise<Config> {
     unknown
   >;
 
-  // Layer 2: User config (~/.dev-anywhere/config.json)
-  const userConfigPath = join(homedir(), '.dev-anywhere', 'config.json');
+  // Layer 2: User config (~/.modol/config.json)
+  const userConfigPath = join(homedir(), '.modol', 'config.json');
   const userConfig = await readJsonFile(userConfigPath);
   if (userConfig) {
     merged = deepMerge(merged, userConfig);
   }
 
-  // Layer 3: Project config (<cwd>/.dev-anywhere.json)
+  // Layer 3: Project config (<cwd>/.modol.json)
   const projectDir = cwd ?? process.cwd();
-  const projectConfigPath = join(projectDir, '.dev-anywhere.json');
+  const projectConfigPath = join(projectDir, '.modol.json');
   const projectConfig = await readJsonFile(projectConfigPath);
   if (projectConfig) {
     merged = deepMerge(merged, projectConfig);

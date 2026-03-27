@@ -8,7 +8,7 @@ import { homedir } from 'node:os';
 
 const execFileAsync = promisify(execFile);
 
-const CONFIG_DIR = join(homedir(), '.dev-anywhere');
+const CONFIG_DIR = join(homedir(), '.modol');
 const CONFIG_PATH = join(CONFIG_DIR, 'config.json');
 
 interface SavedConfig {
@@ -85,7 +85,7 @@ export async function runOnboarding(): Promise<void> {
 
   console.log();
   console.log('  ╔══════════════════════════════════════╗');
-  console.log('  ║     devany  v0.1.0             ║');
+  console.log('  ║     modol  v0.1.0              ║');
   console.log('  ║     터미널 AI 코딩 어시스턴트          ║');
   console.log('  ╚══════════════════════════════════════╝');
   console.log();

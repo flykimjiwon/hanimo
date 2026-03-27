@@ -11,15 +11,32 @@ export interface ProjectContext {
 }
 
 /**
- * Load project instructions from `.devany.md` in the working directory.
- * Returns the file contents or empty string if not found.
+ * Load project instructions from `.modol.md` files.
+ * Walks from CWD upward to find all .modol.md files (child overrides parent).
  */
 function loadProjectInstructions(cwd: string): string {
-  try {
-    return readFileSync(join(cwd, '.devany.md'), 'utf-8').trim();
-  } catch {
-    return '';
+  const parts: string[] = [];
+  let dir = cwd;
+  const visited = new Set<string>();
+
+  // Walk upward collecting .modol.md files
+  while (dir && !visited.has(dir)) {
+    visited.add(dir);
+    try {
+      const content = readFileSync(join(dir, '.modol.md'), 'utf-8').trim();
+      if (content) {
+        const label = dir === cwd ? '(project root)' : `(${dir})`;
+        parts.unshift(`${label}\n${content}`);
+      }
+    } catch {
+      // No file at this level
+    }
+    const parent = join(dir, '..');
+    if (parent === dir) break;
+    dir = parent;
   }
+
+  return parts.join('\n\n---\n\n');
 }
 
 export function buildSystemPrompt(context: ProjectContext, role?: RoleDefinition): string {
@@ -32,7 +49,7 @@ export function buildSystemPrompt(context: ProjectContext, role?: RoleDefinition
 
   const projectInstructions = loadProjectInstructions(context.cwd);
   const projectSection = projectInstructions
-    ? `\n\n## Project Instructions (.devany.md)\n${projectInstructions}`
+    ? `\n\n## Project Instructions (.modol.md)\n${projectInstructions}`
     : '';
 
   const roleSection = role
@@ -44,13 +61,18 @@ export function buildSystemPrompt(context: ProjectContext, role?: RoleDefinition
     ? `\n\n## User Instructions\n${globalInstructions}`
     : '';
 
-  return `You are dev-anywhere, a terminal-based AI coding assistant.
+  return `You are modol, a terminal-based AI coding assistant.
 
 ## Capabilities
 - Read, write, and edit files in the project directory
+- Hash-anchored editing (hashline_read + hashline_edit) for verified, stale-proof edits
 - Search files with glob patterns and grep content search
 - Run shell commands and view output
 - Use git for version control operations
+- Fetch web pages and documentation (webfetch)
+- Track multi-step work with a todo list (todo)
+- Run multiple read operations in parallel (batch)
+- Get TypeScript/ESLint diagnostics without modifying files (diagnostics)
 
 ## Guidelines
 - Be concise. Avoid unnecessary explanation.

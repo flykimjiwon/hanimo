@@ -2,7 +2,7 @@ import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { homedir } from 'node:os';
 
-const CONFIG_DIR = join(homedir(), '.dev-anywhere');
+const CONFIG_DIR = join(homedir(), '.modol');
 const INSTRUCTIONS_FILE = join(CONFIG_DIR, 'instructions.md');
 
 function ensureDir(): void {

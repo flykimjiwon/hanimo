@@ -7,7 +7,7 @@ import { randomUUID } from 'node:crypto';
 import type { Session, SessionMessage } from './types.js';
 
 // JSON file-based session storage (no native dependencies)
-// Layout: ~/.dev-anywhere/sessions/<id>.json
+// Layout: ~/.modol/sessions/<id>.json
 
 interface SessionData {
   id: string;
@@ -27,7 +27,7 @@ export class SessionStore {
   private dir: string;
 
   constructor(dirPath?: string) {
-    this.dir = dirPath ?? join(homedir(), '.dev-anywhere', 'sessions');
+    this.dir = dirPath ?? join(homedir(), '.modol', 'sessions');
     mkdirSync(this.dir, { recursive: true });
   }
 
@@ -117,6 +117,52 @@ export class SessionStore {
   deleteSession(id: string): void {
     const path = this.sessionPath(id);
     if (existsSync(path)) unlinkSync(path);
+  }
+
+  /**
+   * Search sessions by keyword in message content.
+   */
+  searchSessions(keyword: string, limit = 10): Array<Session & { matchCount: number; preview: string }> {
+    const files = readdirSync(this.dir).filter((f) => f.endsWith('.json'));
+    const results: Array<Session & { matchCount: number; preview: string }> = [];
+    const lower = keyword.toLowerCase();
+
+    for (const file of files) {
+      const id = file.replace('.json', '');
+      const data = this.readSession(id);
+      if (!data) continue;
+
+      let matchCount = 0;
+      let preview = '';
+      for (const m of data.messages) {
+        if (m.content.toLowerCase().includes(lower)) {
+          matchCount++;
+          if (!preview) {
+            // Extract context around match
+            const idx = m.content.toLowerCase().indexOf(lower);
+            const start = Math.max(0, idx - 40);
+            const end = Math.min(m.content.length, idx + keyword.length + 40);
+            preview = (start > 0 ? '...' : '') + m.content.slice(start, end) + (end < m.content.length ? '...' : '');
+          }
+        }
+      }
+
+      if (matchCount > 0) {
+        results.push({
+          id: data.id,
+          createdAt: data.createdAt,
+          updatedAt: data.updatedAt,
+          provider: data.provider,
+          model: data.model,
+          messageCount: data.messages.length,
+          matchCount,
+          preview,
+        });
+      }
+    }
+
+    results.sort((a, b) => b.matchCount - a.matchCount);
+    return results.slice(0, limit);
   }
 
   close(): void {

@@ -1,6 +1,6 @@
 # 07. TUI 디자인 가이드 — 터미널 AI 코딩 어시스턴트 UI/UX
 
-> 작성일: 2026-03-26 | 대상: dev_anywhere (TypeScript + Ink)
+> 작성일: 2026-03-26 | 대상: modol (TypeScript + Ink)
 
 ---
 
@@ -242,7 +242,7 @@ function useStreamingText(stream: AsyncIterable<string>) {
 | `Ctrl+D` | EOF / 종료 |
 | `Ctrl+Z` | SIGTSTP / 일시정지 |
 
-**dev_anywhere 추천 키맵**:
+**modol 추천 키맵**:
 | 키 | 기능 |
 |----|------|
 | `Ctrl+K` | 커맨드 팔레트 (퍼지 검색) |

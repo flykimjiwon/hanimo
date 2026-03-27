@@ -4,19 +4,35 @@ import { gitStatusTool, gitDiffTool, gitCommitTool, gitLogTool } from './git-too
 import { shellExecTool } from './shell-exec.js';
 import { globSearchTool } from './glob-search.js';
 import { grepSearchTool } from './grep-search.js';
+import { hashReadFileTool, hashlineEditTool } from './hashline-edit.js';
+import { webfetchTool } from './webfetch.js';
+import { todoTool } from './todo.js';
+import { batchTool } from './batch.js';
+import { lspDiagnosticsTool } from './lsp-diagnostics.js';
 
 export function createToolRegistry() {
   return {
+    // Core file ops
     read_file: readFileTool,
     write_file: writeFileTool,
     edit_file: editFileTool,
+    // Hash-anchored editing (verified edits)
+    hashline_read: hashReadFileTool,
+    hashline_edit: hashlineEditTool,
+    // Search
+    glob_search: globSearchTool,
+    grep_search: grepSearchTool,
+    // Shell & Git
+    shell_exec: shellExecTool,
     git_status: gitStatusTool,
     git_diff: gitDiffTool,
     git_commit: gitCommitTool,
     git_log: gitLogTool,
-    shell_exec: shellExecTool,
-    glob_search: globSearchTool,
-    grep_search: grepSearchTool,
+    // New tools
+    webfetch: webfetchTool,
+    todo: todoTool,
+    batch: batchTool,
+    diagnostics: lspDiagnosticsTool,
   };
 }
 
@@ -24,8 +40,13 @@ export function createToolRegistry() {
 export function createReadOnlyTools() {
   return {
     read_file: readFileTool,
+    hashline_read: hashReadFileTool,
     glob_search: globSearchTool,
     grep_search: grepSearchTool,
+    webfetch: webfetchTool,
+    todo: todoTool,
+    batch: batchTool,
+    diagnostics: lspDiagnosticsTool,
   };
 }
 
@@ -62,6 +83,8 @@ export {
   readFileTool,
   writeFileTool,
   editFileTool,
+  hashReadFileTool,
+  hashlineEditTool,
   gitStatusTool,
   gitDiffTool,
   gitCommitTool,
@@ -69,4 +92,8 @@ export {
   shellExecTool,
   globSearchTool,
   grepSearchTool,
+  webfetchTool,
+  todoTool,
+  batchTool,
+  lspDiagnosticsTool,
 };

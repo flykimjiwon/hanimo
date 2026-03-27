@@ -1,14 +1,16 @@
-# devany
+# modol
 
 > **Terminal AI coding assistant that works with any LLM — cloud or local**
 
 [한국어](README.ko.md)
 
+> Named after **modol** (모돌), a fluffy white mini bichon dog 🐶 — small, smart, and always ready to help.
+
 ---
 
-## What is devany?
+## What is modol?
 
-devany is a terminal-based AI coding assistant similar to Claude Code, Cursor, or Aider. It connects to **14 LLM providers** (cloud APIs + local servers) and lets AI read, write, search, and execute code in your project — all from the terminal.
+modol is a terminal-based AI coding assistant similar to Claude Code, Cursor, or Aider. It connects to **14 LLM providers** (cloud APIs + local servers) and lets AI read, write, search, and execute code in your project — all from the terminal.
 
 Key differentiators:
 - **14 providers, one interface** — OpenAI, Anthropic, Google, DeepSeek, Groq, Ollama, and 8 more
@@ -22,8 +24,8 @@ Key differentiators:
 
 ```bash
 # Clone & install
-git clone https://github.com/flykimjiwon/dev_anywhere.git
-cd dev_anywhere
+git clone https://github.com/flykimjiwon/modol.git
+cd modol
 npm install
 
 # Run (first launch opens setup wizard)
@@ -48,9 +50,9 @@ npm run dev
 npm run build
 npm start
 
-# Global install (use `devany` anywhere)
+# Global install (use `modol` anywhere)
 npm link
-devany
+modol
 ```
 
 ---
@@ -59,29 +61,29 @@ devany
 
 ```bash
 # Text mode (default — readline-based interactive)
-devany
+modol
 
 # TUI mode (fullscreen Ink-based)
-devany --tui
+modol --tui
 
 # With initial prompt
-devany "explain the project structure"
+modol "explain the project structure"
 
 # Specify provider & model
-devany -p ollama -m qwen3:8b
-devany -p anthropic -m claude-sonnet-4-20250514
-devany -p deepseek -m deepseek-chat
+modol -p ollama -m qwen3:8b
+modol -p anthropic -m claude-sonnet-4-20250514
+modol -p deepseek -m deepseek-chat
 
 # Custom endpoint (any OpenAI-compatible server)
-devany -u http://my-server:8000/v1 -m my-model
+modol -u http://my-server:8000/v1 -m my-model
 
 # Session management
-devany --list-sessions          # List saved sessions
-devany --resume                 # Resume latest session
-devany --resume abc12345        # Resume specific session
+modol --list-sessions          # List saved sessions
+modol --resume                 # Resume latest session
+modol --resume abc12345        # Resume specific session
 
 # Re-run setup
-devany --setup
+modol --setup
 ```
 
 ---
@@ -132,7 +134,7 @@ devany --setup
 
 ## Smart Model Role Detection
 
-devany automatically detects model capabilities and assigns roles:
+modol automatically detects model capabilities and assigns roles:
 
 | Role | Badge | Tools Available | Example Models |
 |------|-------|----------------|----------------|
@@ -168,14 +170,14 @@ devany automatically detects model capabilities and assigns roles:
 
 - **Path sandboxing** — file operations blocked outside CWD + sensitive paths (.ssh, .aws, .env)
 - **Shell filter** — 22 dangerous patterns blocked (rm -rf, sudo, curl|bash, eval, DROP TABLE, etc.)
-- **Config protection** — `~/.dev-anywhere/config.json` saved with `0600` permissions
+- **Config protection** — `~/.modol/config.json` saved with `0600` permissions
 - **.gitignore** — glob/grep searches respect .gitignore automatically
 
 ---
 
 ## Project Instructions
 
-Create a `.devany.md` file in your project root to give AI project-specific context:
+Create a `.modol.md` file in your project root to give AI project-specific context:
 
 ```markdown
 # My Project
@@ -192,14 +194,14 @@ This is automatically injected into the system prompt on every session.
 ## Architecture
 
 ```
-dev_anywhere/
+modol/
 ├── src/
 │   ├── cli.ts                    # CLI entrypoint (commander)
 │   ├── text-mode.ts              # Text mode (readline-based)
 │   ├── onboarding.ts             # First-run setup wizard
 │   ├── core/
 │   │   ├── agent-loop.ts         # LLM agent loop (Vercel AI SDK streamText)
-│   │   ├── system-prompt.ts      # System prompt builder (.devany.md loader)
+│   │   ├── system-prompt.ts      # System prompt builder (.modol.md loader)
 │   │   ├── permission.ts         # Path sandboxing + permission gate
 │   │   ├── markdown.ts           # ANSI terminal markdown renderer
 │   │   └── types.ts              # Shared types (Message, AgentEvent)
@@ -258,9 +260,9 @@ dev_anywhere/
 
 | Path | Contents |
 |------|----------|
-| `~/.dev-anywhere/config.json` | Provider, model, API keys (0600 perms) |
-| `~/.dev-anywhere/sessions/*.json` | Conversation sessions (auto-saved) |
-| `.devany.md` (project root) | Project-specific AI instructions |
+| `~/.modol/config.json` | Provider, model, API keys (0600 perms) |
+| `~/.modol/sessions/*.json` | Conversation sessions (auto-saved) |
+| `.modol.md` (project root) | Project-specific AI instructions |
 
 ---
 

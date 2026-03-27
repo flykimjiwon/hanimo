@@ -1,11 +1,10 @@
 {
-  "name": "dev-anywhere",
+  "name": "modol",
   "version": "0.1.0",
-  "description": "Terminal-based multi-agent AI coding system",
+  "description": "modol — cute terminal-based AI coding assistant",
   "type": "module",
   "bin": {
-    "devany": "./bin/dev-anywhere",
-    "dev-anywhere": "./bin/dev-anywhere"
+    "modol": "./bin/modol"
   },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",

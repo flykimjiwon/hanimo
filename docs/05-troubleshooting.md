@@ -1,4 +1,4 @@
-# dev_anywhere 트러블슈팅 가이드
+# modol 트러블슈팅 가이드
 
 ## 프로바이더 연결 경우의 수
 
@@ -6,14 +6,14 @@
 
 | 입력 | 예시 | 동작 |
 |------|------|------|
-| 프로바이더만 | `devany -p openai` | 기본 모델 + 환경변수 키 |
-| 프로바이더 + 모델 | `devany -p openai -m gpt-4.1` | 지정 모델 + 환경변수 키 |
-| 프로바이더 + 키 | `devany -p deepseek -k sk-xxx` | 기본 모델 + 직접 키 |
-| 프로바이더 + 모델 + 키 | `devany -p anthropic -m claude-opus-4 -k sk-ant-xxx` | 완전 지정 |
-| URL만 | `devany -u http://서버:8000/v1` | custom 프로바이더, 기본 모델 |
-| URL + 모델 | `devany -u http://서버:8000/v1 -m qwen3:30b` | 커스텀 서버 + 지정 모델 |
-| URL + 키 + 모델 | `devany -u http://서버:8000/v1 -k token -m mymodel` | 완전 커스텀 |
-| 프로바이더 + URL (프록시) | `devany -p openai -u http://proxy:3000/v1` | OpenAI SDK로 프록시 경유 |
+| 프로바이더만 | `modol -p openai` | 기본 모델 + 환경변수 키 |
+| 프로바이더 + 모델 | `modol -p openai -m gpt-4.1` | 지정 모델 + 환경변수 키 |
+| 프로바이더 + 키 | `modol -p deepseek -k sk-xxx` | 기본 모델 + 직접 키 |
+| 프로바이더 + 모델 + 키 | `modol -p anthropic -m claude-opus-4 -k sk-ant-xxx` | 완전 지정 |
+| URL만 | `modol -u http://서버:8000/v1` | custom 프로바이더, 기본 모델 |
+| URL + 모델 | `modol -u http://서버:8000/v1 -m qwen3:30b` | 커스텀 서버 + 지정 모델 |
+| URL + 키 + 모델 | `modol -u http://서버:8000/v1 -k token -m mymodel` | 완전 커스텀 |
+| 프로바이더 + URL (프록시) | `modol -p openai -u http://proxy:3000/v1` | OpenAI SDK로 프록시 경유 |
 
 ### B. 환경변수 자동감지
 
@@ -36,7 +36,7 @@
 ### C. 설정 우선순위
 
 ```
-CLI 플래그 (-p/-m/-k/-u) > 환경변수 > 프로젝트설정(.dev-anywhere.json) > 유저설정(~/.dev-anywhere/config.json) > 기본값
+CLI 플래그 (-p/-m/-k/-u) > 환경변수 > 프로젝트설정(.modol.json) > 유저설정(~/.modol/config.json) > 기본값
 ```
 
 ### D. 런타임 전환 명령
@@ -68,17 +68,17 @@ curl http://localhost:11434/v1/chat/completions \
 - 빠른 응답이 필요하면 비-CoT 모델 사용: `qwen2.5:7b`, `llama3.2`
 - `/model qwen2.5:7b` 로 런타임 전환
 
-### 2. `zsh: command not found: devany`
+### 2. `zsh: command not found: modol`
 
 **원인**: 글로벌 CLI 등록이 안 된 상태.
 
 **해결**:
 ```bash
-cd dev_anywhere
+cd modol
 npm link
 ```
 
-확인: `which devany` → `/Users/.../.npm-global/bin/devany`
+확인: `which modol` → `/Users/.../.npm-global/bin/modol`
 
 ### 3. Ollama 연결 실패 (ECONNREFUSED)
 
@@ -93,7 +93,7 @@ ollama pull qwen2.5:7b  # 모델 설치
 
 ### 4. 로컬 모델에서 도구(tool) 사용 안 됨
 
-**원인**: 대부분의 로컬 모델은 OpenAI function calling을 지원하지 않음. devany는 로컬 프로바이더(ollama/vllm/lmstudio)에서 자동으로 tools:OFF.
+**원인**: 대부분의 로컬 모델은 OpenAI function calling을 지원하지 않음. modol는 로컬 프로바이더(ollama/vllm/lmstudio)에서 자동으로 tools:OFF.
 
 **해결**:
 - `/tools on` 으로 강제 활성화 가능 (모델이 지원할 경우)
@@ -103,12 +103,12 @@ ollama pull qwen2.5:7b  # 모델 설치
 
 **방법 1: CLI**
 ```bash
-devany -u http://내부서버:8000/v1 -m mymodel -k 토큰
+modol -u http://내부서버:8000/v1 -m mymodel -k 토큰
 ```
 
 **방법 2: 프로젝트 설정**
 ```jsonc
-// 프로젝트루트/.dev-anywhere.json
+// 프로젝트루트/.modol.json
 {
   "provider": "custom",
   "model": "사내모델명",

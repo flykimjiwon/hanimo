@@ -28,6 +28,9 @@ export const COMMAND_LIST: CommandInfo[] = [
   { name: 'save', description: 'Save current session', descriptionKo: '현재 세션 저장', shortcut: 'Ctrl+X S' },
   { name: 'load', description: 'Load a saved session', descriptionKo: '저장된 세션 불러오기', shortcut: 'Ctrl+X L' },
   { name: 'sessions', description: 'List recent sessions', descriptionKo: '최근 세션 목록', shortcut: 'Ctrl+X E' },
+  { name: 'auto', description: 'Autonomous mode (work until done)', descriptionKo: '자율 모드 (완료까지 자동 실행)' },
+  { name: 'search', description: 'Search sessions by keyword', descriptionKo: '세션 키워드 검색' },
+  { name: 'diagnostics', description: 'Run tsc/eslint checks', descriptionKo: 'TypeScript/ESLint 진단 실행' },
 ];
 
 export interface CommandContext {
@@ -65,7 +68,7 @@ const COMMAND_MAP: Record<string, CommandHandler> = {
         'Available commands:',
         '  /help, /h         Show this help',
         '  /clear            Clear conversation',
-        '  /exit, /quit, /q  Exit devany',
+        '  /exit, /quit, /q  Exit modol',
         '  /model, /m [name] Switch model (no arg = show menu)',
         '  /provider, /p [n] Switch provider (no arg = show menu)',
         '  /role [id]        Switch role (no arg = show menu)',
@@ -78,6 +81,9 @@ const COMMAND_MAP: Record<string, CommandHandler> = {
         '  /save             Save current session',
         '  /load             Load a saved session',
         '  /sessions         List recent sessions',
+        '  /auto [msg]       Autonomous mode — work until done',
+        '  /search [keyword] Search sessions by keyword',
+        '  /diagnostics [f]  Run tsc/eslint diagnostics',
         '',
         'Shortcuts:',
         '  Esc               Open menu',
@@ -281,6 +287,41 @@ const COMMAND_MAP: Record<string, CommandHandler> = {
     } else {
       ctx.addSystemMessage('Session list not available.');
     }
+  },
+
+  auto: (args, ctx) => {
+    const msg = args.trim();
+    if (!msg) {
+      ctx.addSystemMessage('Usage: /auto <task description>\nExample: /auto Fix all TypeScript errors in src/');
+      return;
+    }
+    // Send the message prefixed with [AUTO] — the agent loop will handle it
+    ctx.addSystemMessage(`🔄 Auto mode started: "${msg}"\nThe agent will work autonomously until complete.`);
+    // Delegate to sendMessage which will trigger auto-loop in app.tsx
+    (ctx as unknown as { sendAutoMessage?: (m: string) => void }).sendAutoMessage?.(msg);
+  },
+
+  search: (args, ctx) => {
+    const keyword = args.trim();
+    if (!keyword) {
+      ctx.addSystemMessage('Usage: /search <keyword>\nSearches message content across saved sessions.');
+      return;
+    }
+    if ((ctx as unknown as { searchSessions?: (k: string) => string }).searchSessions) {
+      ctx.addSystemMessage((ctx as unknown as { searchSessions: (k: string) => string }).searchSessions(keyword));
+    } else {
+      ctx.addSystemMessage('Session search not available.');
+    }
+  },
+
+  diagnostics: (args, ctx) => {
+    const file = args.trim() || undefined;
+    ctx.addSystemMessage(`Running diagnostics${file ? ` for ${file}` : ' (project-wide)'}...`);
+    // Trigger diagnostics via the agent — send as a user message
+    const prompt = file
+      ? `Run the diagnostics tool on file "${file}" and show me the results.`
+      : 'Run the diagnostics tool on the whole project and show me the results.';
+    (ctx as unknown as { sendMessage?: (m: string) => void }).sendMessage?.(prompt);
   },
 
   models: (_args, ctx) => {

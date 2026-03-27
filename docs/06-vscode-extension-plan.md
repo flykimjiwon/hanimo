@@ -6,17 +6,17 @@
 
 ## 목표
 
-dev_anywhere의 코어 엔진을 **터미널 TUI + VS Code 익스텐션** 양쪽에서 사용할 수 있는 구조로 발전시킨다.
+modol의 코어 엔진을 **터미널 TUI + VS Code 익스텐션** 양쪽에서 사용할 수 있는 구조로 발전시킨다.
 
 ---
 
 ## 1. 모노레포 구조 (권장)
 
 ```
-dev-anywhere/                     ← pnpm workspace root
+modol/                     ← pnpm workspace root
 ├── pnpm-workspace.yaml
 ├── packages/
-│   └── core/                     ← @dev-anywhere/core
+│   └── core/                     ← @modol/core
 │       ├── package.json
 │       ├── tsconfig.json
 │       └── src/
@@ -31,7 +31,7 @@ dev-anywhere/                     ← pnpm workspace root
 │           └── pricing/          ← (NEW) 모델별 비용 산정
 ├── apps/
 │   ├── cli/                      ← 기존 터미널 앱
-│   │   ├── package.json          ← depends on @dev-anywhere/core
+│   │   ├── package.json          ← depends on @modol/core
 │   │   └── src/
 │   │       ├── cli.ts
 │   │       ├── text-mode/        ← ANSI 렌더러, 메뉴
@@ -71,7 +71,7 @@ packages:
 │    ├── ChatViewProvider                     │
 │    │     ├── resolveWebviewView()           │
 │    │     └── postMessage() ←→ onMessage()   │
-│    ├── @dev-anywhere/core                   │
+│    ├── @modol/core                   │
 │    │     ├── runAgentLoop()                 │
 │    │     ├── getModel()                     │
 │    │     ├── createToolRegistry()           │
@@ -100,13 +100,13 @@ packages:
   "contributes": {
     "viewsContainers": {
       "activitybar": [{
-        "id": "dev-anywhere",
+        "id": "modol",
         "title": "Dev Anywhere",
         "icon": "resources/icon.svg"
       }]
     },
     "views": {
-      "dev-anywhere": [{
+      "modol": [{
         "type": "webview",
         "id": "devAnywhere.chatView",
         "name": "Chat"
@@ -219,7 +219,7 @@ class FixProvider implements vscode.CodeActionProvider {
 2. `packages/core/` 추출 (agents, core, tools, session, providers, config)
 3. `text-mode.ts`에서 대화 관리 로직 → `core/conversation/` 분리
 4. CJS + ESM 듀얼 빌드 설정
-5. `apps/cli/`로 기존 CLI 이동, `@dev-anywhere/core` 의존
+5. `apps/cli/`로 기존 CLI 이동, `@modol/core` 의존
 6. CLI 동작 검증
 
 ### Phase 2 — VS Code 익스텐션 MVP

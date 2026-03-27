@@ -29,7 +29,7 @@ export class RoleManager {
   }
 
   async loadCustomRoles(): Promise<void> {
-    const customDir = join(homedir(), '.dev-anywhere', 'roles');
+    const customDir = join(homedir(), '.modol', 'roles');
     let files: string[];
     try {
       files = readdirSync(customDir).filter(f => f.endsWith('.json'));

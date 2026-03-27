@@ -9,7 +9,7 @@ describe('SessionStore', () => {
   let store: SessionStore;
 
   beforeEach(() => {
-    tmpDir = mkdtempSync(join(tmpdir(), 'devany-test-'));
+    tmpDir = mkdtempSync(join(tmpdir(), 'modol-test-'));
     store = new SessionStore(tmpDir);
   });
 

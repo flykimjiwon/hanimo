@@ -1,14 +1,16 @@
-# devany
+# modol
 
 > **어디서든 개발하는 터미널 AI 코딩 어시스턴트 — 클라우드든 로컬이든**
 
 [English](README.md)
 
+> 이름의 유래: **모돌**은 작고 귀여운 흰색 미니 비숑 강아지 🐶 — 작지만 똑똑하고 항상 곁에 있어줍니다.
+
 ---
 
-## devany란?
+## modol란?
 
-devany는 터미널에서 동작하는 AI 코딩 어시스턴트입니다. Claude Code, Cursor, Aider와 비슷하지만, **14개 LLM 프로바이더**(클라우드 API + 로컬 서버)를 지원하고, AI가 프로젝트 파일을 읽고, 쓰고, 검색하고, 실행할 수 있습니다.
+modol는 터미널에서 동작하는 AI 코딩 어시스턴트입니다. Claude Code, Cursor, Aider와 비슷하지만, **14개 LLM 프로바이더**(클라우드 API + 로컬 서버)를 지원하고, AI가 프로젝트 파일을 읽고, 쓰고, 검색하고, 실행할 수 있습니다.
 
 핵심 차별점:
 - **14개 프로바이더, 하나의 인터페이스** — OpenAI, Anthropic, Google, DeepSeek, Groq, Ollama 등
@@ -22,8 +24,8 @@ devany는 터미널에서 동작하는 AI 코딩 어시스턴트입니다. Claud
 
 ```bash
 # 클론 & 설치
-git clone https://github.com/flykimjiwon/dev_anywhere.git
-cd dev_anywhere
+git clone https://github.com/flykimjiwon/modol.git
+cd modol
 npm install
 
 # 실행 (첫 실행 시 설정 위저드 자동 실행)
@@ -48,9 +50,9 @@ npm run dev
 npm run build
 npm start
 
-# 글로벌 설치 (어디서든 devany 명령 사용)
+# 글로벌 설치 (어디서든 modol 명령 사용)
 npm link
-devany
+modol
 ```
 
 ---
@@ -59,29 +61,29 @@ devany
 
 ```bash
 # 텍스트 모드 (기본 — readline 기반 대화형)
-devany
+modol
 
 # TUI 모드 (풀스크린 Ink 기반)
-devany --tui
+modol --tui
 
 # 초기 프롬프트와 함께
-devany "이 프로젝트의 구조를 설명해줘"
+modol "이 프로젝트의 구조를 설명해줘"
 
 # 프로바이더 & 모델 지정
-devany -p ollama -m qwen3:8b
-devany -p anthropic -m claude-sonnet-4-20250514
-devany -p deepseek -m deepseek-chat
+modol -p ollama -m qwen3:8b
+modol -p anthropic -m claude-sonnet-4-20250514
+modol -p deepseek -m deepseek-chat
 
 # 커스텀 엔드포인트 (OpenAI 호환 서버)
-devany -u http://내서버:8000/v1 -m my-model
+modol -u http://내서버:8000/v1 -m my-model
 
 # 세션 관리
-devany --list-sessions          # 저장된 세션 목록
-devany --resume                 # 최근 세션 이어하기
-devany --resume abc12345        # 특정 세션 ID로 이어하기
+modol --list-sessions          # 저장된 세션 목록
+modol --resume                 # 최근 세션 이어하기
+modol --resume abc12345        # 특정 세션 ID로 이어하기
 
 # 초기 설정 재실행
-devany --setup
+modol --setup
 ```
 
 ---
@@ -132,7 +134,7 @@ devany --setup
 
 ## 스마트 모델 역할 감지
 
-devany는 모델 역량을 자동 감지하여 역할을 배정합니다:
+modol는 모델 역량을 자동 감지하여 역할을 배정합니다:
 
 | 역할 | 뱃지 | 사용 가능 도구 | 대상 모델 |
 |------|------|--------------|-----------|
@@ -169,14 +171,14 @@ devany는 모델 역량을 자동 감지하여 역할을 배정합니다:
 
 - **경로 샌드박싱** — CWD 밖 파일 접근 차단 + 민감 경로(.ssh, .aws, .env) 블록
 - **셸 필터** — 22개 위험 패턴 차단 (rm -rf, sudo, curl|bash, eval, DROP TABLE 등)
-- **설정 파일 보호** — `~/.dev-anywhere/config.json`은 `0600` 권한으로 저장
+- **설정 파일 보호** — `~/.modol/config.json`은 `0600` 권한으로 저장
 - **.gitignore** — glob/grep 검색 시 .gitignore 패턴 자동 적용
 
 ---
 
 ## 프로젝트 지침
 
-프로젝트 루트에 `.devany.md` 파일을 만들면 AI에게 프로젝트별 맥락을 제공합니다:
+프로젝트 루트에 `.modol.md` 파일을 만들면 AI에게 프로젝트별 맥락을 제공합니다:
 
 ```markdown
 # 우리 프로젝트
@@ -193,14 +195,14 @@ devany는 모델 역량을 자동 감지하여 역할을 배정합니다:
 ## 아키텍처
 
 ```
-dev_anywhere/
+modol/
 ├── src/
 │   ├── cli.ts                    # CLI 엔트리포인트 (commander)
 │   ├── text-mode.ts              # 텍스트 모드 (readline 기반)
 │   ├── onboarding.ts             # 첫 실행 설정 위저드
 │   ├── core/
 │   │   ├── agent-loop.ts         # LLM 에이전트 루프 (streamText)
-│   │   ├── system-prompt.ts      # 시스템 프롬프트 빌더 (.devany.md 로드)
+│   │   ├── system-prompt.ts      # 시스템 프롬프트 빌더 (.modol.md 로드)
 │   │   ├── permission.ts         # 경로 샌드박싱 + 권한 게이트
 │   │   ├── markdown.ts           # ANSI 터미널 마크다운 렌더러
 │   │   └── types.ts              # 공유 타입 (Message, AgentEvent)
@@ -259,9 +261,9 @@ dev_anywhere/
 
 | 경로 | 내용 |
 |------|------|
-| `~/.dev-anywhere/config.json` | 프로바이더, 모델, API 키 (0600 권한) |
-| `~/.dev-anywhere/sessions/*.json` | 대화 세션 (자동 저장) |
-| `.devany.md` (프로젝트 루트) | 프로젝트별 AI 지침 |
+| `~/.modol/config.json` | 프로바이더, 모델, API 키 (0600 권한) |
+| `~/.modol/sessions/*.json` | 대화 세션 (자동 저장) |
+| `.modol.md` (프로젝트 루트) | 프로젝트별 AI 지침 |
 
 ---
 

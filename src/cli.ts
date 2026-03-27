@@ -13,7 +13,7 @@ export async function main(): Promise<void> {
   const program = new Command();
 
   program
-    .name('devany')
+    .name('modol')
     .description('Terminal-based multi-agent AI coding system')
     .version('0.1.0')
     .argument('[prompt...]', 'Initial prompt')
