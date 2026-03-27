@@ -228,8 +228,8 @@ export async function runOnboarding(): Promise<void> {
     savedConfig.providers[provider] = providerEntry;
   }
 
-  await mkdir(CONFIG_DIR, { recursive: true });
-  await writeFile(CONFIG_PATH, JSON.stringify(savedConfig, null, 2) + '\n', 'utf-8');
+  await mkdir(CONFIG_DIR, { recursive: true, mode: 0o700 });
+  await writeFile(CONFIG_PATH, JSON.stringify(savedConfig, null, 2) + '\n', { encoding: 'utf-8', mode: 0o600 });
 
   console.log();
   console.log(`  ✓ 설정 저장됨: ${CONFIG_PATH}`);

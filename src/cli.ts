@@ -85,11 +85,59 @@ export async function main(): Promise<void> {
 
         console.log('Recent sessions:\n');
         for (const s of sessions) {
+          const date = s.updatedAt.replace('T', ' ').slice(0, 19);
           console.log(
-            `  ${s.id.slice(0, 8)}  ${s.updatedAt}  ${s.provider}/${s.model}  (${s.messageCount} msgs)`,
+            `  ${s.id.slice(0, 8)}  ${date}  ${s.provider}/${s.model}  (${s.messageCount} msgs)`,
           );
         }
         return;
+      }
+
+      // Resume session mode
+      let resumeSession: { sessionId: string; messages: Array<{ role: string; content: string }> } | undefined;
+
+      if (options.resume !== undefined) {
+        const store = new SessionStore();
+
+        if (options.resume === true || options.resume === '') {
+          // --resume without ID → pick latest session
+          const sessions = store.listSessions(1);
+          if (sessions.length === 0) {
+            console.log('No sessions to resume. Start a new conversation.');
+            store.close();
+            return;
+          }
+          const latest = sessions[0]!;
+          const msgs = store.getMessages(latest.id);
+          resumeSession = {
+            sessionId: latest.id,
+            messages: msgs.map(m => ({ role: m.role, content: m.content })),
+          };
+          // Use session's provider/model as defaults (CLI flags still override)
+          if (!options.provider) config.provider = latest.provider as typeof config.provider;
+          if (!options.model) config.model = latest.model;
+          console.log(`Resuming session ${latest.id.slice(0, 8)} (${msgs.length} messages)`);
+        } else {
+          // --resume <sessionId> or partial ID
+          const sessionId = String(options.resume);
+          const sessions = store.listSessions();
+          const match = sessions.find(s => s.id === sessionId || s.id.startsWith(sessionId));
+          if (!match) {
+            console.log(`Session not found: ${sessionId}`);
+            console.log('Use --list-sessions to see available sessions.');
+            store.close();
+            return;
+          }
+          const msgs = store.getMessages(match.id);
+          resumeSession = {
+            sessionId: match.id,
+            messages: msgs.map(m => ({ role: m.role, content: m.content })),
+          };
+          if (!options.provider) config.provider = match.provider as typeof config.provider;
+          if (!options.model) config.model = match.model;
+          console.log(`Resuming session ${match.id.slice(0, 8)} (${msgs.length} messages)`);
+        }
+        store.close();
       }
 
       // Prepare model + tools
@@ -115,6 +163,7 @@ export async function main(): Promise<void> {
           systemPrompt,
           tools,
           initialPrompt: prompt || undefined,
+          providerConfig,
         });
         return;
       }
@@ -127,6 +176,7 @@ export async function main(): Promise<void> {
         systemPrompt,
         tools,
         initialPrompt: prompt || undefined,
+        resumeSession,
       });
     });
 

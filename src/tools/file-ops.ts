@@ -2,6 +2,7 @@ import { tool } from 'ai';
 import { z } from 'zod';
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import { dirname } from 'node:path';
+import { checkPathSandbox } from '../core/permission.js';
 
 export const readFileTool = tool({
   description: 'Read a file from the filesystem',
@@ -12,6 +13,10 @@ export const readFileTool = tool({
   }),
   execute: async ({ path, startLine, endLine }) => {
     try {
+      // Path sandbox check
+      const blocked = checkPathSandbox(path, process.cwd());
+      if (blocked) return { success: false, error: blocked };
+
       const raw = await readFile(path, 'utf-8');
       const allLines = raw.split('\n');
 
@@ -43,6 +48,10 @@ export const writeFileTool = tool({
   }),
   execute: async ({ path, content }) => {
     try {
+      // Path sandbox check
+      const blocked = checkPathSandbox(path, process.cwd());
+      if (blocked) return { success: false, error: blocked };
+
       await mkdir(dirname(path), { recursive: true });
       await writeFile(path, content, 'utf-8');
       const lineCount = content.split('\n').length;
@@ -68,6 +77,10 @@ export const editFileTool = tool({
   }),
   execute: async ({ path, oldStr, newStr }) => {
     try {
+      // Path sandbox check
+      const blocked = checkPathSandbox(path, process.cwd());
+      if (blocked) return { success: false, error: blocked };
+
       const content = await readFile(path, 'utf-8');
 
       // Count occurrences

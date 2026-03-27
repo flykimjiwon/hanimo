@@ -19,6 +19,15 @@ export function createToolRegistry() {
   };
 }
 
+// Read-only tools for Assistant role (no write/edit/shell/git-commit)
+export function createReadOnlyTools() {
+  return {
+    read_file: readFileTool,
+    glob_search: globSearchTool,
+    grep_search: grepSearchTool,
+  };
+}
+
 export {
   readFileTool,
   writeFileTool,

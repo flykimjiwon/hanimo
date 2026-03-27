@@ -27,6 +27,7 @@ export const globSearchTool = tool({
         ignore,
         absolute: true,
         onlyFiles: true,
+        gitignore: true,
       });
 
       const truncated = files.length > limit;

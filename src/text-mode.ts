@@ -9,6 +9,8 @@ import { loadConfig } from './config/loader.js';
 import { PROVIDER_NAMES, LOCAL_PROVIDERS, KNOWN_MODELS } from './providers/types.js';
 import type { ProviderName } from './providers/types.js';
 import type { Message, AgentEvent, TokenUsage } from './core/types.js';
+import { SessionStore } from './session/store.js';
+import { renderMarkdown } from './core/markdown.js';
 
 const execFileAsync = promisify(execFile);
 
@@ -158,6 +160,10 @@ interface TextModeOptions {
   systemPrompt: string;
   tools: ToolSet;
   initialPrompt?: string;
+  resumeSession?: {
+    sessionId: string;
+    messages: Array<{ role: string; content: string }>;
+  };
 }
 
 // Quick connection + model verification + warmup
@@ -259,6 +265,22 @@ export async function startTextMode(options: TextModeOptions): Promise<void> {
   let cachedOllamaModels: string[] = [];
 
   const messages: Message[] = [];
+
+  // Session persistence — reuse existing session on resume, or create new
+  const sessionStore = new SessionStore();
+  let sessionId: string;
+
+  if (options.resumeSession) {
+    sessionId = options.resumeSession.sessionId;
+    // Restore messages into conversation history
+    for (const m of options.resumeSession.messages) {
+      if (m.role === 'user' || m.role === 'assistant' || m.role === 'system') {
+        messages.push({ role: m.role as 'user' | 'assistant' | 'system', content: m.content });
+      }
+    }
+  } else {
+    sessionId = sessionStore.createSession(currentProvider, currentModel);
+  }
   const totalUsage: TokenUsage = { promptTokens: 0, completionTokens: 0, totalTokens: 0 };
 
   if (currentProvider === 'ollama') {
@@ -393,14 +415,11 @@ export async function startTextMode(options: TextModeOptions): Promise<void> {
 
   // ── Interactive menus ──
   async function openModelMenu(): Promise<void> {
-    let modelList: string[] = [];
+    const modelList = currentProvider === 'ollama'
+      ? (cachedOllamaModels.length > 0 ? cachedOllamaModels : await listOllamaModels())
+      : (KNOWN_MODELS[currentProvider] ?? []);
     if (currentProvider === 'ollama') {
-      modelList = cachedOllamaModels.length > 0
-        ? cachedOllamaModels
-        : await listOllamaModels();
       cachedOllamaModels = modelList;
-    } else {
-      modelList = KNOWN_MODELS[currentProvider] ?? [];
     }
 
     if (modelList.length === 0) {
@@ -659,10 +678,13 @@ export async function startTextMode(options: TextModeOptions): Promise<void> {
     // ── 일반 메시지 → LLM ──
     debug('send:', trimmed.slice(0, 50), '| provider:', currentProvider, '| model:', currentModel);
     messages.push({ role: 'user', content: trimmed });
+    sessionStore.saveMessage(sessionId, 'user', trimmed);
     isRunning = true;
     abortController = new AbortController();
 
     let gotToken = false;
+    let tokenBuffer = '';
+    let tokenLineCount = 0;
     const startTime = Date.now();
 
     // Connection check before sending
@@ -685,22 +707,38 @@ export async function startTextMode(options: TextModeOptions): Promise<void> {
             gotToken = true;
             clearInterval(waitTimer);
             const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
-            // Clear the waiting line, then print response
             process.stdout.write(`\r  ${cyan('▌')} ${dim(`(${elapsed}s)`)} `);
             debug('first token at', elapsed, 's');
           }
+          tokenBuffer += event.content;
           process.stdout.write(event.content);
+          // Track newlines for cursor repositioning
+          for (const ch of event.content) {
+            if (ch === '\n') tokenLineCount++;
+          }
           break;
         case 'tool-call':
           process.stdout.write(`\n  ${yellow('⚡')} ${dim(event.toolName + '...')}`);
+          tokenBuffer = '';
+          tokenLineCount = 0;
           break;
         case 'tool-result': {
           const preview = event.result.length > 200 ? event.result.slice(0, 200) + '...' : event.result;
           const lines = preview.split('\n').slice(0, 5);
           process.stdout.write(`\n  ${dim('┃')} ${dim(lines.join('\n  ┃ '))}\n  ${cyan('▌')} `);
+          tokenBuffer = '';
+          tokenLineCount = 0;
           break;
         }
         case 'done':
+          // Re-render final response with markdown formatting
+          if (tokenBuffer.trim() && tokenLineCount > 0) {
+            // Move cursor up to overwrite raw streamed text
+            process.stdout.write(`\x1b[${tokenLineCount + 1}A\x1b[J`);
+            process.stdout.write(`  ${cyan('▌')} ${dim(`(${((Date.now() - startTime) / 1000).toFixed(1)}s)`)}\n`);
+            const rendered = renderMarkdown(tokenBuffer.trim());
+            process.stdout.write(rendered);
+          }
           if (event.usage.promptTokens) {
             totalUsage.promptTokens += event.usage.promptTokens;
           }
@@ -729,7 +767,10 @@ export async function startTextMode(options: TextModeOptions): Promise<void> {
       });
       debug('response length:', result.response.length, '| gotToken:', gotToken);
       if (result.response) {
-        messages.push({ role: 'assistant', content: result.response });
+        // Use full messages from agent loop (includes tool calls/results)
+        messages.length = 0;
+        messages.push(...result.messages);
+        sessionStore.saveMessage(sessionId, 'assistant', result.response);
       } else {
         // Pop the user message since we got no response
         messages.pop();

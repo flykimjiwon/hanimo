@@ -66,7 +66,8 @@ export const grepSearchTool = tool({
   }),
   execute: async ({ pattern, path, glob: fileGlob, ignoreCase, maxResults, contextLines }) => {
     try {
-      const flags = ignoreCase ? 'gi' : 'g';
+      // No 'g' flag — avoids lastIndex state bug causing missed matches
+      const flags = ignoreCase ? 'i' : '';
       let regex: RegExp;
       try {
         regex = new RegExp(pattern, flags);
@@ -80,6 +81,7 @@ export const grepSearchTool = tool({
         ignore: ['**/node_modules/**', '**/dist/**', '**/.git/**', '**/*.min.js', '**/*.map'],
         absolute: true,
         onlyFiles: true,
+        gitignore: true,
       });
 
       const allMatches: GrepMatch[] = [];

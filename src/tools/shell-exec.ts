@@ -3,18 +3,37 @@ import { z } from 'zod';
 import { execaCommand } from 'execa';
 
 const DANGEROUS_PATTERNS: RegExp[] = [
-  /rm\s+(-rf|-fr)\s+\//,
+  // rm variants (handles -r -f, --recursive, --force, etc.)
+  /\brm\b.*-[^\s]*r[^\s]*f.*\//,
+  /\brm\b.*--recursive/,
+  /\brm\b.*--force.*\//,
+  // SQL injection
   /DROP\s+TABLE/i,
   /DROP\s+DATABASE/i,
+  /TRUNCATE\s+TABLE/i,
+  // Disk destruction
   /FORMAT\s+/i,
-  /mkfs\./,
-  /dd\s+if=/,
+  /\bmkfs\b/,
+  /\bdd\b\s+if=/,
   />\s*\/dev\/sd/,
-  /chmod\s+-R\s+777\s+\//,
-  /:\(\)\s*\{\s*:\|:\s*&\s*\}\s*;/,
+  // Permission escalation
+  /chmod\s+(-R\s+)?777\s+\//,
+  /\bsudo\b/,
+  // Fork bomb variants
+  /:\(\)\s*\{.*:\|:.*\}/,
+  // Pipe-to-shell (curl|bash, wget|sh)
+  /\bcurl\b.*\|\s*(ba)?sh/,
+  /\bwget\b.*\|\s*(ba)?sh/,
+  // Eval execution
+  /\beval\b\s+/,
+  // Dangerous redirects
+  />\s*\/dev\/(sda|nvme|disk)/,
+  />\s*\/etc\//,
+  // History/credential exfiltration
+  /\bcat\b.*\.(bash_history|ssh|aws|env)/,
 ];
 
-function isDangerous(command: string): string | null {
+export function isDangerous(command: string): string | null {
   for (const pattern of DANGEROUS_PATTERNS) {
     if (pattern.test(command)) {
       return `Command matches dangerous pattern: ${pattern.source}`;

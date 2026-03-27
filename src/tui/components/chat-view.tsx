@@ -1,10 +1,11 @@
-import React from 'react';
-import { Box, Text, Static } from 'ink';
+import React, { useMemo } from 'react';
+import { Box, Text } from 'ink';
 import { Spinner } from './spinner.js';
 import { colors } from '../theme.js';
 
 export interface DisplayMessage {
-  role: 'user' | 'assistant' | 'tool-call' | 'tool-result';
+  id: string;
+  role: 'user' | 'assistant' | 'tool-call' | 'tool-result' | 'system';
   content: string;
   toolName?: string;
 }
@@ -13,6 +14,7 @@ interface ChatViewProps {
   messages: DisplayMessage[];
   streamingText: string;
   isLoading: boolean;
+  height: number;
 }
 
 const MAX_TOOL_RESULT_LINES = 10;
@@ -29,7 +31,7 @@ function MessageBubble({ message }: { message: DisplayMessage }): React.ReactEle
   switch (message.role) {
     case 'user':
       return (
-        <Box marginTop={1} paddingX={1}>
+        <Box paddingX={1}>
           <Text color={colors.userText} bold>
             {'\u276F'}{' '}
           </Text>
@@ -69,36 +71,88 @@ function MessageBubble({ message }: { message: DisplayMessage }): React.ReactEle
         </Box>
       );
     }
+
+    case 'system':
+      return (
+        <Box paddingX={1} flexDirection="column">
+          <Text color={colors.hint}>{message.content}</Text>
+        </Box>
+      );
+
+    default: {
+      const _exhaustive: never = message.role;
+      return <Text>{String(_exhaustive)}</Text>;
+    }
   }
+}
+
+// Estimate how many terminal lines a message takes
+function estimateLines(msg: DisplayMessage, width: number): number {
+  const usableWidth = Math.max(width - 4, 20); // padding
+  const text = msg.role === 'tool-result'
+    ? truncateLines(msg.content, MAX_TOOL_RESULT_LINES)
+    : msg.content;
+  let lines = 0;
+  for (const line of text.split('\n')) {
+    lines += Math.max(1, Math.ceil(line.length / usableWidth));
+  }
+  // user messages get extra top margin (1 line)
+  if (msg.role === 'user') lines += 1;
+  return lines;
 }
 
 export function ChatView({
   messages,
   streamingText,
   isLoading,
+  height,
 }: ChatViewProps): React.ReactElement {
-  // Split: completed messages go to <Static>, active goes to live render
-  const completedMessages = streamingText.length > 0 || isLoading
-    ? messages.slice(0, -0 || messages.length) // all completed when streaming
-    : messages;
+  const width = process.stdout.columns || 80;
+
+  // Calculate which messages fit in the viewport (show most recent)
+  const visibleMessages = useMemo(() => {
+    // Reserve lines for streaming text and spinner
+    let reserved = 0;
+    if (streamingText.length > 0) {
+      for (const line of streamingText.split('\n')) {
+        reserved += Math.max(1, Math.ceil(line.length / Math.max(width - 4, 20)));
+      }
+    }
+    if (isLoading && streamingText.length === 0) {
+      reserved = 1; // spinner line
+    }
+
+    const available = height - reserved;
+    if (available <= 0) return messages;
+
+    let used = 0;
+    let startIdx = messages.length;
+    for (let i = messages.length - 1; i >= 0; i--) {
+      const msg = messages[i];
+      if (!msg) break;
+      const lines = estimateLines(msg, width);
+      if (used + lines > available && startIdx < messages.length) break;
+      used += lines;
+      startIdx = i;
+    }
+    return messages.slice(startIdx);
+  }, [messages, streamingText, isLoading, height, width]);
 
   return (
-    <Box flexDirection="column" flexGrow={1} overflow="hidden">
-      {/* Completed messages — never re-rendered */}
-      <Static items={completedMessages}>
-        {(msg, index) => (
-          <MessageBubble key={index} message={msg} />
-        )}
-      </Static>
-
+    <Box flexDirection="column" height={height}>
       {/* Empty state */}
       {messages.length === 0 && !isLoading && (
-        <Box justifyContent="center" marginY={1} paddingX={1}>
+        <Box justifyContent="center" flexGrow={1} alignItems="center">
           <Text color={colors.dimText}>
             Type a message to start... {'\u2502'} Ctrl+C to exit
           </Text>
         </Box>
       )}
+
+      {/* Messages — only visible portion */}
+      {visibleMessages.map((msg) => (
+        <MessageBubble key={msg.id} message={msg} />
+      ))}
 
       {/* Active streaming text */}
       {streamingText.length > 0 && (

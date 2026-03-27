@@ -60,8 +60,22 @@ export const KNOWN_MODELS: Record<string, string[]> = {
   fireworks: ['accounts/fireworks/models/qwen2p5-coder-32b-instruct', 'accounts/fireworks/models/deepseek-v3', 'accounts/fireworks/models/llama-v3p3-70b-instruct'],
   mistral: ['codestral-latest', 'mistral-large-latest', 'mistral-small-latest'],
   glm: ['glm-4-plus', 'glm-4-flash', 'codegeex-4'],
-  // Local models — 20-40B coding sweet spot
-  ollama: ['qwen3:32b', 'qwen3-coder:30b', 'deepseek-coder-v2:16b', 'codellama:34b', 'codegemma:7b', 'starcoder2:15b', 'devstral:24b', 'llama3.2'],
+  // Local models — expanded with tool calling capable models
+  ollama: [
+    // 20B+ Agent tier
+    'qwen3-coder:30b', 'qwen3.5:27b', 'qwen3:32b', 'devstral:24b',
+    'nemotron-cascade-2:30b', 'gpt-oss:20b',
+    // 10B-20B
+    'qwen3:14b', 'deepseek-coder-v2:16b',
+    // 5B-10B Agent tier
+    'qwen3.5:9b', 'qwen3:8b', 'llama3.1:8b',
+    // 5B-10B Assistant tier
+    'qwen2.5-coder:7b', 'mistral:7b',
+    // Under 5B
+    'qwen3.5:4b', 'qwen3:4b', 'nemotron-3-nano:4b', 'phi4-mini:3.8b', 'granite4:3b',
+    // Chat-only
+    'llama3.2:3b', 'gemma3:1b', 'codegemma:7b', 'starcoder2:15b', 'codellama:34b',
+  ],
   vllm: [],
   lmstudio: [],
 };

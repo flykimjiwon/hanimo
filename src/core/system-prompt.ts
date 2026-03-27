@@ -1,8 +1,23 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+
 export interface ProjectContext {
   cwd: string;
   gitBranch?: string;
   gitRemote?: string;
   platform: string;
+}
+
+/**
+ * Load project instructions from `.devany.md` in the working directory.
+ * Returns the file contents or empty string if not found.
+ */
+function loadProjectInstructions(cwd: string): string {
+  try {
+    return readFileSync(join(cwd, '.devany.md'), 'utf-8').trim();
+  } catch {
+    return '';
+  }
 }
 
 export function buildSystemPrompt(context: ProjectContext): string {
@@ -12,6 +27,11 @@ export function buildSystemPrompt(context: ProjectContext): string {
   ]
     .filter(Boolean)
     .join('\n');
+
+  const projectInstructions = loadProjectInstructions(context.cwd);
+  const projectSection = projectInstructions
+    ? `\n\n## Project Instructions (.devany.md)\n${projectInstructions}`
+    : '';
 
   return `You are dev-anywhere, a terminal-based AI coding assistant.
 
@@ -34,5 +54,5 @@ export function buildSystemPrompt(context: ProjectContext): string {
 - Platform: ${context.platform}
 ${gitInfo}
 
-When referencing files, use paths relative to the working directory.`;
+When referencing files, use paths relative to the working directory.${projectSection}`;
 }

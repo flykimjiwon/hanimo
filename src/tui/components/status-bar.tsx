@@ -2,12 +2,15 @@ import React from 'react';
 import { Box, Text } from 'ink';
 import { Spinner } from './spinner.js';
 import { colors } from '../theme.js';
+import type { ModelRole } from '../../providers/model-capabilities.js';
+import { ROLE_BADGES } from '../../providers/model-capabilities.js';
 
 type StatusKind = 'idle' | 'thinking' | 'tool';
 
 interface StatusBarProps {
   provider: string;
   model: string;
+  modelRole: ModelRole;
   status: StatusKind;
   currentTool?: string;
   toolsEnabled: boolean;
@@ -25,9 +28,10 @@ function formatCost(cost: number): string {
 }
 
 function formatTokens(count: number): string {
-  if (count >= 1_000_000) return `${(count / 1_000_000).toFixed(1)}M`;
-  if (count >= 1000) return `${(count / 1000).toFixed(1)}k`;
-  return String(count);
+  const n = Number.isFinite(count) ? count : 0;
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
+  if (n >= 1000) return `${(n / 1000).toFixed(1)}k`;
+  return String(n);
 }
 
 function StatusIndicator({
@@ -47,9 +51,10 @@ function StatusIndicator({
   }
 }
 
-export function StatusBar({
+export const StatusBar = React.memo(function StatusBar({
   provider,
   model,
+  modelRole,
   status,
   currentTool,
   toolsEnabled,
@@ -58,6 +63,12 @@ export function StatusBar({
   const totalTokens = usage.promptTokens + usage.completionTokens;
   const toolsTag = toolsEnabled ? 'tools:ON' : 'tools:OFF';
   const toolsColor = toolsEnabled ? colors.success : colors.dimText;
+
+  // Role badge colors: Agent=green, Assistant=yellow, Chat=gray
+  const roleBadge = ROLE_BADGES[modelRole];
+  const roleColor = modelRole === 'agent' ? colors.success
+    : modelRole === 'assistant' ? colors.warning
+    : colors.dimText;
 
   return (
     <Box flexDirection="column" width="100%">
@@ -74,6 +85,8 @@ export function StatusBar({
           <Text color={colors.provider}>{provider}</Text>
           <Text color={colors.dimText}>/</Text>
           <Text color={colors.model}>{model}</Text>
+          <Text> </Text>
+          <Text color={roleColor} bold>{roleBadge}</Text>
           <Text color={colors.dimText}> {'\u2502'} </Text>
           <Text color={toolsColor}>{toolsTag}</Text>
         </Box>
@@ -97,4 +110,4 @@ export function StatusBar({
       </Box>
     </Box>
   );
-}
+});

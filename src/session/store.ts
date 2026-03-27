@@ -1,169 +1,125 @@
-import Database from 'better-sqlite3';
 import { join } from 'node:path';
 import { homedir } from 'node:os';
-import { mkdirSync } from 'node:fs';
+import {
+  mkdirSync, existsSync, readFileSync, writeFileSync, readdirSync, unlinkSync,
+} from 'node:fs';
 import { randomUUID } from 'node:crypto';
 import type { Session, SessionMessage } from './types.js';
 
-interface SessionRow {
+// JSON file-based session storage (no native dependencies)
+// Layout: ~/.dev-anywhere/sessions/<id>.json
+
+interface SessionData {
   id: string;
-  created_at: string;
-  updated_at: string;
+  createdAt: string;
+  updatedAt: string;
   provider: string;
   model: string;
-}
-
-interface MessageRow {
-  id: string;
-  session_id: string;
-  role: string;
-  content: string;
-  created_at: string;
-}
-
-interface CountRow {
-  count: number;
+  messages: Array<{
+    id: string;
+    role: string;
+    content: string;
+    createdAt: string;
+  }>;
 }
 
 export class SessionStore {
-  private db: Database.Database;
+  private dir: string;
 
-  constructor(dbPath?: string) {
-    const dir = join(homedir(), '.dev-anywhere');
-    mkdirSync(dir, { recursive: true });
-    this.db = new Database(dbPath ?? join(dir, 'sessions.db'));
-    this.initialize();
+  constructor(dirPath?: string) {
+    this.dir = dirPath ?? join(homedir(), '.dev-anywhere', 'sessions');
+    mkdirSync(this.dir, { recursive: true });
   }
 
-  private initialize(): void {
-    this.db.exec(`
-      CREATE TABLE IF NOT EXISTS sessions (
-        id TEXT PRIMARY KEY,
-        created_at TEXT NOT NULL DEFAULT (datetime('now')),
-        updated_at TEXT NOT NULL DEFAULT (datetime('now')),
-        provider TEXT NOT NULL,
-        model TEXT NOT NULL
-      )
-    `);
+  private sessionPath(id: string): string {
+    return join(this.dir, `${id}.json`);
+  }
 
-    this.db.exec(`
-      CREATE TABLE IF NOT EXISTS messages (
-        id TEXT PRIMARY KEY,
-        session_id TEXT NOT NULL,
-        role TEXT NOT NULL,
-        content TEXT NOT NULL,
-        created_at TEXT NOT NULL DEFAULT (datetime('now')),
-        FOREIGN KEY (session_id) REFERENCES sessions(id) ON DELETE CASCADE
-      )
-    `);
+  private readSession(id: string): SessionData | undefined {
+    const path = this.sessionPath(id);
+    if (!existsSync(path)) return undefined;
+    try {
+      return JSON.parse(readFileSync(path, 'utf-8')) as SessionData;
+    } catch {
+      return undefined;
+    }
+  }
 
-    this.db.pragma('journal_mode = WAL');
-    this.db.pragma('foreign_keys = ON');
+  private writeSession(data: SessionData): void {
+    writeFileSync(this.sessionPath(data.id), JSON.stringify(data, null, 2));
   }
 
   createSession(provider: string, model: string): string {
     const id = randomUUID();
     const now = new Date().toISOString();
-
-    const stmt = this.db.prepare(
-      'INSERT INTO sessions (id, created_at, updated_at, provider, model) VALUES (?, ?, ?, ?, ?)',
-    );
-    stmt.run(id, now, now, provider, model);
-
+    this.writeSession({ id, createdAt: now, updatedAt: now, provider, model, messages: [] });
     return id;
   }
 
   saveMessage(sessionId: string, role: string, content: string): void {
-    const id = randomUUID();
-    const now = new Date().toISOString();
-
-    const insertMsg = this.db.prepare(
-      'INSERT INTO messages (id, session_id, role, content, created_at) VALUES (?, ?, ?, ?, ?)',
-    );
-    const updateSession = this.db.prepare(
-      'UPDATE sessions SET updated_at = ? WHERE id = ?',
-    );
-
-    const transaction = this.db.transaction(() => {
-      insertMsg.run(id, sessionId, role, content, now);
-      updateSession.run(now, sessionId);
-    });
-
-    transaction();
+    const data = this.readSession(sessionId);
+    if (!data) return;
+    data.messages.push({ id: randomUUID(), role, content, createdAt: new Date().toISOString() });
+    data.updatedAt = new Date().toISOString();
+    this.writeSession(data);
   }
 
   getSession(id: string): Session | undefined {
-    const row = this.db
-      .prepare('SELECT * FROM sessions WHERE id = ?')
-      .get(id) as SessionRow | undefined;
-
-    if (!row) return undefined;
-
-    const countRow = this.db
-      .prepare('SELECT COUNT(*) as count FROM messages WHERE session_id = ?')
-      .get(id) as CountRow;
-
+    const data = this.readSession(id);
+    if (!data) return undefined;
     return {
-      id: row.id,
-      createdAt: row.created_at,
-      updatedAt: row.updated_at,
-      provider: row.provider,
-      model: row.model,
-      messageCount: countRow.count,
+      id: data.id,
+      createdAt: data.createdAt,
+      updatedAt: data.updatedAt,
+      provider: data.provider,
+      model: data.model,
+      messageCount: data.messages.length,
     };
   }
 
   getMessages(sessionId: string): SessionMessage[] {
-    const rows = this.db
-      .prepare('SELECT * FROM messages WHERE session_id = ? ORDER BY created_at ASC')
-      .all(sessionId) as MessageRow[];
-
-    return rows.map((row) => ({
-      id: row.id,
-      sessionId: row.session_id,
-      role: row.role,
-      content: row.content,
-      createdAt: row.created_at,
+    const data = this.readSession(sessionId);
+    if (!data) return [];
+    return data.messages.map((m) => ({
+      id: m.id,
+      sessionId,
+      role: m.role,
+      content: m.content,
+      createdAt: m.createdAt,
     }));
   }
 
   listSessions(limit?: number): Session[] {
-    const query = limit
-      ? 'SELECT * FROM sessions ORDER BY updated_at DESC LIMIT ?'
-      : 'SELECT * FROM sessions ORDER BY updated_at DESC';
+    const files = readdirSync(this.dir).filter((f) => f.endsWith('.json'));
+    const sessions: Session[] = [];
 
-    const rows = (
-      limit
-        ? this.db.prepare(query).all(limit)
-        : this.db.prepare(query).all()
-    ) as SessionRow[];
+    for (const file of files) {
+      const id = file.replace('.json', '');
+      const data = this.readSession(id);
+      if (data) {
+        sessions.push({
+          id: data.id,
+          createdAt: data.createdAt,
+          updatedAt: data.updatedAt,
+          provider: data.provider,
+          model: data.model,
+          messageCount: data.messages.length,
+        });
+      }
+    }
 
-    return rows.map((row) => {
-      const countRow = this.db
-        .prepare('SELECT COUNT(*) as count FROM messages WHERE session_id = ?')
-        .get(row.id) as CountRow;
+    // Sort by updatedAt descending
+    sessions.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
 
-      return {
-        id: row.id,
-        createdAt: row.created_at,
-        updatedAt: row.updated_at,
-        provider: row.provider,
-        model: row.model,
-        messageCount: countRow.count,
-      };
-    });
+    return limit ? sessions.slice(0, limit) : sessions;
   }
 
   deleteSession(id: string): void {
-    const transaction = this.db.transaction(() => {
-      this.db.prepare('DELETE FROM messages WHERE session_id = ?').run(id);
-      this.db.prepare('DELETE FROM sessions WHERE id = ?').run(id);
-    });
-
-    transaction();
+    const path = this.sessionPath(id);
+    if (existsSync(path)) unlinkSync(path);
   }
 
   close(): void {
-    this.db.close();
+    // No-op (JSON files don't need cleanup)
   }
 }

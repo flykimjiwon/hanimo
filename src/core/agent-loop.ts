@@ -7,6 +7,21 @@ import type {
   Message,
 } from './types.js';
 
+// Max messages to keep in conversation history to avoid exceeding context window.
+// Keeps system + first 2 messages + last N messages.
+const MAX_CONTEXT_MESSAGES = 40;
+
+/**
+ * Truncate messages to fit within context window limits.
+ * Preserves the first 2 messages (initial context) and the most recent messages.
+ */
+function truncateMessages(messages: Message[]): Message[] {
+  if (messages.length <= MAX_CONTEXT_MESSAGES) return messages;
+  const head = messages.slice(0, 2);
+  const tail = messages.slice(-(MAX_CONTEXT_MESSAGES - 2));
+  return [...head, { role: 'system' as const, content: '[Earlier messages truncated to fit context window]' }, ...tail];
+}
+
 // Pricing per 1M tokens (USD)
 const MODEL_PRICING: Record<string, { input: number; output: number }> = {
   // OpenAI
@@ -78,19 +93,22 @@ export async function runAgentLoop(
   let fullResponse = '';
   const updatedMessages: Message[] = [...messages];
 
+  // Truncate if conversation is too long
+  const contextMessages = truncateMessages(updatedMessages);
+
   try {
     const result = streamText({
       model,
       system: systemPrompt,
-      messages: updatedMessages,
+      messages: contextMessages,
       tools,
       maxSteps,
       abortSignal,
       onStepFinish(event) {
         if (event.usage) {
-          totalUsage.promptTokens += event.usage.promptTokens ?? 0;
-          totalUsage.completionTokens += event.usage.completionTokens ?? 0;
-          totalUsage.totalTokens += event.usage.totalTokens ?? 0;
+          totalUsage.promptTokens += event.usage.promptTokens || 0;
+          totalUsage.completionTokens += event.usage.completionTokens || 0;
+          totalUsage.totalTokens += event.usage.totalTokens || 0;
         }
 
         if (event.toolCalls && event.toolCalls.length > 0) {
@@ -130,14 +148,30 @@ export async function runAgentLoop(
     const finalResult = await result;
     const finalUsage = await finalResult.usage;
     if (finalUsage) {
-      totalUsage.promptTokens = finalUsage.promptTokens ?? 0;
-      totalUsage.completionTokens = finalUsage.completionTokens ?? 0;
-      totalUsage.totalTokens = finalUsage.totalTokens;
+      totalUsage.promptTokens = finalUsage.promptTokens || 0;
+      totalUsage.completionTokens = finalUsage.completionTokens || 0;
+      totalUsage.totalTokens = finalUsage.totalTokens || 0;
     }
 
     const responseText = await finalResult.text;
     if (responseText) {
       fullResponse = responseText;
+    }
+
+    // Preserve tool call/result messages from the AI SDK response
+    try {
+      const responseMessages = await finalResult.response;
+      if (responseMessages && 'messages' in responseMessages) {
+        const msgs = (responseMessages as { messages: Message[] }).messages;
+        if (Array.isArray(msgs)) {
+          updatedMessages.push(...msgs);
+        }
+      }
+    } catch {
+      // Fallback: just append the assistant text response
+      if (fullResponse) {
+        updatedMessages.push({ role: 'assistant', content: fullResponse });
+      }
     }
 
     emit({ type: 'done', response: fullResponse, usage: totalUsage });
@@ -149,7 +183,10 @@ export async function runAgentLoop(
     };
   } catch (error) {
     const err = error instanceof Error ? error : new Error(String(error));
-    emit({ type: 'error', error: err });
+    // Don't emit error for abort — caller handles AbortError separately
+    if (err.name !== 'AbortError') {
+      emit({ type: 'error', error: err });
+    }
     throw err;
   }
 }
