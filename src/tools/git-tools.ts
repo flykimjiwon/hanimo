@@ -1,6 +1,7 @@
 import { tool } from 'ai';
 import { z } from 'zod';
 import { simpleGit } from 'simple-git';
+import { checkPathSandbox } from '../core/permission.js';
 
 export const gitStatusTool = tool({
   description: 'Show the working tree status (staged, modified, untracked files)',
@@ -9,6 +10,10 @@ export const gitStatusTool = tool({
   }),
   execute: async ({ cwd }) => {
     try {
+      if (cwd) {
+        const sandboxErr = checkPathSandbox(cwd, process.cwd());
+        if (sandboxErr) return { success: false, error: sandboxErr };
+      }
       const git = simpleGit(cwd ?? process.cwd());
       const status = await git.status();
       return {
@@ -39,6 +44,10 @@ export const gitDiffTool = tool({
   }),
   execute: async ({ cwd, staged, target }) => {
     try {
+      if (cwd) {
+        const sandboxErr = checkPathSandbox(cwd, process.cwd());
+        if (sandboxErr) return { success: false, error: sandboxErr };
+      }
       const git = simpleGit(cwd ?? process.cwd());
       const args: string[] = [];
       if (staged) args.push('--cached');
@@ -66,6 +75,10 @@ export const gitCommitTool = tool({
   }),
   execute: async ({ cwd, message, files }) => {
     try {
+      if (cwd) {
+        const sandboxErr = checkPathSandbox(cwd, process.cwd());
+        if (sandboxErr) return { success: false, error: sandboxErr };
+      }
       const git = simpleGit(cwd ?? process.cwd());
 
       if (files && files.length > 0) {
@@ -99,6 +112,10 @@ export const gitLogTool = tool({
   }),
   execute: async ({ cwd, maxCount }) => {
     try {
+      if (cwd) {
+        const sandboxErr = checkPathSandbox(cwd, process.cwd());
+        if (sandboxErr) return { success: false, error: sandboxErr };
+      }
       const git = simpleGit(cwd ?? process.cwd());
       const log = await git.log({ maxCount });
       const commits = log.all.map((entry) => ({

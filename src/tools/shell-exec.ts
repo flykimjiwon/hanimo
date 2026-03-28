@@ -1,6 +1,7 @@
 import { tool } from 'ai';
 import { z } from 'zod';
 import { execaCommand } from 'execa';
+import { checkPathSandbox } from '../core/permission.js';
 
 const DEFAULT_TIMEOUT_MS = 30000;
 const MAX_TIMEOUT_MS = 120000;
@@ -70,6 +71,13 @@ export const shellExecTool = tool({
         stderr: '',
         error: `Blocked: ${dangerReason}`,
       };
+    }
+
+    if (cwd) {
+      const sandboxErr = checkPathSandbox(cwd, process.cwd());
+      if (sandboxErr) {
+        return { success: false, exitCode: -1, stdout: '', stderr: '', error: sandboxErr };
+      }
     }
 
     try {

@@ -4,6 +4,7 @@ import { readFile } from 'node:fs/promises';
 import { createReadStream } from 'node:fs';
 import { createInterface } from 'node:readline';
 import { globby } from 'globby';
+import { checkPathSandbox } from '../core/permission.js';
 
 export interface GrepMatch {
   file: string;
@@ -73,6 +74,11 @@ export const grepSearchTool = tool({
         regex = new RegExp(pattern, flags);
       } catch {
         return { success: false, error: `Invalid regex pattern: ${pattern}` };
+      }
+
+      if (path) {
+        const sandboxErr = checkPathSandbox(path, process.cwd());
+        if (sandboxErr) return { success: false, error: sandboxErr };
       }
 
       const basePath = path ?? process.cwd();

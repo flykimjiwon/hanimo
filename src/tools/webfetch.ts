@@ -4,6 +4,21 @@ import { z } from 'zod';
 const MAX_CONTENT_LENGTH = 50000;
 const TIMEOUT_MS = 15000;
 
+const PRIVATE_IP_PATTERNS: RegExp[] = [
+  /^127\./,
+  /^10\./,
+  /^172\.(1[6-9]|2\d|3[01])\./,
+  /^192\.168\./,
+  /^169\.254\./,
+  /^\[?::1\]?$/,
+];
+
+function isPrivateHost(hostname: string): boolean {
+  const h = hostname.toLowerCase().replace(/^\[|\]$/g, '');
+  if (h === 'localhost') return true;
+  return PRIVATE_IP_PATTERNS.some((p) => p.test(h));
+}
+
 /**
  * Strip HTML tags and convert to readable plain text.
  * Lightweight — no external dependency needed.
@@ -48,6 +63,11 @@ export const webfetchTool = tool({
   }),
   execute: async ({ url, selector }) => {
     try {
+      const parsedUrl = new URL(url);
+      if (isPrivateHost(parsedUrl.hostname)) {
+        return { success: false, error: 'Blocked: URL points to internal/private network' };
+      }
+
       const response = await fetch(url, {
         headers: {
           'User-Agent': 'modol/0.1 (AI coding assistant)',

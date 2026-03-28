@@ -131,7 +131,7 @@ function estimateLines(
   return lines;
 }
 
-export function ChatView({
+export const ChatView = React.memo(function ChatView({
   messages,
   streamingText,
   isLoading,
@@ -263,4 +263,4 @@ export function ChatView({
       )}
     </Box>
   );
-}
+})

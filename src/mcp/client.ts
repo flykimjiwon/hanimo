@@ -35,7 +35,10 @@ export class McpClient {
       );
     }
 
-    await this.client.connect(this.transport);
+    const connectTimeout = new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error('MCP server connection timed out after 10s')), 10000)
+    );
+    await Promise.race([this.client.connect(this.transport), connectTimeout]);
     this.connected = true;
   }
 

@@ -1,6 +1,7 @@
 import { tool } from 'ai';
 import { z } from 'zod';
 import { globby } from 'globby';
+import { checkPathSandbox } from '../core/permission.js';
 
 export const globSearchTool = tool({
   description: 'Find files matching glob patterns (e.g. "**/*.ts", "src/**/*.test.ts")',
@@ -22,6 +23,11 @@ export const globSearchTool = tool({
   }),
   execute: async ({ pattern, cwd, ignore, limit }) => {
     try {
+      if (cwd) {
+        const sandboxErr = checkPathSandbox(cwd, process.cwd());
+        if (sandboxErr) return { success: false, error: sandboxErr };
+      }
+
       const files = await globby(pattern, {
         cwd: cwd ?? process.cwd(),
         ignore,

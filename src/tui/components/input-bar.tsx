@@ -17,7 +17,7 @@ interface InputBarProps {
   roleName?: string;
 }
 
-export function InputBar({
+export const InputBar = React.memo(function InputBar({
   onSubmit,
   isDisabled,
   completions,
@@ -216,4 +216,4 @@ export function InputBar({
       </Box>
     </Box>
   );
-}
+});
