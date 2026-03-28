@@ -1,0 +1,19 @@
+commit	passed	total	status	description
+baseline	99	99	keep	baseline measurement
+0eb017f	104	104	keep	add batch tool tests (5 cases)
+8b1f319	108	108	keep	add notify + compaction tests (4 cases)
+1d106f9	111	111	keep	add lsp-diagnostics tests + fix batch glob ordering
+d1bdbfd	114	114	keep	add permission edge case tests (traversal, key/pem, tricky names)
+0ca688a	119	119	keep	add shell-exec security tests (fork bomb, dd, mkfs, /etc, safe cmds)
+3348014	119	119	keep	extract magic numbers to constants in shell-exec
+dd9b095	121	121	keep	add hashline edge case tests (end<start, single-line)
+bd5b3e5	125	125	keep	add session store edge cases (empty, corrupted, large, empty search)
+d0389dd	131	131	keep	export htmlToText + 6 unit tests (entities, links, strip, whitespace)
+5b9dd10	137	137	keep	add grep-search tests (6 cases: regex, case, context, max, invalid, no match)
+842d092	141	141	keep	add glob-search tests (pattern, limit, extension, no match)
+907ae9a	141	141	keep	improve tool descriptions (hashline_read, batch)
+5beed57	141	141	keep	add todo clear action + fix batch test ordering
+11f038a	141	141	keep	add current timestamp to system prompt
+b6a34c4	142	142	keep	add todo clear action test
+82443fd	142	142	keep	improve edit_file error messages with hints
+fcc4aab	150	150	keep	add file-ops tests (8 cases: read, edit, write)

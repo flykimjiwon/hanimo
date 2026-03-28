@@ -1,299 +1,438 @@
-# modol
+# modol 🐶
 
-> **Terminal AI coding assistant that works with any LLM — cloud or local**
+> **Terminal AI coding agent — works with any LLM, cloud or local.**
 
-[한국어](README.ko.md)
+[한국어](README.ko.md) · [GitHub](https://github.com/flykimjiwon/dev_anywhere)
 
-> Named after **modol** (모돌), a fluffy white mini bichon dog 🐶 — small, smart, and always ready to help.
+Named after **modol** (모돌), a fluffy white mini bichon dog — small, smart, and always ready to help.
 
 ---
 
 ## What is modol?
 
-modol is a terminal-based AI coding assistant similar to Claude Code, Cursor, or Aider. It connects to **14 LLM providers** (cloud APIs + local servers) and lets AI read, write, search, and execute code in your project — all from the terminal.
+modol is a lightweight, terminal-based AI coding agent. Think Claude Code or Cursor, but **provider-agnostic** and **local-model-first**.
 
-Key differentiators:
-- **14 providers, one interface** — OpenAI, Anthropic, Google, DeepSeek, Groq, Ollama, and 8 more
-- **Ollama-first** — optimized for local models, zero API cost, full offline support
-- **Smart role detection** — automatically assigns Agent/Assistant/Chat role based on model capabilities
-- **Zero native deps** — pure JavaScript, `npm install` just works (no C++ builds)
+- **14 LLM providers** — OpenAI, Anthropic, Google, DeepSeek, Groq, Ollama, vLLM, LM Studio, and more
+- **16 built-in tools** — file editing, shell execution, git, web fetch, diagnostics, and more
+- **Hash-anchored editing** — verified edits that prevent stale-line errors
+- **Autonomous mode** — agent works until the task is done, no babysitting
+- **Smart context compaction** — LLM-based conversation summarization
+- **Dual UI** — full TUI (Ink/React) or lightweight text mode
+- **Zero native dependencies** — pure JavaScript, `npm install` just works
+- **~7,800 lines** — highest feature-to-code density of any AI coding agent
 
 ---
 
 ## Quick Start
 
+### Prerequisites
+
+- **Node.js** >= 20.0.0
+- **npm** (comes with Node.js)
+- (Optional) **Ollama** for local models — [ollama.com](https://ollama.com)
+
+### Install
+
 ```bash
-# Clone & install
-git clone https://github.com/flykimjiwon/modol.git
-cd modol
+# Clone
+git clone https://github.com/flykimjiwon/dev_anywhere.git
+cd dev_anywhere
+
+# Install dependencies
 npm install
-
-# Run (first launch opens setup wizard)
-npm run dev
-
-# Or with specific provider/model
-npm run dev -- -p ollama -m qwen3:8b
-npm run dev -- -p openai -m gpt-4o
 ```
 
-**Requirements**: Node.js >= 20.0.0
-
----
-
-## Installation
+### Run
 
 ```bash
-# Development mode (tsx, hot reload)
+# Development mode (recommended for first run)
 npm run dev
 
-# Build & run
-npm run build
-npm start
+# Or directly
+npx tsx src/cli.ts
+```
 
-# Global install (use `modol` anywhere)
+### Global CLI install
+
+```bash
 npm link
+# Now you can run from anywhere:
 modol
 ```
 
----
-
-## Usage
+### First run with Ollama (free, offline)
 
 ```bash
-# Text mode (default — readline-based interactive)
-modol
+# 1. Install Ollama
+brew install ollama   # macOS
+# or visit https://ollama.com
 
-# TUI mode (fullscreen Ink-based)
-modol --tui
+# 2. Pull a model
+ollama pull qwen3:8b
 
-# With initial prompt
-modol "explain the project structure"
+# 3. Start modol
+npm run dev -- --provider ollama --model qwen3:8b
+```
 
-# Specify provider & model
-modol -p ollama -m qwen3:8b
-modol -p anthropic -m claude-sonnet-4-20250514
-modol -p deepseek -m deepseek-chat
+### First run with OpenAI
 
-# Custom endpoint (any OpenAI-compatible server)
-modol -u http://my-server:8000/v1 -m my-model
+```bash
+# Set your API key
+export OPENAI_API_KEY="sk-..."
 
-# Session management
-modol --list-sessions          # List saved sessions
-modol --resume                 # Resume latest session
-modol --resume abc12345        # Resume specific session
-
-# Re-run setup
-modol --setup
+# Start modol
+npm run dev -- --provider openai --model gpt-4o-mini
 ```
 
 ---
 
 ## Supported Providers (14)
 
-### Cloud APIs
-
-| Provider | Default Model | Models | Auth |
-|----------|--------------|--------|------|
-| **OpenAI** | gpt-4o-mini | 7 | API key |
-| **Anthropic** | claude-sonnet-4 | 3 | API key |
-| **Google** | gemini-2.5-flash | 3 | API key |
-| **DeepSeek** | deepseek-chat | 3 | API key |
-| **Groq** | qwen-qwq-32b | 4 | API key |
-| **Together** | Qwen2.5-Coder-32B | 4 | API key |
-| **OpenRouter** | deepseek-chat-v3 (free) | 4 | API key |
-| **Fireworks** | qwen2p5-coder-32b | 3 | API key |
-| **Mistral** | codestral-latest | 3 | API key |
-| **GLM/Zhipu** | glm-4-plus | 3 | API key |
-
-### Local / Self-hosted
-
-| Provider | Default URL | Auth |
-|----------|-----------|------|
-| **Ollama** | localhost:11434 | None |
-| **vLLM** | localhost:8000 | None |
-| **LM Studio** | localhost:1234 | None |
-| **Custom** | (user-specified) | Optional |
+| Provider | Type | Models |
+|----------|------|--------|
+| **OpenAI** | Cloud | gpt-4o, gpt-4o-mini, gpt-4.1, o3-mini |
+| **Anthropic** | Cloud | claude-sonnet-4, claude-haiku-4, claude-opus-4 |
+| **Google** | Cloud | gemini-2.5-flash, gemini-2.5-pro |
+| **DeepSeek** | Cloud | deepseek-chat, deepseek-coder, deepseek-reasoner |
+| **Groq** | Cloud | llama-3.3-70b, qwen-qwq-32b |
+| **Together** | Cloud | Various open models |
+| **OpenRouter** | Cloud | Any model via OpenRouter |
+| **Fireworks** | Cloud | Various open models |
+| **Mistral** | Cloud | codestral, mistral-large, mistral-small |
+| **GLM** | Cloud | Zhipu GLM models |
+| **Ollama** | Local | Any Ollama model (qwen3, llama3, gemma3, etc.) |
+| **vLLM** | Local | Self-hosted models |
+| **LM Studio** | Local | Desktop-managed models |
+| **Custom** | Local | Any OpenAI-compatible endpoint |
 
 ---
 
-## AI Tools (9)
+## Tools (16)
 
+modol gives the AI agent 16 built-in tools:
+
+### Core File Operations
 | Tool | Description |
 |------|-------------|
-| `read_file` | Read file contents |
-| `write_file` | Create or overwrite files |
-| `edit_file` | Edit specific lines in a file |
-| `glob_search` | Find files by pattern (.gitignore aware) |
-| `grep_search` | Search file contents with regex (.gitignore aware) |
+| `read_file` | Read file contents with line numbers |
+| `write_file` | Create/overwrite files (auto-creates directories) |
+| `edit_file` | Replace exact string matches in files |
+| `hashline_read` | Read with hash-tagged lines for verified editing |
+| `hashline_edit` | Edit using hash anchors — prevents stale-line errors |
+
+### Search
+| Tool | Description |
+|------|-------------|
+| `glob_search` | Find files by glob pattern (respects .gitignore) |
+| `grep_search` | Regex content search with context lines |
+| `batch` | Run multiple reads/globs in parallel (2-5x faster) |
+
+### Shell & Git
+| Tool | Description |
+|------|-------------|
 | `shell_exec` | Execute shell commands (22 dangerous patterns blocked) |
-| `git_status` | Check git status |
-| `git_diff` | View git changes |
+| `git_status` | Check git working tree status |
+| `git_diff` | View staged/unstaged changes |
 | `git_commit` | Create git commits |
+| `git_log` | View commit history |
+
+### New Tools
+| Tool | Description |
+|------|-------------|
+| `webfetch` | Fetch web pages, extract text from HTML/JSON |
+| `todo` | Track multi-step work with a task list |
+| `diagnostics` | Run TypeScript/ESLint checks without modifying files |
 
 ---
 
-## Smart Model Role Detection
+## Features
 
-modol automatically detects model capabilities and assigns roles:
+### Hash-Anchored Editing (Hashline)
 
-| Role | Badge | Tools Available | Example Models |
-|------|-------|----------------|----------------|
-| **Agent** | `[A]` green | All 9 tools | qwen3:8b+, all cloud APIs |
-| **Assistant** | `[R]` yellow | Read-only (3) | qwen3.5:4b, mistral:7b |
-| **Chat** | `[C]` gray | None | gemma3:1b, codegemma |
+Traditional line-number editing breaks when the file changes between read and edit. Hashline solves this:
 
-30+ models registered with 4-tier matching: exact name → prefix → cloud provider → safe default.
+```
+# Agent reads file with hashline_read:
+1#a3f1| function hello() {
+2#7bc2|   console.log("hello");
+3#e4d0| }
+
+# Agent edits with hashline_edit using anchors:
+startAnchor: "2#7bc2"  endAnchor: "2#7bc2"
+newContent: '  console.log("hello world");'
+
+# If line 2 changed since reading → error with "re-read" hint
+# If hash matches → edit applied safely
+```
+
+### Autonomous Mode (`/auto`)
+
+```
+/auto Fix all TypeScript errors in src/
+```
+
+The agent loops automatically: reads code → makes changes → runs diagnostics → repeats until done. Max 20 iterations. macOS notification on completion.
+
+### Smart Context Compaction
+
+When conversations get long (40+ messages), modol uses the LLM to summarize earlier context instead of just truncating. This preserves the task goal, completed work, and current state.
+
+### LSP Diagnostics
+
+```
+/diagnostics              # Check whole project
+/diagnostics src/app.ts   # Check specific file
+```
+
+Runs `tsc --noEmit` + ESLint and returns structured results. The agent can read errors and fix them directly.
+
+### Session Management
+
+```
+/save                     # Save current session
+/load                     # Load a saved session
+/sessions                 # List recent sessions
+/search auth              # Search sessions by keyword
+```
+
+Sessions are stored as JSON files in `~/.modol/sessions/`.
+
+### Role System
+
+Three built-in roles control tool access:
+
+| Role | Tools | Use Case |
+|------|-------|----------|
+| **dev** (Agent) | All 16 tools | Coding, file editing, git |
+| **plan** (Assistant) | Read-only (8 tools) | Code review, analysis |
+| **chat** (Chat) | No tools | General conversation |
+
+modol auto-detects the right role based on model capabilities (e.g., small Ollama models get Chat role).
+
+### MCP Support
+
+modol supports Model Context Protocol (MCP) for extending tools:
+
+```json
+// ~/.modol/config.json
+{
+  "mcp": {
+    "servers": {
+      "my-server": {
+        "command": "npx",
+        "args": ["-y", "some-mcp-server"],
+        "enabled": true
+      }
+    }
+  }
+}
+```
+
+Supports both **stdio** and **SSE** transports. Servers tagged `onlineOnly` are skipped in offline mode.
 
 ---
 
-## Slash Commands
+## Configuration
 
-| Command | Shortcut | Description |
-|---------|----------|-------------|
-| `/help` | `/h` | Show help |
-| `/model [name]` | `/m` | Switch model (no arg = menu) |
-| `/provider [name]` | `/p` | Switch provider |
-| `/tools [on\|off]` | `/t` | Toggle tools |
-| `/models` | | List models with role badges |
-| `/endpoint url` | `/e` | Connect custom endpoint |
-| `/lang [ko\|en\|ja\|zh]` | | Set response language |
-| `/config` | | Show current config |
-| `/usage` | `/u` | Token usage & cost |
-| `/clear` | | Clear conversation |
-| `/exit` | `/q` | Exit |
+### Config file: `~/.modol/config.json`
 
-**Keyboard**: `Esc` = menu, `Tab` = autocomplete, `Ctrl+C` = cancel/exit
+```json
+{
+  "provider": "ollama",
+  "model": "qwen3:8b",
+  "providers": {
+    "openai": { "apiKey": "sk-..." },
+    "anthropic": { "apiKey": "sk-ant-..." }
+  },
+  "maxSteps": 25,
+  "shell": {
+    "timeout": 30000,
+    "requireApproval": true
+  },
+  "defaultRole": "dev",
+  "subAgents": {
+    "enabled": false,
+    "count": "3"
+  }
+}
+```
+
+### Project instructions: `.modol.md`
+
+Create a `.modol.md` file in your project root to give the AI context:
+
+```markdown
+# Project: My App
+
+- This is a Next.js 15 app with App Router
+- Use TypeScript strict mode
+- Tests use Vitest
+- Database: PostgreSQL with Drizzle ORM
+```
+
+modol walks up from CWD to find all `.modol.md` files — great for monorepos with per-package instructions.
+
+### Environment variables
+
+```bash
+OPENAI_API_KEY=sk-...          # OpenAI
+ANTHROPIC_API_KEY=sk-ant-...   # Anthropic
+GOOGLE_API_KEY=AI...           # Google
+DEEPSEEK_API_KEY=...           # DeepSeek
+GROQ_API_KEY=gsk_...           # Groq
+```
+
+---
+
+## Keyboard Shortcuts
+
+### TUI Mode
+| Key | Action |
+|-----|--------|
+| `Esc` | Open main menu |
+| `Ctrl+K` | Command palette (fuzzy search) |
+| `Ctrl+X` → key | Leader key (S=save, L=load, V=verbose, K=palette) |
+| `Ctrl+C` | Cancel current operation (double = exit) |
+| `Ctrl+O` | Toggle verbose tool output |
+| `Up/Down` | Input history |
+| `Tab` | Autocomplete commands |
+
+### Slash Commands
+| Command | Description |
+|---------|-------------|
+| `/help` | Show all commands |
+| `/model [name]` | Switch model (no arg = menu) |
+| `/provider [name]` | Switch provider (no arg = menu) |
+| `/role [id]` | Switch role (dev/plan/chat) |
+| `/tools [on\|off]` | Toggle tool access |
+| `/config` | Show current configuration |
+| `/usage` | Token usage & cost estimate |
+| `/theme [id]` | Change theme (live preview) |
+| `/auto [msg]` | Autonomous mode |
+| `/search [keyword]` | Search past sessions |
+| `/diagnostics [file]` | Run tsc/eslint checks |
+| `/clear` | Clear conversation |
+| `/save` | Save session |
+| `/load` | Load session |
+| `/exit` | Exit modol |
+
+---
+
+## Multi-Agent Orchestration
+
+modol supports multi-agent mode for complex tasks:
+
+```json
+// ~/.modol/config.json
+{
+  "subAgents": {
+    "enabled": true,
+    "count": "5",
+    "model": "gpt-4o-mini"
+  }
+}
+```
+
+The orchestrator decomposes tasks into subtasks, executes them in parallel with sub-agents, and synthesizes results.
 
 ---
 
 ## Security
 
-- **Path sandboxing** — file operations blocked outside CWD + sensitive paths (.ssh, .aws, .env)
-- **Shell filter** — 22 dangerous patterns blocked (rm -rf, sudo, curl|bash, eval, DROP TABLE, etc.)
-- **Config protection** — `~/.modol/config.json` saved with `0600` permissions
-- **.gitignore** — glob/grep searches respect .gitignore automatically
+modol has layered security:
+
+1. **Path sandboxing** — file ops blocked outside project directory
+2. **Sensitive file protection** — `.ssh`, `.aws`, `.env`, `*.key`, `*.pem`, `credentials.*` always blocked
+3. **Shell danger filter** — 22+ patterns blocked (rm -rf, sudo, curl|bash, DROP TABLE, fork bombs, etc.)
+4. **Permission gate** — destructive operations require user approval
 
 ---
 
-## Project Instructions
+## Karpathy Loop (Autonomous Research)
 
-Create a `.modol.md` file in your project root to give AI project-specific context:
+modol includes a `program.md` for running [Karpathy Loop](https://github.com/karpathy/autoresearch) style experiments:
 
-```markdown
-# My Project
-- This is a Next.js 15 app with TypeScript strict
-- Use Tailwind CSS for styling
-- API routes are in app/api/
-- Never use `any` type
+```bash
+cd your-project
+claude   # or any AI coding agent
+# Then: "Read program.md and start the experiment loop"
 ```
 
-This is automatically injected into the system prompt on every session.
+The agent will: read code → make one change → measure score → keep or discard → repeat forever.
 
 ---
 
 ## Architecture
 
 ```
-modol/
-├── src/
-│   ├── cli.ts                    # CLI entrypoint (commander)
-│   ├── text-mode.ts              # Text mode (readline-based)
-│   ├── onboarding.ts             # First-run setup wizard
-│   ├── core/
-│   │   ├── agent-loop.ts         # LLM agent loop (Vercel AI SDK streamText)
-│   │   ├── system-prompt.ts      # System prompt builder (.modol.md loader)
-│   │   ├── permission.ts         # Path sandboxing + permission gate
-│   │   ├── markdown.ts           # ANSI terminal markdown renderer
-│   │   └── types.ts              # Shared types (Message, AgentEvent)
-│   ├── providers/
-│   │   ├── registry.ts           # Provider factory + cache
-│   │   ├── types.ts              # 14 providers + KNOWN_MODELS
-│   │   └── model-capabilities.ts # 30+ model capability registry
-│   ├── tools/
-│   │   ├── registry.ts           # Tool registry (full + read-only)
-│   │   ├── file-ops.ts           # read/write/edit (sandboxed)
-│   │   ├── shell-exec.ts         # Shell exec (danger filter)
-│   │   ├── grep-search.ts        # Regex content search
-│   │   ├── glob-search.ts        # File pattern search
-│   │   └── git-tools.ts          # Git operations
-│   ├── session/
-│   │   └── store.ts              # JSON file-based session storage
-│   ├── tui/
-│   │   ├── app.tsx               # TUI main app (Ink + React)
-│   │   ├── components/           # ChatView, InputBar, StatusBar, SelectMenu
-│   │   └── hooks/                # useAgent, useCommands, useStream
-│   └── config/
-│       ├── loader.ts             # Config loader (env → file → defaults)
-│       └── schema.ts             # Config schema
-├── tests/                        # 5 test files, 43 tests
-├── vitest.config.ts
-├── eslint.config.js
-├── .prettierrc
-└── tsconfig.json
+src/
+├── core/          # Agent loop, system prompt, compaction, auto-loop
+├── tools/         # 16 tools (hashline, webfetch, todo, batch, diagnostics...)
+├── providers/     # 14 LLM providers (Ollama, OpenAI, Anthropic, Google...)
+├── tui/           # Ink/React fullscreen TUI
+├── agents/        # Orchestrator, sub-agents
+├── config/        # Zod schema validation
+├── roles/         # dev/plan/chat role system
+├── session/       # JSON file-based persistence
+├── mcp/           # MCP client (stdio + SSE)
+├── cli.ts         # Commander CLI entry
+└── text-mode.ts   # Lightweight readline mode
 ```
 
----
-
-## Tech Stack
-
-| Category | Technology |
-|----------|-----------|
-| **Runtime** | Node.js >= 20 |
-| **Language** | TypeScript (strict, ES2022, NodeNext) |
-| **LLM Integration** | Vercel AI SDK v4 (streamText, tool calling) |
-| **Provider SDKs** | @ai-sdk/openai, @ai-sdk/anthropic, @ai-sdk/google |
-| **TUI** | Ink 5 + React 18 |
-| **CLI** | Commander |
-| **Validation** | Zod |
-| **Shell** | Execa |
-| **File Search** | Globby (gitignore support) |
-| **Git** | simple-git |
-| **Testing** | Vitest (43 tests) |
-| **Linting** | ESLint + typescript-eslint |
-| **Formatting** | Prettier |
-
-**Zero native dependencies** — no C++ builds, no Python, no Rust. Pure JavaScript.
-
----
-
-## Data Storage
-
-| Path | Contents |
-|------|----------|
-| `~/.modol/config.json` | Provider, model, API keys (0600 perms) |
-| `~/.modol/sessions/*.json` | Conversation sessions (auto-saved) |
-| `.modol.md` (project root) | Project-specific AI instructions |
+**~7,800 lines of TypeScript** — 150 tests across 20 test files.
 
 ---
 
 ## Development
 
 ```bash
-npm run dev            # Run with tsx
-npm run build          # TypeScript build
-npm test               # Run 43 tests
-npm run test:watch     # Watch mode
-npm run lint           # tsc --noEmit + eslint
-npm run lint:fix       # Auto-fix lint issues
-npm run format         # Prettier format
-npm run format:check   # Check formatting
+# Run in dev mode
+npm run dev
+
+# Run tests
+npm test
+
+# Type check
+npm run lint
+
+# Format
+npm run format
 ```
 
 ---
 
-## Research Documents
+## Comparison
 
-The initial research that informed this project:
+| Feature | modol | Claude Code | Cursor | Aider |
+|---------|:-----:|:-----------:|:------:|:-----:|
+| Open source | Yes | No | No | Yes |
+| Local models | 4 providers | No | No | Yes |
+| Cloud providers | 10 | 1 | 2 | 5 |
+| Built-in tools | 16 | ~10 | ~8 | ~6 |
+| Hash editing | Yes | No | No | No |
+| Autonomous mode | Yes | No | No | No |
+| TUI + Text mode | Both | TUI only | GUI | Text |
+| Zero native deps | Yes | No | No | No |
+| Code size | 7.8K | ~200K+ | N/A | ~15K |
 
-| # | Document | Contents |
-|---|----------|----------|
-| 1 | [Tools Survey](docs/01-tools-survey.md) | 35+ terminal AI coding tools survey |
-| 2 | [Feasibility](docs/02-feasibility.md) | Architecture, language choice, timeline |
-| 3 | [License Analysis](docs/03-license-analysis.md) | Fork legality for 20 tools |
-| 4 | [Deployment](docs/04-deployment.md) | Cloud vs air-gap deployment scenarios |
+---
+
+## Roadmap
+
+- [ ] Plugin system for third-party tools
+- [ ] VS Code extension
+- [ ] Web UI dashboard
+- [ ] modol.app ecosystem integration (ModolAI, ModolRAG)
+- [ ] Agent swarm mode (multiple agents collaborating)
 
 ---
 
 ## License
 
 MIT
+
+---
+
+<p align="center">
+  Built with love by <a href="https://github.com/flykimjiwon">김지원</a> and modol 🐶
+</p>
