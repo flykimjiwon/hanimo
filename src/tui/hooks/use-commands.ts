@@ -28,6 +28,7 @@ export const COMMAND_LIST: CommandInfo[] = [
   { name: 'save', description: 'Save current session', descriptionKo: '현재 세션 저장', shortcut: 'Ctrl+X S' },
   { name: 'load', description: 'Load a saved session', descriptionKo: '저장된 세션 불러오기', shortcut: 'Ctrl+X L' },
   { name: 'sessions', description: 'List recent sessions', descriptionKo: '최근 세션 목록', shortcut: 'Ctrl+X E' },
+  { name: 'mode', description: 'Switch mode preset (turbo/balanced/eco/auto)', descriptionKo: '모드 프리셋 전환 (터보/균형/효율/자동)' },
   { name: 'endpoint', description: 'Set/view provider base URL', descriptionKo: '프로바이더 엔드포인트 URL 설정' },
   { name: 'auto', description: 'Autonomous mode (work until done)', descriptionKo: '자율 모드 (완료까지 자동 실행)' },
   { name: 'search', description: 'Search sessions by keyword', descriptionKo: '세션 키워드 검색' },
@@ -82,6 +83,7 @@ const COMMAND_MAP: Record<string, CommandHandler> = {
         '  /save             Save current session',
         '  /load             Load a saved session',
         '  /sessions         List recent sessions',
+        '  /mode [preset]    Mode preset (auto/turbo/balanced/eco)',
         '  /endpoint [url]   Set provider base URL (e.g. DGX SPARK)',
         '  /auto [msg]       Autonomous mode — work until done',
         '  /search [keyword] Search sessions by keyword',
@@ -288,6 +290,78 @@ const COMMAND_MAP: Record<string, CommandHandler> = {
       ctx.addSystemMessage(ctx.listRecentSessions());
     } else {
       ctx.addSystemMessage('Session list not available.');
+    }
+  },
+
+  mode: (args, ctx) => {
+    const modeId = args.trim().toLowerCase();
+    if (!modeId) {
+      ctx.addSystemMessage(
+        [
+          'Mode presets — 역할별 최적 모델 자동 배정:',
+          '',
+          '  /mode auto       🐶 자동 — 역할별 최적 모델 자동 배정',
+          '  /mode turbo      🚀 터보 — 최고 성능 (가장 큰 모델)',
+          '  /mode balanced   ⚖️  균형 — 성능과 속도 균형',
+          '  /mode eco        🌱 효율 — 최고 속도 (가장 작은 모델)',
+          '  /mode show       📋 현재 프리셋 상세 보기',
+          '',
+          'Example: /mode turbo',
+        ].join('\n'),
+      );
+      return;
+    }
+
+    if (modeId === 'show') {
+      try {
+        const fs = require('node:fs');
+        const path = require('node:path');
+        const os = require('node:os');
+        const configPath = path.join(os.homedir(), '.modol', 'config.json');
+        const cfg = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
+        const currentMode = cfg.modePreset ?? 'auto';
+        const assignments = cfg.modeAssignments ?? {};
+        const lines = [
+          `Current mode: ${currentMode}`,
+          '',
+          `  Super:  ${assignments.super ?? '(not set)'}`,
+          `  Dev:    ${assignments.dev ?? '(not set)'}`,
+          `  Plan:   ${assignments.plan ?? '(not set)'}`,
+          `  Chat:   ${assignments.chat ?? '(not set)'}`,
+        ];
+        ctx.addSystemMessage(lines.join('\n'));
+      } catch {
+        ctx.addSystemMessage('No mode configured. Use /mode auto to auto-detect.');
+      }
+      return;
+    }
+
+    const validModes = ['auto', 'turbo', 'balanced', 'eco'];
+    if (!validModes.includes(modeId)) {
+      ctx.addSystemMessage(`Unknown mode: "${modeId}". Available: ${validModes.join(', ')}`);
+      return;
+    }
+
+    // Save mode selection to config and trigger model reassignment
+    try {
+      const fs = require('node:fs');
+      const path = require('node:path');
+      const os = require('node:os');
+      const configDir = path.join(os.homedir(), '.modol');
+      fs.mkdirSync(configDir, { recursive: true });
+      const configPath = path.join(configDir, 'config.json');
+      let cfg: Record<string, unknown> = {};
+      try { cfg = JSON.parse(fs.readFileSync(configPath, 'utf-8')); } catch { /* empty */ }
+      cfg.modePreset = modeId;
+      fs.writeFileSync(configPath, JSON.stringify(cfg, null, 2) + '\n', { mode: 0o600 });
+
+      const icons: Record<string, string> = { auto: '🐶', turbo: '🚀', balanced: '⚖️', eco: '🌱' };
+      const names: Record<string, string> = { auto: '자동', turbo: '터보', balanced: '균형', eco: '효율' };
+      ctx.addSystemMessage(
+        `${icons[modeId]} Mode: ${names[modeId]} (${modeId})\nRestart modol to apply model assignments.\nOr use /mode show to see assignments.`,
+      );
+    } catch (err: unknown) {
+      ctx.addSystemMessage(`Failed to save mode: ${err instanceof Error ? err.message : String(err)}`);
     }
   },
 
