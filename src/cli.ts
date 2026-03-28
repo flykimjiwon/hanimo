@@ -59,9 +59,15 @@ export async function main(): Promise<void> {
         const shared = { ...cfg };
         if (shared['providers']) {
           const providers = { ...(shared['providers'] as Record<string, Record<string, unknown>>) };
+          const localProviders = new Set(['ollama', 'vllm', 'lmstudio', 'custom']);
           for (const [k, v] of Object.entries(providers)) {
-            const { apiKey: _a, ...rest } = v;
-            providers[k] = { ...rest, apiKey: '<YOUR_API_KEY>' };
+            if (localProviders.has(k) || !v.apiKey) {
+              // Local providers don't need API keys — keep as-is
+              providers[k] = { ...v };
+            } else {
+              const { apiKey: _a, ...rest } = v;
+              providers[k] = { ...rest, apiKey: '<YOUR_API_KEY>' };
+            }
           }
           shared['providers'] = providers;
         }

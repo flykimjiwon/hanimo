@@ -11,10 +11,12 @@ export async function sendNotification(
   if (process.platform !== 'darwin') return;
 
   try {
-    const escapedTitle = title.replace(/"/g, '\\"');
-    const escapedMessage = message.replace(/"/g, '\\"');
+    // Sanitize: strip all quotes and backslashes to prevent shell/AppleScript injection
+    const clean = (s: string): string => s.replace(/["'\\`$]/g, '').slice(0, 200);
+    const safeTitle = clean(title);
+    const safeMessage = clean(message);
     await execaCommand(
-      `osascript -e 'display notification "${escapedMessage}" with title "${escapedTitle}"'`,
+      `osascript -e 'display notification "${safeMessage}" with title "${safeTitle}"'`,
       { shell: true, timeout: 5000, reject: false },
     );
   } catch {

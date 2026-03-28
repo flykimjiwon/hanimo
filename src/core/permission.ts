@@ -37,12 +37,10 @@ export function checkPathSandbox(filePath: string, cwd: string): string | null {
     }
   }
 
-  // For absolute paths, check they're within cwd
-  if (isAbsolute(filePath)) {
-    const rel = relative(cwd, resolved);
-    if (rel.startsWith('..') || isAbsolute(rel)) {
-      return `Access denied: "${filePath}" is outside the project directory (${cwd})`;
-    }
+  // Check resolved path is within cwd (catches both absolute and relative traversal)
+  const rel = relative(cwd, resolved);
+  if (rel.startsWith('..') || isAbsolute(rel)) {
+    return `Access denied: "${filePath}" is outside the project directory (${cwd})`;
   }
 
   return null;

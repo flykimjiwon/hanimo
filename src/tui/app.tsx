@@ -242,6 +242,10 @@ function App({
   toolsEnabledRef.current = toolsEnabled;
 
   const switchModel = useCallback((name: string) => {
+    // Cancel any in-flight request before switching
+    if (agent.isLoading) {
+      agent.cancelRun();
+    }
     try {
       const newModelInstance = getModel(
         currentProviderRef.current as ProviderName,
@@ -266,6 +270,9 @@ function App({
   }, [agent, providerConfig]);
 
   const switchProvider = useCallback((name: string) => {
+    if (agent.isLoading) {
+      agent.cancelRun();
+    }
     try {
       clearProviderCache();
       const isLocal = LOCAL_PROVIDERS.has(name as ProviderName);
