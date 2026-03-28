@@ -71,7 +71,7 @@ export function SelectMenu({ title, items, onSelect, onCancel, legend, onHighlig
       {items.map((item, i) => {
         const isCursor = i === cursor;
         const marker = item.active ? '\u25CF' : isCursor ? '\u25B8' : ' ';
-        const num = i < 10 ? `${(i + 1) % 10}` : ' ';
+        const num = i < 26 ? String.fromCharCode(i < 9 ? 49 + i : i === 9 ? 48 : 97 + i - 10) : ' ';
         return (
           <Box key={item.value}>
             <Text color={isCursor ? colors.model : colors.dimText}>{num} </Text>

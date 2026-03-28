@@ -492,8 +492,28 @@ function App({
     { label: 'Auto (no preference)', value: 'auto', active: currentLang === 'auto' },
   ];
 
+  // Dynamic model discovery — fetch real models from provider
+  const [discoveredModels, setDiscoveredModels] = useState<string[]>([]);
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const { discoverModelsWithCache } = await import('../providers/model-discovery.js');
+        const provConfig = providerConfig;
+        const models = await discoverModelsWithCache(currentProvider as import('../providers/types.js').ProviderName, provConfig);
+        if (!cancelled && models.length > 0) {
+          setDiscoveredModels(models.map(m => m.id));
+        }
+      } catch {
+        // Discovery failed — will fallback to KNOWN_MODELS
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [currentProvider, providerConfig]);
+
   const modelMenuItems: MenuItem[] = useMemo(() => {
-    const models = KNOWN_MODELS[currentProvider] ?? [];
+    // Prefer discovered (real) models, fallback to hardcoded
+    const models = discoveredModels.length > 0 ? discoveredModels : (KNOWN_MODELS[currentProvider] ?? []);
     return models.map((m: string) => {
       const cap = getModelCapability(m, currentProvider);
       const roleColor = cap.role === 'agent' ? colors.success
@@ -507,7 +527,7 @@ function App({
         badgeColor: roleColor,
       };
     });
-  }, [currentProvider, currentModel]);
+  }, [currentProvider, currentModel, discoveredModels]);
 
   const providerMenuItems: MenuItem[] = useMemo(() => {
     return PROVIDER_NAMES.map((p) => ({
