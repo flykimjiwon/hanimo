@@ -151,7 +151,7 @@ export async function runOnboarding(): Promise<void> {
   } else if (providerChoice === '11' || providerChoice === '12' || providerChoice === '13' || providerChoice === '14') {
     // Local / self-hosted providers
     const localMap: Record<string, { name: string; model: string; defaultURL: string }> = {
-      '11': { name: 'ollama',   model: 'qwen3-coder:30b',  defaultURL: 'http://localhost:11434' },
+      '11': { name: 'ollama',   model: 'qwen3-coder:30b',  defaultURL: 'http://localhost:11434/v1' },
       '12': { name: 'vllm',     model: 'default',           defaultURL: 'http://localhost:8000' },
       '13': { name: 'lmstudio', model: 'default',           defaultURL: 'http://localhost:1234' },
       '14': { name: 'custom',   model: 'default',           defaultURL: '' },
