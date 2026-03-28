@@ -80,7 +80,7 @@ export function useAgent({ model, systemPrompt, tools }: UseAgentOptions): UseAg
       if (startTimeRef.current !== null) {
         setElapsedMs(Date.now() - startTimeRef.current);
       }
-    }, 100);
+    }, 500);
     return () => {
       clearInterval(timer);
       startTimeRef.current = null;

@@ -8,7 +8,7 @@ interface UseStreamReturn {
 
 // 16ms batch flush — prevents re-render storm during fast streaming
 // Buffer accumulates chunks, setState fires at ~60fps max
-const FLUSH_INTERVAL_MS = 50;
+const FLUSH_INTERVAL_MS = 80;
 
 export function useStream(): UseStreamReturn {
   const [text, setText] = useState('');

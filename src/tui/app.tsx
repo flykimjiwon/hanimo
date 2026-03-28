@@ -454,6 +454,7 @@ function App({
     { label: `역할: ${roleLabel}`, value: 'role' },
     { label: '모델 전환', value: 'model' },
     { label: '프로바이더 전환', value: 'provider' },
+    { label: '엔드포인트 설정', value: 'endpoint' },
     { label: `언어: ${langLabel}`, value: 'lang' },
     { label: `도구: ${toolsEnabled ? 'ON → OFF' : 'OFF → ON'}`, value: 'tools' },
     { label: '테마 변경', value: 'theme' },
@@ -464,6 +465,7 @@ function App({
     { label: `Role: ${roleLabel}`, value: 'role' },
     { label: 'Switch Model', value: 'model' },
     { label: 'Switch Provider', value: 'provider' },
+    { label: 'Set Endpoint URL', value: 'endpoint' },
     { label: `Language: ${langLabel}`, value: 'lang' },
     { label: `Tools: ${toolsEnabled ? 'ON → OFF' : 'OFF → ON'}`, value: 'tools' },
     { label: 'Theme', value: 'theme' },
@@ -571,6 +573,14 @@ function App({
       case 'theme':
         themeBeforePreviewRef.current = { ...colors };
         setMenuState('theme');
+        break;
+      case 'endpoint':
+        agent.addSystemMessage(
+          ko
+            ? '엔드포인트 설정:\n  /endpoint <url>     현재 프로바이더 URL 변경\n  /endpoint clear     기본값 복원\n\n예시:\n  /endpoint https://spark3-share.tech-2030.net/api/v1\n  /endpoint http://192.168.1.100:11434\n\n또는 CLI에서:\n  modol --base-url <url> --api-key <key> --model <name>'
+            : 'Endpoint settings:\n  /endpoint <url>     Set base URL for current provider\n  /endpoint clear     Reset to default\n\nExamples:\n  /endpoint https://spark3-share.tech-2030.net/api/v1\n  /endpoint http://192.168.1.100:11434\n\nOr from CLI:\n  modol --base-url <url> --api-key <key> --model <name>',
+        );
+        setMenuState('none');
         break;
       case 'clear':
         agent.clearMessages();

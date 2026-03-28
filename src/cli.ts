@@ -30,6 +30,8 @@ export async function main(): Promise<void> {
     .option('--offline', 'Force offline mode (disable online-only MCP servers)')
     .option('--list-sessions', 'List saved sessions')
     .option('--setup', 'Re-run initial setup')
+    .option('--share-config [file]', 'Export shareable config (default: modol-shared.json)')
+    .option('--import-config <file>', 'Import a shared config file')
     .action(async (promptParts: string[], options: {
       provider?: string;
       model?: string;
@@ -42,7 +44,54 @@ export async function main(): Promise<void> {
       offline?: boolean;
       listSessions?: boolean;
       setup?: boolean;
+      shareConfig?: string | boolean;
+      importConfig?: string;
     }) => {
+      // --share-config: export shareable config
+      if (options.shareConfig !== undefined) {
+        const { readFileSync, writeFileSync } = await import('node:fs');
+        const { join } = await import('node:path');
+        const { homedir } = await import('node:os');
+        const configPath = join(homedir(), '.modol', 'config.json');
+        let cfg: Record<string, unknown> = {};
+        try { cfg = JSON.parse(readFileSync(configPath, 'utf-8')); } catch { /* empty */ }
+        // Strip sensitive keys for sharing
+        const shared = { ...cfg };
+        if (shared['providers']) {
+          const providers = { ...(shared['providers'] as Record<string, Record<string, unknown>>) };
+          for (const [k, v] of Object.entries(providers)) {
+            const { apiKey: _a, ...rest } = v;
+            providers[k] = { ...rest, apiKey: '<YOUR_API_KEY>' };
+          }
+          shared['providers'] = providers;
+        }
+        const outFile = typeof options.shareConfig === 'string' ? options.shareConfig : 'modol-shared.json';
+        writeFileSync(outFile, JSON.stringify(shared, null, 2) + '\n');
+        console.log(`✅ Shared config exported: ${outFile}`);
+        console.log('   API keys are replaced with placeholders.');
+        console.log('   Share this file — recipients run: modol --import-config ' + outFile);
+        return;
+      }
+
+      // --import-config: import shared config
+      if (options.importConfig) {
+        const { readFileSync, writeFileSync, mkdirSync } = await import('node:fs');
+        const { join } = await import('node:path');
+        const { homedir } = await import('node:os');
+        try {
+          const imported = JSON.parse(readFileSync(options.importConfig, 'utf-8'));
+          const configDir = join(homedir(), '.modol');
+          mkdirSync(configDir, { recursive: true });
+          writeFileSync(join(configDir, 'config.json'), JSON.stringify(imported, null, 2) + '\n', { mode: 0o600 });
+          console.log(`✅ Config imported from ${options.importConfig}`);
+          console.log('   Edit ~/.modol/config.json to add your API keys.');
+          console.log('   Then run: modol');
+        } catch (err: unknown) {
+          console.error(`❌ Failed to import: ${err instanceof Error ? err.message : String(err)}`);
+        }
+        return;
+      }
+
       // First-run onboarding or explicit --setup
       if (options.setup || await needsOnboarding()) {
         await runOnboarding();
