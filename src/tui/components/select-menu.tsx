@@ -53,11 +53,14 @@ export function SelectMenu({ title, items, onSelect, onCancel, legend, onHighlig
       return;
     }
 
-    // Number key shortcuts (1-9)
+    // Number key shortcuts (0-9): 1-9 for items 1-9, 0 for item 10
     const num = parseInt(input, 10);
-    if (num >= 1 && num <= 9 && num <= items.length) {
-      const item = items[num - 1];
-      if (item) onSelect(item.value);
+    if (!isNaN(num)) {
+      const idx = num === 0 ? 9 : num - 1; // 0 key = 10th item
+      if (idx >= 0 && idx < items.length) {
+        const item = items[idx];
+        if (item) onSelect(item.value);
+      }
     }
   });
 
@@ -68,7 +71,7 @@ export function SelectMenu({ title, items, onSelect, onCancel, legend, onHighlig
       {items.map((item, i) => {
         const isCursor = i === cursor;
         const marker = item.active ? '\u25CF' : isCursor ? '\u25B8' : ' ';
-        const num = i < 9 ? `${i + 1}` : ' ';
+        const num = i < 10 ? `${(i + 1) % 10}` : ' ';
         return (
           <Box key={item.value}>
             <Text color={isCursor ? colors.model : colors.dimText}>{num} </Text>

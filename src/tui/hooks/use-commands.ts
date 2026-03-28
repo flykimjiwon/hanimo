@@ -28,6 +28,7 @@ export const COMMAND_LIST: CommandInfo[] = [
   { name: 'save', description: 'Save current session', descriptionKo: '현재 세션 저장', shortcut: 'Ctrl+X S' },
   { name: 'load', description: 'Load a saved session', descriptionKo: '저장된 세션 불러오기', shortcut: 'Ctrl+X L' },
   { name: 'sessions', description: 'List recent sessions', descriptionKo: '최근 세션 목록', shortcut: 'Ctrl+X E' },
+  { name: 'endpoint', description: 'Set/view provider base URL', descriptionKo: '프로바이더 엔드포인트 URL 설정' },
   { name: 'auto', description: 'Autonomous mode (work until done)', descriptionKo: '자율 모드 (완료까지 자동 실행)' },
   { name: 'search', description: 'Search sessions by keyword', descriptionKo: '세션 키워드 검색' },
   { name: 'diagnostics', description: 'Run tsc/eslint checks', descriptionKo: 'TypeScript/ESLint 진단 실행' },
@@ -81,6 +82,7 @@ const COMMAND_MAP: Record<string, CommandHandler> = {
         '  /save             Save current session',
         '  /load             Load a saved session',
         '  /sessions         List recent sessions',
+        '  /endpoint [url]   Set provider base URL (e.g. DGX SPARK)',
         '  /auto [msg]       Autonomous mode — work until done',
         '  /search [keyword] Search sessions by keyword',
         '  /diagnostics [f]  Run tsc/eslint diagnostics',
@@ -287,6 +289,30 @@ const COMMAND_MAP: Record<string, CommandHandler> = {
     } else {
       ctx.addSystemMessage('Session list not available.');
     }
+  },
+
+  endpoint: (args, ctx) => {
+    const url = args.trim();
+    if (!url) {
+      ctx.addSystemMessage(
+        [
+          'Endpoint configuration:',
+          '  /endpoint <url>     Set base URL for current provider',
+          '  /endpoint clear     Reset to default',
+          '',
+          'Examples:',
+          '  /endpoint https://spark3-share.tech-2030.net/api/v1',
+          '  /endpoint http://192.168.1.100:11434',
+          '  /endpoint http://localhost:8000/v1',
+        ].join('\n'),
+      );
+      return;
+    }
+    if (url === 'clear') {
+      ctx.addSystemMessage('Endpoint reset to default. Restart modol to apply.');
+      return;
+    }
+    ctx.addSystemMessage(`Endpoint set: ${url}\nRestart modol with: modol --base-url ${url}`);
   },
 
   auto: (args, ctx) => {
