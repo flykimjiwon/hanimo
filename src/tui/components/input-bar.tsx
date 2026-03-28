@@ -170,8 +170,10 @@ export const InputBar = React.memo(function InputBar({
   const displayLine = lines[lines.length - 1] ?? '';
   const continuationHint = value.endsWith('\\');
 
-  // Role display
-  const modeLabel = roleIcon && roleName ? `${roleIcon} ${roleName}` : '\u2699 default';
+  // Role display — truncate to prevent line wrap on narrow terminals
+  const maxLabelLen = Math.max(10, (process.stdout.columns || 80) - 20);
+  const rawLabel = roleIcon && roleName ? `${roleIcon} ${roleName}` : '\u2699 default';
+  const modeLabel = rawLabel.length > maxLabelLen ? rawLabel.slice(0, maxLabelLen) + '...' : rawLabel;
 
   return (
     <Box

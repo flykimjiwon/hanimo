@@ -440,10 +440,10 @@ function App({
       ? ('thinking' as const)
       : ('idle' as const);
 
-  // Calculate height: status bar (2) + input (7: 5 content + 2 border) + hints (1) + padding (1) = 11
-  // When menu is open, reserve extra space for the menu
+  // Calculate height: status bar (2) + input (7: 5 content + 2 border) + hints (1) + padding (1) + overflow buffer (2) = 13
+  // Extra buffer prevents layout overflow on narrow terminals
   const menuHeight = menuState !== 'none' ? 12 : 0;
-  const chatHeight = Math.max(termRows - 11 - menuHeight, 5);
+  const chatHeight = Math.max(termRows - 13 - menuHeight, 3);
 
   // Tab completions: slash commands + current provider's model names
   const completions = useMemo(() => {
