@@ -63,6 +63,65 @@ const MODEL_CAPABILITIES: Record<string, ModelCapability> = {
 
   // ── llama3.2 (default tag) ───────────────────────
   'llama3.2':            { role: 'chat',      toolCalling: false, codingTier: 'weak' },
+
+  // ══════════════════════════════════════════════════
+  // CLOUD MODELS
+  // ══════════════════════════════════════════════════
+
+  // ── OpenAI ──────────────────────────────────────
+  'gpt-4o':              { role: 'agent',     toolCalling: true,  codingTier: 'strong',   note: 'OpenAI 최고 범용, 128K ctx' },
+  'gpt-4o-mini':         { role: 'agent',     toolCalling: true,  codingTier: 'strong',   note: '저렴 + 빠름, 128K ctx' },
+  'gpt-4.1':             { role: 'agent',     toolCalling: true,  codingTier: 'strong',   note: '코딩 최적화, 1M ctx' },
+  'gpt-4.1-mini':        { role: 'agent',     toolCalling: true,  codingTier: 'strong',   note: '4.1 경량, 1M ctx' },
+  'gpt-4.1-nano':        { role: 'agent',     toolCalling: true,  codingTier: 'moderate', note: '초경량, 1M ctx' },
+  'o3-mini':             { role: 'agent',     toolCalling: true,  codingTier: 'strong',   note: '추론 특화, 200K ctx' },
+  'o4-mini':             { role: 'agent',     toolCalling: true,  codingTier: 'strong',   note: '추론 최신, 200K ctx' },
+  'codex-mini-latest':   { role: 'agent',     toolCalling: true,  codingTier: 'strong',   note: 'Codex 코딩 전용' },
+
+  // ── Anthropic ───────────────────────────────────
+  'claude-opus-4-20250514':   { role: 'agent', toolCalling: true, codingTier: 'strong',  note: '최고 성능, 200K ctx. API 키 필요' },
+  'claude-sonnet-4-20250514': { role: 'agent', toolCalling: true, codingTier: 'strong',  note: '속도/성능 밸런스, 200K ctx' },
+  'claude-haiku-4-20250414':  { role: 'agent', toolCalling: true, codingTier: 'moderate', note: '가장 빠름/저렴, 200K ctx' },
+
+  // ── Google Gemini ───────────────────────────────
+  'gemini-2.5-pro':      { role: 'agent',     toolCalling: true,  codingTier: 'strong',   note: '1M ctx, 추론 최강' },
+  'gemini-2.5-flash':    { role: 'agent',     toolCalling: true,  codingTier: 'strong',   note: '1M ctx, 빠름/저렴' },
+  'gemini-2.0-flash':    { role: 'agent',     toolCalling: true,  codingTier: 'moderate', note: '이전 세대, 안정적' },
+
+  // ── DeepSeek ────────────────────────────────────
+  'deepseek-chat':       { role: 'agent',     toolCalling: true,  codingTier: 'strong',   note: 'V3, 128K ctx, 저렴' },
+  'deepseek-coder':      { role: 'agent',     toolCalling: true,  codingTier: 'strong',   note: '코딩 전용' },
+  'deepseek-reasoner':   { role: 'agent',     toolCalling: true,  codingTier: 'strong',   note: 'R1, 추론 특화' },
+
+  // ── Groq ────────────────────────────────────────
+  'llama-3.3-70b-versatile': { role: 'agent', toolCalling: true, codingTier: 'strong',   note: 'Groq 초고속 추론' },
+  'qwen-qwq-32b':        { role: 'agent',     toolCalling: true,  codingTier: 'strong',   note: 'Groq 추론 모델' },
+  'llama-3.1-8b-instant': { role: 'agent',    toolCalling: true,  codingTier: 'moderate', note: 'Groq 초저지연' },
+
+  // ── Mistral ─────────────────────────────────────
+  'codestral-latest':    { role: 'agent',     toolCalling: true,  codingTier: 'strong',   note: 'Mistral 코딩 전용' },
+  'mistral-large-latest': { role: 'agent',    toolCalling: true,  codingTier: 'strong',   note: 'Mistral 최고 성능' },
+  'mistral-small-latest': { role: 'agent',    toolCalling: true,  codingTier: 'moderate', note: 'Mistral 경량' },
+
+  // ── GLM (Zhipu) ─────────────────────────────────
+  'glm-4-plus':          { role: 'agent',     toolCalling: true,  codingTier: 'strong',   note: '중국 최고 성능' },
+  'glm-4-flash':         { role: 'agent',     toolCalling: true,  codingTier: 'moderate', note: '무료 티어 가능' },
+  'glm-4-air':           { role: 'agent',     toolCalling: true,  codingTier: 'moderate', note: '저렴' },
+
+  // ── DGX SPARK / Custom ──────────────────────────
+  'gpt-oss:120b':        { role: 'agent',     toolCalling: true,  codingTier: 'strong',   note: 'OpenAI 오픈소스 대형' },
+  'deepseek-v3:latest':  { role: 'agent',     toolCalling: true,  codingTier: 'strong',   note: '671B MoE, DGX 전용' },
+  'deepseek-r1:32b':     { role: 'agent',     toolCalling: true,  codingTier: 'strong',   note: '추론 특화 32B' },
+  'deepseek-r1:14b':     { role: 'agent',     toolCalling: true,  codingTier: 'strong',   note: '추론 특화 14B' },
+  'mixtral:8x22b-instruct': { role: 'agent',  toolCalling: true,  codingTier: 'strong',   note: '176B MoE' },
+  'qwen2.5:32b-instruct': { role: 'agent',    toolCalling: true,  codingTier: 'strong',   note: '32B 범용' },
+  'qwen3-coder-next:q8_0': { role: 'agent',   toolCalling: true,  codingTier: 'strong',   note: '코딩 에이전트 차세대' },
+  'nemotron-3-nano:30b': { role: 'agent',     toolCalling: true,  codingTier: 'moderate', note: 'NVIDIA 30B' },
+  'glm-4.7-flash:latest': { role: 'agent',    toolCalling: true,  codingTier: 'moderate', note: 'GLM 오픈소스' },
+  'glm-4.7-flash:bf16':  { role: 'agent',     toolCalling: true,  codingTier: 'moderate', note: 'GLM bf16 정밀도' },
+  'mistral-small3.2:latest': { role: 'agent',  toolCalling: true, codingTier: 'moderate', note: 'Mistral 소형' },
+  'llava:13b':           { role: 'assistant',  toolCalling: false, codingTier: 'weak',     note: '비전 모델' },
+  'glm-ocr:bf16':        { role: 'assistant',  toolCalling: false, codingTier: 'none',     note: 'OCR 전용' },
 };
 
 // ── Prefix-based fallbacks ────────────────────────────────────────────

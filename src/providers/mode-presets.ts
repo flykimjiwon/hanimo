@@ -55,6 +55,34 @@ function extractSizeB(modelId: string): number {
 
   // Known sizes for models without explicit size
   const knownSizes: Record<string, number> = {
+    // Cloud models (estimated effective size for ranking)
+    'claude-opus-4-20250514': 2000,
+    'claude-sonnet-4-20250514': 1000,
+    'claude-haiku-4-20250414': 200,
+    'gpt-4o': 1500,
+    'gpt-4.1': 1500,
+    'gpt-4o-mini': 300,
+    'gpt-4.1-mini': 300,
+    'gpt-4.1-nano': 100,
+    'o3-mini': 800,
+    'o4-mini': 900,
+    'codex-mini-latest': 500,
+    'gemini-2.5-pro': 1800,
+    'gemini-2.5-flash': 400,
+    'gemini-2.0-flash': 300,
+    'deepseek-chat': 671,
+    'deepseek-coder': 671,
+    'deepseek-reasoner': 671,
+    'mistral-large-latest': 123,
+    'codestral-latest': 123,
+    'mistral-small-latest': 24,
+    'glm-4-plus': 500,
+    'glm-4-flash': 100,
+    'glm-4-air': 150,
+    'llama-3.3-70b-versatile': 70,
+    'qwen-qwq-32b': 32,
+    'llama-3.1-8b-instant': 8,
+    // Self-hosted large models
     'deepseek-v3:latest': 671,
     'mixtral:8x22b-instruct': 176,
     'llama3.3:latest': 70,
@@ -75,8 +103,8 @@ function classifyCapability(modelId: string): AvailableModel['capability'] {
   const lower = modelId.toLowerCase();
   if (lower.includes('embed') || lower.includes('arctic-embed') || lower.includes('nomic-embed') || lower.includes('mxbai-embed')) return 'embedding';
   if (lower.includes('llava') || lower.includes('ocr') || lower.includes('vision')) return 'vision';
-  if (lower.includes('coder') || lower.includes('codex') || lower.includes('starcoder') || lower.includes('codellama') || lower.includes('devstral')) return 'coding';
-  if (lower.includes('deepseek-r1') || lower.includes('qwq') || lower.includes('nemotron')) return 'reasoning';
+  if (lower.includes('coder') || lower.includes('codex') || lower.includes('codestral') || lower.includes('starcoder') || lower.includes('codellama') || lower.includes('devstral')) return 'coding';
+  if (lower.includes('deepseek-r1') || lower.includes('reasoner') || lower.includes('qwq') || lower.includes('o3-') || lower.includes('o4-')) return 'reasoning';
   return 'general';
 }
 
