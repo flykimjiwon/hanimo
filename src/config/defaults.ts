@@ -25,4 +25,5 @@ export const DEFAULT_CONFIG: Config = {
   network: {
     mode: 'auto',
   },
+  endpoints: [],
 };

@@ -6,6 +6,17 @@ export const ProviderConfigSchema = z.object({
   defaultModel: z.string().optional(),
 });
 
+export const EndpointSchema = z.object({
+  name: z.string().describe('Display name (e.g. "local-ollama", "dgx-spark")'),
+  provider: z
+    .enum(['openai', 'anthropic', 'google', 'deepseek', 'groq', 'together', 'openrouter', 'fireworks', 'mistral', 'glm', 'ollama', 'vllm', 'lmstudio', 'custom'])
+    .describe('Provider type'),
+  baseURL: z.string().describe('Endpoint URL (e.g. http://localhost:11434)'),
+  apiKey: z.string().optional().describe('API key (optional for local providers)'),
+  enabled: z.boolean().default(true),
+  priority: z.number().default(0).describe('Higher = preferred when same model exists on multiple endpoints'),
+});
+
 export const McpServerConfigSchema = z.object({
   name: z.string(),
   enabled: z.boolean().default(true),
@@ -56,8 +67,10 @@ export const ConfigSchema = z.object({
       mode: z.enum(['auto', 'online', 'offline']).default('auto'),
     })
     .default({}),
+  endpoints: z.array(EndpointSchema).default([]),
 });
 
 export type Config = z.infer<typeof ConfigSchema>;
 export type ProviderConfigEntry = z.infer<typeof ProviderConfigSchema>;
 export type McpServerConfig = z.infer<typeof McpServerConfigSchema>;
+export type Endpoint = z.infer<typeof EndpointSchema>;
