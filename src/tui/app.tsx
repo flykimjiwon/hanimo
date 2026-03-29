@@ -286,6 +286,18 @@ function App({
     try {
       clearProviderCache();
       const isLocal = LOCAL_PROVIDERS.has(name as ProviderName);
+
+      // Block cloud providers without API key
+      if (!isLocal && !providerConfig?.apiKey) {
+        agent.addSystemMessage(
+          `⚠️ ${name} requires an API key.\n` +
+          `Set with: modol --provider ${name} --api-key YOUR_KEY\n` +
+          `Or add to ~/.modol/config.json:\n` +
+          `  "providers": { "${name}": { "apiKey": "..." } }`,
+        );
+        return;
+      }
+
       const models = KNOWN_MODELS[name] ?? [];
       const defaultModel = models[0] ?? 'default';
       const newModelInstance = getModel(
@@ -532,6 +544,8 @@ function App({
   // Dynamic model discovery — fetch real models from provider
   const [discoveredModels, setDiscoveredModels] = useState<string[]>([]);
   useEffect(() => {
+    // Reset on provider change to avoid showing stale models
+    setDiscoveredModels([]);
     let cancelled = false;
     (async () => {
       try {
@@ -634,8 +648,8 @@ function App({
       case 'endpoint':
         agent.addSystemMessage(
           ko
-            ? '엔드포인트 설정:\n  /endpoint <url>     현재 프로바이더 URL 변경\n  /endpoint clear     기본값 복원\n\n예시:\n  /endpoint https://spark3-share.tech-2030.net/api/v1\n  /endpoint http://192.168.1.100:11434\n\n또는 CLI에서:\n  modol --base-url <url> --api-key <key> --model <name>'
-            : 'Endpoint settings:\n  /endpoint <url>     Set base URL for current provider\n  /endpoint clear     Reset to default\n\nExamples:\n  /endpoint https://spark3-share.tech-2030.net/api/v1\n  /endpoint http://192.168.1.100:11434\n\nOr from CLI:\n  modol --base-url <url> --api-key <key> --model <name>',
+            ? '엔드포인트 관리:\n  /endpoint list                          등록된 엔드포인트 목록\n  /endpoint add <이름> <프로바이더> <URL> [API키]\n  /endpoint remove <이름>\n\n예시:\n  /endpoint add local ollama http://localhost:11434\n  /endpoint add openai-api openai https://api.openai.com/v1 sk-...\n  /endpoint add remote ollama http://192.168.1.100:11434\n\n또는 CLI에서:\n  modol --base-url <url> --api-key <key> --model <name>'
+            : 'Endpoint management:\n  /endpoint list                          Show registered endpoints\n  /endpoint add <name> <provider> <url> [apiKey]\n  /endpoint remove <name>\n\nExamples:\n  /endpoint add local ollama http://localhost:11434\n  /endpoint add openai-api openai https://api.openai.com/v1 sk-...\n  /endpoint add remote ollama http://192.168.1.100:11434\n\nOr from CLI:\n  modol --base-url <url> --api-key <key> --model <name>',
         );
         setMenuState('none');
         break;

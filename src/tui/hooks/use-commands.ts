@@ -382,7 +382,7 @@ const COMMAND_MAP: Record<string, CommandHandler> = {
           '',
           'Examples:',
           '  /endpoint add local ollama http://localhost:11434',
-          '  /endpoint add dgx custom https://spark3-share.tech-2030.net/api/v1 f0a26c07...',
+          '  /endpoint add openai-api openai https://api.openai.com/v1 sk-...',
           '  /endpoint add remote ollama http://192.168.1.100:11434',
           '  /endpoint remove dgx',
           '  /endpoint list',
