@@ -1,79 +1,154 @@
 # modol 다음 세션 TODO
 
-## 우선순위 1: 멀티 엔드포인트 TUI 연결
+> 유저 피드백 기반, 우선순위순 정리
+
+---
+
+## 🔴 우선순위 1: 메뉴 UX 전면 재설계
+
+### 현재 문제
+- `/endpoint add local ollama http://localhost:11434` 명령어 입력이 불편
+- 메뉴에서 직접 선택하는 방식이 없음
+- 모델 전환 시 사용 불가능한 모델도 보임
+- 프로바이더 전환 시 API 키 없는 것도 전부 나옴
+- 엔드포인트 설정이 텍스트 안내만
+
+### 목표: 두 가지 방식 모두 지원
+```
+방식 1: 슬래시 커맨드 (파워유저)
+  /endpoint add local ollama http://localhost:11434
+
+방식 2: 메뉴 (일반유저) ← 신규
+  Esc → 엔드포인트 관리 → 추가
+  → [이름 입력] → [프로바이더 선택] → [URL 입력] → [API 키(선택)]
+  → 완료
+```
+
+### 구현할 것
+
+#### 1-1. 메뉴 구조 재설계
+```
+현재:                          개선:
+├── 역할: Dev                  ├── 🐶 역할 & 모드
+├── 모델 전환                  │   ├── 역할 (dev/plan/super/chat)
+├── 프로바이더 전환             │   └── 모드 프리셋 (auto/turbo/eco)
+├── 엔드포인트 설정            ├── 📡 모델 전환
+├── 언어                       │   └── (사용 가능 모델만, @엔드포인트 표시)
+├── 도구 ON/OFF                ├── 🔌 엔드포인트 관리
+├── 테마                       │   ├── 목록 보기
+├── 대화 초기화                │   ├── 추가 (단계별 입력)
+├── 도움말                     │   ├── 삭제
+└── 종료                       │   └── 우선순위 변경
+                               ├── 🌍 언어
+                               ├── 🔧 도구 ON/OFF
+                               ├── 🎨 테마
+                               ├── 🗑️ 대화 초기화
+                               ├── ❓ 도움말
+                               └── 🚪 종료
+```
+
+#### 1-2. 엔드포인트 추가 메뉴 (단계별)
+```
+[엔드포인트 추가]
+Step 1: 이름 입력 ─────────────
+  ❯ local-ollama█
+
+Step 2: 프로바이더 선택 ────────
+  1 ▸ ollama
+  2   openai
+  3   anthropic
+  4   custom
+
+Step 3: URL 입력 ───────────────
+  ❯ http://localhost:11434█
+
+Step 4: API 키 (선택) ──────────
+  ❯ (Enter로 건너뛰기)█
+
+✅ 엔드포인트 "local-ollama" 추가됨
+```
+
+#### 1-3. 모델 메뉴 개선
+```
+[모델 전환]
+  1 ▸ qwen3:8b         @local-ollama     [A]
+  2   qwen3:14b        @local-ollama     [A]
+  3   gpt-oss:20b      @dgx              [A]
+  4   gpt-oss:20b      @local-ollama     [A]  ← 같은 모델, 다른 엔드포인트
+  5   deepseek-r1:32b  @dgx              [A]
+  ──────────────────────────────
+  같은 모델 여러 엔드포인트: 선택 또는 Auto (라운드로빈)
+```
+
+#### 1-4. 같은 모델 다중 엔드포인트 처리
+```
+[qwen3:8b 엔드포인트 선택]
+  1 ▸ @local-ollama  (priority: 10) — http://localhost:11434
+  2   @remote-ollama (priority: 3)  — http://192.168.1.100:11434
+  3   Auto (라운드로빈)
+```
+
+---
+
+## 🟡 우선순위 2: Tab 역할 전환 + 모델 연동
+
+### 현재 문제
+- Tab은 역할만 순환 (chat→dev→plan→super)
+- 역할 전환 시 최적 모델은 자동 변경 안 됨
+
+### 구현할 것
+- Tab 순환: chat → dev → plan → super → chat
+- 각 역할 전환 시 `/mode` 프리셋에 따라 모델도 함께 변경
+- 예: super로 전환 → turbo 모드의 super 모델로 자동 전환
+
+---
+
+## 🟡 우선순위 3: StatusBar 좁은 터미널 대응
+
+### 현재 문제
+```
+mod anthroclaude-sonnet-4 🔧  │tools:● Re0   $0
+ l   ic    20250514        Dev  ON    ady tok
+```
+StatusBar 텍스트가 터미널 너비를 초과하면 줄바꿈되어 깨짐.
+
+### 구현할 것
+- 터미널 너비에 따라 StatusBar 항목 우선순위별 truncate
+- 좁으면: `modol │ qwen3:8b [A] │ Ready`
+- 넓으면: `modol │ ollama/qwen3:8b 🔧 Dev │ tools:ON │ ● Ready │ 0 tok │ $0`
+
+---
+
+## 🟢 우선순위 4: 이전 메뉴 `/endpoint` 메시지 중복
+
+### 현재 문제
+- Esc → 엔드포인트 설정 → 안내 메시지 표시
+- 이전에 `/endpoint help` 쳤던 메시지와 중복 표시
+- 메뉴 선택 결과와 슬래시 커맨드 결과가 같은 채팅 영역에 나옴
+
+### 구현할 것
+- 메뉴 선택은 **대화 메시지가 아닌** overlay/popup으로 표시
+- 또는 시스템 메시지 앞에 `───` 구분선
+
+---
+
+## 🟢 우선순위 5: spark3 URL 완전 제거
 
 ### 현재 상태
-- EndpointManager 엔진 구현됨 (`src/providers/endpoint-manager.ts`)
-- config.json에 endpoints 배열 지원됨
-- `/endpoint add/list/remove` TUI 커맨드 구현됨
-- **아직 TUI 모델 메뉴에 실제 연결 안 됨**
+- src에서는 제거 완료
+- README, docs에 아직 남아있을 수 있음
 
-### 구현할 것
+### 할 것
+```bash
+grep -r "spark3-share" . --include="*.md" --include="*.json" | grep -v node_modules | grep -v .omc
+```
 
-1. **모델 메뉴에 엔드포인트 표시**
-   - 모델명 옆에 `@엔드포인트명` 표시
-   - 예: `qwen3:8b @local`, `qwen3:8b @remote`, `gpt-oss:20b @dgx`
+---
 
-2. **같은 모델 여러 엔드포인트 → 서브메뉴**
-   ```
-   모델 선택: qwen3:8b (2 endpoints)
-   → 1. @local (http://localhost:11434) — priority:10
-     2. @remote (http://192.168.1.100:11434) — priority:3
-     3. Auto (round-robin)
-   ```
+## 📋 이전 세션에서 이월
 
-3. **프로바이더 전환 시 연결 검증**
-   - API 키 없는 클라우드 프로바이더 → 경고 메시지
-   - 엔드포인트 연결 실패 → 에러 메시지 + 다른 엔드포인트 제안
-
-4. **app.tsx에서 EndpointManager 초기화**
-   ```typescript
-   // startup에서:
-   const epManager = new EndpointManager();
-   await epManager.loadEndpoints(config.endpoints);
-
-   // 모델 메뉴에서:
-   const models = epManager.getAllModels(); // 엔드포인트별 모델
-
-   // 모델 선택 시:
-   const ep = epManager.getEndpoint(modelId); // 라운드로빈 or 선택
-   const modelInstance = getModel(ep.provider, modelId, { baseURL: ep.endpointURL, apiKey: ep.apiKey });
-   ```
-
-5. **StatusBar에 현재 엔드포인트 표시**
-   ```
-   modol │ ollama/qwen3:8b @local │ 🐶 Super Modol │ tools:ON
-   ```
-
-## 우선순위 2: /auto 커맨드 실제 동작 연결
-
-### 현재 상태
-- auto-loop.ts 엔진 구현됨
-- /auto 커맨드는 메시지만 표시하고 실제 동작 안 함
-- `sendAutoMessage`가 CommandContext에 없음
-
-### 구현할 것
-- CommandContext에 `sendAutoMessage` 추가
-- app.tsx에서 auto-loop 실행 연결
-- 자율 루프 중 TUI에 진행 상황 표시
-
-## 우선순위 3: 스킬 시스템
-
-### 구현할 것
-- `~/.modol/skills/*.md` 파일 자동 로드
-- 시스템 프롬프트에 주입
-- `/skill list` — 로드된 스킬 목록
-- `/skill add <url>` — URL에서 스킬 파일 생성 (webfetch 활용)
-
-## 우선순위 4: text-mode i18n
-
-### 구현할 것
-- text-mode.ts에 한국어/영어 분기 추가
-- onboarding.ts에 언어 선택 추가
-
-## 우선순위 5: TUI 추가 개선
-
-- 프로바이더 전환 시 연결 검증 (API 키 확인)
-- StatusBar에 openai라고 뜨는데 실제론 ollama 치는 버그 수정
-- 테마 설명 i18n (현재 한국어만)
-- leader key 힌트 i18n
+- [ ] text-mode.ts 한국어/영어 i18n
+- [ ] 테마 설명 i18n (현재 한국어만)
+- [ ] leader key 힌트 i18n
+- [ ] onboarding.ts 다국어
+- [ ] 스텁 파일 삭제 (coordinator.ts, worker-pool.ts)
