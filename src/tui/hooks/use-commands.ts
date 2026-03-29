@@ -526,6 +526,19 @@ const COMMAND_MAP: Record<string, CommandHandler> = {
     (ctx as unknown as { sendMessage?: (m: string) => void }).sendMessage?.(prompt);
   },
 
+  'models-refresh': (_args, ctx) => {
+    ctx.addSystemMessage('Refreshing model registry from OpenRouter...');
+    import('../../providers/model-registry.js').then(({ refreshModelRegistry, getRegistrySummary }) => {
+      refreshModelRegistry().then(() => {
+        getRegistrySummary().then(summary => {
+          ctx.addSystemMessage(`✅ Model registry updated: ${summary}`);
+        });
+      });
+    }).catch(() => {
+      ctx.addSystemMessage('❌ Failed to refresh model registry.');
+    });
+  },
+
   models: (_args, ctx) => {
     const models = KNOWN_MODELS[ctx.provider] ?? [];
     if (models.length === 0) {
