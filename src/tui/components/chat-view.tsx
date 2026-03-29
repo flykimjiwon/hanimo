@@ -215,7 +215,7 @@ export const ChatView = React.memo(function ChatView({
   const hiddenAbove = firstVisible ? messages.indexOf(firstVisible) : 0;
 
   return (
-    <Box flexDirection="column" height={height}>
+    <Box flexDirection="column" height={height} overflowY="hidden">
       {/* Scroll-up indicator */}
       {hiddenAbove > 0 && (
         <Box paddingX={1} justifyContent="center">
@@ -239,10 +239,17 @@ export const ChatView = React.memo(function ChatView({
         <MessageBubble key={msg.id} message={msg} maxToolLines={maxToolLines} />
       ))}
 
-      {/* Active streaming text */}
+      {/* Active streaming text — truncate to fit available height */}
       {isStreaming && (
-        <Box paddingX={1} flexDirection="column">
-          <Text color={colors.assistantText}>{streamingText}</Text>
+        <Box paddingX={1} flexDirection="column" height={Math.min(height - visibleMessages.length * 2, Math.max(3, height / 2))} overflowY="hidden">
+          <Text color={colors.assistantText} wrap="wrap">{
+            (() => {
+              const maxLines = Math.max(5, Math.floor(height / 2));
+              const lines = streamingText.split('\n');
+              if (lines.length <= maxLines) return streamingText;
+              return lines.slice(-maxLines).join('\n');
+            })()
+          }</Text>
         </Box>
       )}
 
