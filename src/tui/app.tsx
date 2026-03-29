@@ -508,6 +508,7 @@ function App({
     { label: `도구: ${toolsEnabled ? 'ON → OFF' : 'OFF → ON'}`, value: 'tools' },
     { label: '테마 변경', value: 'theme' },
     { label: '대화 초기화', value: 'clear' },
+    { label: '설정 초기화', value: 'reset-config' },
     { label: '도움말', value: 'help' },
     { label: '종료', value: 'exit' },
   ] : [
@@ -519,6 +520,7 @@ function App({
     { label: `Tools: ${toolsEnabled ? 'ON → OFF' : 'OFF → ON'}`, value: 'tools' },
     { label: 'Theme', value: 'theme' },
     { label: 'Clear Conversation', value: 'clear' },
+    { label: 'Reset All Settings', value: 'reset-config' },
     { label: 'Help', value: 'help' },
     { label: 'Exit', value: 'exit' },
   ];
@@ -581,12 +583,18 @@ function App({
   }, [currentProvider, currentModel, discoveredModels]);
 
   const providerMenuItems: MenuItem[] = useMemo(() => {
-    return PROVIDER_NAMES.map((p) => ({
-      label: p,
-      value: p,
-      active: p === currentProvider,
-    }));
-  }, [currentProvider]);
+    return PROVIDER_NAMES
+      .filter((p) => {
+        // Show: local providers + cloud providers with API key configured
+        if (LOCAL_PROVIDERS.has(p)) return true;
+        return !!providerConfig?.apiKey;
+      })
+      .map((p) => ({
+        label: LOCAL_PROVIDERS.has(p) ? `${p} (local)` : p,
+        value: p,
+        active: p === currentProvider,
+      }));
+  }, [currentProvider, providerConfig]);
 
   const themeMenuItems: MenuItem[] = useMemo(() => {
     return THEME_PRESETS.map((t) => ({
@@ -658,6 +666,23 @@ function App({
         agent.addSystemMessage('Conversation cleared.');
         setMenuState('none');
         break;
+      case 'reset-config': {
+        try {
+          const fs = require('node:fs');
+          const path = require('node:path');
+          const os = require('node:os');
+          const configPath = path.join(os.homedir(), '.modol', 'config.json');
+          fs.writeFileSync(configPath, JSON.stringify({ provider: 'ollama', model: 'qwen3:8b' }, null, 2) + '\n', { mode: 0o600 });
+          agent.addSystemMessage(ko
+            ? '✅ 설정이 초기화되었습니다. modol을 재시작하세요.'
+            : '✅ All settings reset to defaults. Restart modol to apply.',
+          );
+        } catch (err: unknown) {
+          agent.addSystemMessage(`❌ ${err instanceof Error ? err.message : String(err)}`);
+        }
+        setMenuState('none');
+        break;
+      }
       case 'help':
         if (commandCtxRef.current) handleCommand('/help', commandCtxRef.current);
         setMenuState('none');
