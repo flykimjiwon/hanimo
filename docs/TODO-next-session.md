@@ -152,3 +152,22 @@ grep -r "spark3-share" . --include="*.md" --include="*.json" | grep -v node_modu
 - [ ] leader key 힌트 i18n
 - [ ] onboarding.ts 다국어
 - [ ] 스텁 파일 삭제 (coordinator.ts, worker-pool.ts)
+
+---
+
+## 🔴 추가 피드백 (2026-03-29)
+
+### StatusBar 하단 이동/요약
+- 상단 StatusBar가 깜빡임 유발 (스크롤 많을 때)
+- 주요 정보(모델명, 역할, 상태)를 **하단 input 밑에 요약** 표시
+- 상단은 최소화하거나 제거
+- 참고: 현재 하단 힌트줄 `Enter 전송 | Esc 메뉴 | ...`에 통합 가능
+
+### 도움말 완전 i18n
+- `/help` 출력이 영어 고정 → 한국어 모드면 한국어로
+- 모든 커맨드 설명, 메뉴 텍스트, 에러 메시지 i18n 필요
+- `currentLang`이 'ko'이면 한국어, 아니면 영어
+
+### 도구 ON/OFF 메뉴 제거
+- 역할 시스템으로 이미 통합됨
+- 메뉴에서 "도구: ON → OFF" 항목 삭제
