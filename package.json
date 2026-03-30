@@ -19,7 +19,7 @@
     "format:check": "prettier --check \"src/**/*.{ts,tsx}\"",
     "start": "node dist/cli.js",
     "bundle": "node scripts/build-binary.mjs",
-    "build:binary": "npm run bundle && bash scripts/build-sea.sh"
+    "build:binary": "npm run bundle && node scripts/build-sea.mjs"
   },
   "keywords": [
     "ai",

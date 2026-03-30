@@ -90,7 +90,7 @@ export function buildSystemPrompt(context: ProjectContext, role?: RoleDefinition
 - Working directory: ${context.cwd}
 - Platform: ${context.platform}
 - Current time: ${new Date().toISOString()}
-${gitInfo}
+${context.platform === 'win32' ? '- Shell: Use PowerShell-compatible commands (dir instead of ls, Get-Content instead of cat, Select-String instead of grep)\n' : ''}${gitInfo}
 
 When referencing files, use paths relative to the working directory.${globalSection}${projectSection}${roleSection}${skillsSection}`;
 }

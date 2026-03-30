@@ -16,7 +16,7 @@ function lineHash(line: string): string {
  * Tag each line with its hash: "lineNum#HASH| content"
  */
 export function tagLines(content: string, startLine = 1): string {
-  const lines = content.split('\n');
+  const lines = content.split(/\r?\n/);
   return lines
     .map((line, i) => {
       const num = startLine + i;
@@ -54,7 +54,7 @@ export const hashReadFileTool = tool({
       if (blocked) return { success: false, error: blocked };
 
       const raw = await readFile(path, 'utf-8');
-      const allLines = raw.split('\n');
+      const allLines = raw.split(/\r?\n/);
 
       const start = startLine ? Math.max(1, startLine) : 1;
       const end = endLine ? Math.min(allLines.length, endLine) : allLines.length;
@@ -109,7 +109,7 @@ export const hashlineEditTool = tool({
       if (end.line < start.line) return { success: false, error: 'End anchor must be >= start anchor' };
 
       const raw = await readFile(path, 'utf-8');
-      const lines = raw.split('\n');
+      const lines = raw.split(/\r?\n/);
 
       // Verify start line hash
       const startIdx = start.line - 1;
@@ -138,10 +138,11 @@ export const hashlineEditTool = tool({
       }
 
       // Replace range
-      const newLines = newContent.split('\n');
+      const newLines = newContent.split(/\r?\n/);
       const before = lines.slice(0, startIdx);
       const after = lines.slice(endIdx + 1);
-      const updated = [...before, ...newLines, ...after].join('\n');
+      const eol = raw.includes('\r\n') ? '\r\n' : '\n';
+      const updated = [...before, ...newLines, ...after].join(eol);
 
       await writeFile(path, updated, 'utf-8');
 

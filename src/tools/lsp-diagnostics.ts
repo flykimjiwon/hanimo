@@ -11,6 +11,7 @@ import { join } from 'node:path';
 async function runTsc(cwd: string, file?: string): Promise<string> {
   const tscPaths = [
     join(cwd, 'node_modules', '.bin', 'tsc'),
+    ...(process.platform === 'win32' ? [join(cwd, 'node_modules', '.bin', 'tsc.cmd')] : []),
     'tsc',
   ];
 
@@ -43,6 +44,7 @@ async function runTsc(cwd: string, file?: string): Promise<string> {
 async function runEslint(cwd: string, file?: string): Promise<string> {
   const eslintPaths = [
     join(cwd, 'node_modules', '.bin', 'eslint'),
+    ...(process.platform === 'win32' ? [join(cwd, 'node_modules', '.bin', 'eslint.cmd')] : []),
     'eslint',
   ];
 

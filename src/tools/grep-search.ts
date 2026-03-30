@@ -102,7 +102,7 @@ export const grepSearchTool = tool({
         if (contextLines > 0 && fileMatches.length > 0) {
           try {
             const content = await readFile(file, 'utf-8');
-            const lines = content.split('\n');
+            const lines = content.split(/\r?\n/);
             for (const match of fileMatches) {
               const start = Math.max(0, match.line - 1 - contextLines);
               const end = Math.min(lines.length, match.line + contextLines);

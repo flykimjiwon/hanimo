@@ -277,12 +277,12 @@ export async function startTextMode(options: TextModeOptions): Promise<void> {
   // Permission gate: wrap destructive tools with readline approval prompt
   const permissionHandler = {
     async requestApproval(description: string): Promise<boolean> {
-      const wasRaw = stdin.isRaw;
-      if (wasRaw) stdin.setRawMode(false);
+      const wasRaw = typeof stdin.setRawMode === 'function' ? stdin.isRaw : false;
+      if (wasRaw && typeof stdin.setRawMode === 'function') stdin.setRawMode(false);
       const tempRl = createInterface({ input: stdin, output: stdout });
       const answer: string = await tempRl.question(`  ${yellow('⚠')} ${description} ${dim('[Y/n]')} `);
       tempRl.close();
-      if (wasRaw) stdin.setRawMode(true);
+      if (wasRaw && typeof stdin.setRawMode === 'function') stdin.setRawMode(true);
       const a = answer.trim().toLowerCase();
       return a === '' || a === 'y' || a === 'yes';
     },

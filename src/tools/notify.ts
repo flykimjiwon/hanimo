@@ -9,7 +9,7 @@ export async function sendNotification(
   title: string,
   message: string,
 ): Promise<void> {
-  const clean = (s: string): string => s.replace(/["'\\`$]/g, '').slice(0, 200);
+  const clean = (s: string): string => s.replace(/[^a-zA-Z0-9 .,!?\-_\u3131-\uD79D]/g, '').slice(0, 200);
   const safeTitle = clean(title);
   const safeMessage = clean(message);
 
@@ -25,7 +25,15 @@ export async function sendNotification(
         { shell: true, timeout: 5000, reject: false },
       );
     } else if (process.platform === 'win32') {
-      const ps = `powershell -Command "Add-Type -AssemblyName System.Windows.Forms; [System.Windows.Forms.MessageBox]::Show('${safeMessage}','${safeTitle}')"`;
+      // Use PowerShell toast notification (non-blocking, Windows 10+)
+      const ps = [
+        'powershell -Command "',
+        '[Windows.UI.Notifications.ToastNotificationManager, Windows.UI.Notifications, ContentType = WindowsRuntime] | Out-Null;',
+        '$t = [Windows.UI.Notifications.ToastNotificationManager]::GetTemplateContent(0);',
+        `$t.GetElementsByTagName('text')[0].AppendChild($t.CreateTextNode('${safeTitle}: ${safeMessage}')) | Out-Null;`,
+        `[Windows.UI.Notifications.ToastNotificationManager]::CreateToastNotifier('modol').Show([Windows.UI.Notifications.ToastNotification]::new($t))`,
+        '"',
+      ].join(' ');
       await execaCommand(ps, { shell: true, timeout: 5000, reject: false });
     }
   } catch {
