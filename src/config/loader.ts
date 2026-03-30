@@ -52,18 +52,18 @@ function getEnvOverrides(): Record<string, unknown> {
   const providerOverrides: Record<string, Record<string, string>> = {};
 
   // Explicit modol env vars
-  const provider = process.env['DEV_ANYWHERE_PROVIDER'];
+  const provider = process.env['MODOL_PROVIDER'];
   if (provider) {
     overrides['provider'] = provider;
   }
 
-  const model = process.env['DEV_ANYWHERE_MODEL'];
+  const model = process.env['MODOL_MODEL'];
   if (model) {
     overrides['model'] = model;
   }
 
-  const baseURL = process.env['DEV_ANYWHERE_BASE_URL'];
-  const apiKey = process.env['DEV_ANYWHERE_API_KEY'];
+  const baseURL = process.env['MODOL_BASE_URL'];
+  const apiKey = process.env['MODOL_API_KEY'];
 
   if (baseURL || apiKey) {
     const p = (provider ?? DEFAULT_CONFIG.provider) as string;
