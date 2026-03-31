@@ -281,20 +281,38 @@ export async function main(): Promise<void> {
       }
 
       // Default: TUI mode (fullscreen Ink app)
-      const { startApp } = await import('./tui/app.js');
-      startApp({
-        provider: config.provider,
-        model: config.model,
-        modelInstance,
-        systemPrompt,
-        tools,
-        maxSteps,
-        initialPrompt: prompt || undefined,
-        providerConfig,
-        roleManager,
-        activeRole,
-        networkMode,
-      });
+      // Falls back to text mode if TUI dependencies are unavailable (e.g. binary build)
+      try {
+        const { startApp } = await import('./tui/app.js');
+        startApp({
+          provider: config.provider,
+          model: config.model,
+          modelInstance,
+          systemPrompt,
+          tools,
+          maxSteps,
+          initialPrompt: prompt || undefined,
+          providerConfig,
+          roleManager,
+          activeRole,
+          networkMode,
+        });
+      } catch {
+        console.log('[TUI unavailable — falling back to text mode]');
+        await startTextMode({
+          provider: config.provider,
+          model: config.model,
+          modelInstance,
+          systemPrompt,
+          tools,
+          maxSteps,
+          initialPrompt: prompt || undefined,
+          resumeSession,
+          roleManager,
+          activeRole,
+          networkMode,
+        });
+      }
     });
 
   program.parse();
