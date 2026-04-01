@@ -294,7 +294,7 @@ export async function startTextMode(options: TextModeOptions): Promise<void> {
     permissionHandler,
   );
 
-  let toolsEnabled = !LOCAL_PROVIDERS.has(currentProvider as ProviderName);
+  let toolsEnabled = options.tools !== undefined && Object.keys(options.tools).length > 0;
   let currentBaseURL = '';
   let langSuffix = '';
   let cachedOllamaModels: string[] = [];
@@ -446,7 +446,7 @@ export async function startTextMode(options: TextModeOptions): Promise<void> {
       }
       currentProvider = newProvider;
       currentModel = modelId;
-      toolsEnabled = !LOCAL_PROVIDERS.has(newProvider as ProviderName);
+      toolsEnabled = currentTools !== undefined && Object.keys(currentTools).length > 0;
       if (newProvider === 'ollama') {
         listOllamaModels().then(m => { cachedOllamaModels = m; }).catch(() => {});
       }

@@ -587,9 +587,9 @@ function App({
   const providerMenuItems: MenuItem[] = useMemo(() => {
     return PROVIDER_NAMES
       .filter((p) => {
-        // Show: local providers + cloud providers with API key configured
+        // Show all providers — local providers don't need keys, cloud providers configurable later
         if (LOCAL_PROVIDERS.has(p)) return true;
-        return !!providerConfig?.apiKey;
+        return true;
       })
       .map((p) => ({
         label: LOCAL_PROVIDERS.has(p) ? `${p} (local)` : p,

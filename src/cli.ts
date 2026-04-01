@@ -7,6 +7,7 @@ import { createToolRegistry, mergeToolSets } from './tools/registry.js';
 import { startTextMode } from './text-mode.js';
 import { needsOnboarding, runOnboarding } from './onboarding.js';
 import type { ProviderName } from './providers/types.js';
+import type { LanguageModelV1 } from 'ai';
 import { RoleManager } from './roles/role-manager.js';
 import { McpBridge } from './mcp/bridge.js';
 import { detectNetworkMode } from './mcp/network.js';
@@ -29,7 +30,7 @@ export async function main(): Promise<void> {
     .option('--resume [sessionId]', 'Resume a session')
     .option('--text', 'Use lightweight text mode (default is TUI)')
     .option('--tui', 'Use fullscreen TUI mode (default)')
-    .option('--role <id>', 'Active role (chat, dev, plan, or custom)')
+    .option('--role <id>', 'Active role (hanimo, dev, plan, or custom)')
     .option('--offline', 'Force offline mode (disable online-only MCP servers)')
     .option('--list-sessions', 'List saved sessions')
     .option('--fork <session>', 'Fork a session (format: sessionId[:messageIndex])')
@@ -281,9 +282,18 @@ export async function main(): Promise<void> {
       // Prepare model + tools
       const providerConfig = config.providers?.[config.provider] ?? {};
       const customProviderNames = getCustomProviderNames();
-      const modelInstance = customProviderNames.includes(config.provider)
-        ? getModelForCustomProvider(config.provider, config.model)!
-        : getModel(config.provider as ProviderName, config.model, providerConfig);
+      let modelInstance: LanguageModelV1;
+      if (customProviderNames.includes(config.provider)) {
+        const customModel = getModelForCustomProvider(config.provider, config.model);
+        if (!customModel) {
+          console.error(`❌ Custom provider "${config.provider}" failed to create model "${config.model}".`);
+          console.error('   Check ~/.hanimo/config.json customProviders configuration.');
+          process.exit(1);
+        }
+        modelInstance = customModel;
+      } else {
+        modelInstance = getModel(config.provider as ProviderName, config.model, providerConfig);
+      }
       const systemPrompt = buildSystemPrompt({
         cwd: process.cwd(),
         platform: process.platform,

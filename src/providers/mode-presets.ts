@@ -25,10 +25,9 @@ export interface ModePreset {
   descriptionKo: string;
   icon: string;
   roles: {
-    super: ModelAssignment;
+    hanimo: ModelAssignment;
     dev: ModelAssignment;
     plan: ModelAssignment;
-    chat: ModelAssignment;
   };
 }
 
@@ -174,10 +173,9 @@ export function generatePresets(
     descriptionKo: '최고 성능 — 모든 역할에 가장 큰 모델',
     icon: '🚀',
     roles: {
-      super: toAssignment(pickForRole(analyzed, 'general', 'largest'), 'largest general'),
+      hanimo: toAssignment(pickForRole(analyzed, 'general', 'largest'), 'largest general'),
       dev: toAssignment(pickForRole(analyzed, 'coding', 'largest'), 'largest coding'),
       plan: toAssignment(pickForRole(analyzed, 'reasoning', 'largest'), 'largest reasoning'),
-      chat: toAssignment(pickForRole(analyzed, 'general', 'medium'), 'medium for fast chat'),
     },
   };
 
@@ -190,10 +188,9 @@ export function generatePresets(
     descriptionKo: '성능과 속도의 균형',
     icon: '⚖️',
     roles: {
-      super: toAssignment(pickForRole(analyzed, 'general', 'medium'), 'medium general'),
+      hanimo: toAssignment(pickForRole(analyzed, 'general', 'medium'), 'medium general'),
       dev: toAssignment(pickForRole(analyzed, 'coding', 'medium'), 'medium coding'),
       plan: toAssignment(pickForRole(analyzed, 'reasoning', 'medium'), 'medium reasoning'),
-      chat: toAssignment(pickForRole(analyzed, 'general', 'smallest'), 'small for fast chat'),
     },
   };
 
@@ -206,14 +203,13 @@ export function generatePresets(
     descriptionKo: '최고 속도 — 가장 작고 빠른 모델',
     icon: '🌱',
     roles: {
-      super: toAssignment(pickForRole(analyzed, 'general', 'smallest'), 'smallest general'),
+      hanimo: toAssignment(pickForRole(analyzed, 'general', 'smallest'), 'smallest general'),
       dev: toAssignment(pickForRole(analyzed, 'coding', 'smallest'), 'smallest coding'),
       plan: toAssignment(pickForRole(analyzed, 'general', 'smallest'), 'smallest for plan'),
-      chat: toAssignment(pickForRole(analyzed, 'general', 'smallest'), 'smallest for chat'),
     },
   };
 
-  // Auto: coding model for dev, reasoning for plan, biggest for super, small for chat
+  // Auto: coding model for dev, reasoning for plan, biggest for hanimo
   const auto: ModePreset = {
     id: 'auto',
     name: 'Auto',
@@ -222,10 +218,9 @@ export function generatePresets(
     descriptionKo: '자동 최적화 — 역할별 최적 모델 자동 배정',
     icon: '🐶',
     roles: {
-      super: toAssignment(pickForRole(analyzed, 'general', 'largest'), 'best overall'),
+      hanimo: toAssignment(pickForRole(analyzed, 'general', 'largest'), 'best overall'),
       dev: toAssignment(pickForRole(analyzed, 'coding', 'largest'), 'best coding'),
       plan: toAssignment(pickForRole(analyzed, 'reasoning', 'largest'), 'best reasoning'),
-      chat: toAssignment(pickForRole(analyzed, 'general', 'smallest'), 'fastest for chat'),
     },
   };
 
@@ -241,7 +236,7 @@ function getDefaultPreset(): ModePreset {
     description: 'Default preset (no models discovered)',
     descriptionKo: '기본 프리셋 (모델 미발견)',
     icon: '🐶',
-    roles: { super: fallback, dev: fallback, plan: fallback, chat: fallback },
+    roles: { hanimo: fallback, dev: fallback, plan: fallback },
   };
 }
 
@@ -252,10 +247,9 @@ export function formatPreset(preset: ModePreset, ko: boolean): string {
   const lines = [
     `${preset.icon} ${ko ? preset.nameKo : preset.name} — ${ko ? preset.descriptionKo : preset.description}`,
     '',
-    `  Super:  ${preset.roles.super.model} (${preset.roles.super.reason})`,
+    `  Hanimo: ${preset.roles.hanimo.model} (${preset.roles.hanimo.reason})`,
     `  Dev:    ${preset.roles.dev.model} (${preset.roles.dev.reason})`,
     `  Plan:   ${preset.roles.plan.model} (${preset.roles.plan.reason})`,
-    `  Chat:   ${preset.roles.chat.model} (${preset.roles.chat.reason})`,
   ];
   return lines.join('\n');
 }
