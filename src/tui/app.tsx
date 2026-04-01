@@ -134,6 +134,9 @@ function App({
   // Welcome screen: show until first message is sent
   const [showWelcome, setShowWelcome] = useState(true);
 
+  // Current theme ID (for banner color scheme)
+  const [currentThemeId, setCurrentThemeId] = useState('catppuccin');
+
   // Session store
   const sessionStoreRef = useRef(new SessionStore());
 
@@ -622,6 +625,7 @@ function App({
     themeBeforePreviewRef.current = null; // commit the preview
     const preset = THEME_PRESETS.find((t) => t.id === value);
     if (preset) {
+      setCurrentThemeId(preset.id);
       agent.addSystemMessage(ko ? `테마: ${preset.name} — ${preset.description}` : `Theme: ${preset.name} — ${preset.description}`);
     }
     setMenuState('none');
@@ -813,6 +817,7 @@ function App({
           roleName={currentRole?.name}
           cols={stdout?.columns ?? 80}
           rows={termRows}
+          themeId={currentThemeId}
         />
       ) : (
         <ChatView
