@@ -97,13 +97,13 @@ export async function runAutoLoop(options: AutoLoopOptions): Promise<AutoLoopRes
 
   // Notify user
   if (completed) {
-    await sendNotification('modol', 'Auto mode: task completed ✓');
+    await sendNotification('hanimo', 'Auto mode: task completed ✓');
     bell();
   } else if (paused) {
-    await sendNotification('modol', 'Auto mode: paused (needs input)');
+    await sendNotification('hanimo', 'Auto mode: paused (needs input)');
     bell();
   } else {
-    await sendNotification('modol', `Auto mode: stopped after ${iterations} iterations`);
+    await sendNotification('hanimo', `Auto mode: stopped after ${iterations} iterations`);
     bell();
   }
 

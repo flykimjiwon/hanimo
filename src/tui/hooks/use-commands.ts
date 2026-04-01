@@ -72,7 +72,7 @@ const COMMAND_MAP: Record<string, CommandHandler> = {
         'Available commands:',
         '  /help, /h         Show this help',
         '  /clear            Clear conversation',
-        '  /exit, /quit, /q  Exit modol',
+        '  /exit, /quit, /q  Exit hanimo',
         '  /model, /m [name] Switch model (no arg = show menu)',
         '  /provider, /p [n] Switch provider (no arg = show menu)',
         '  /role [id]        Switch role (no arg = show menu)',
@@ -320,7 +320,7 @@ const COMMAND_MAP: Record<string, CommandHandler> = {
         const fs = require('node:fs');
         const path = require('node:path');
         const os = require('node:os');
-        const configPath = path.join(os.homedir(), '.modol', 'config.json');
+        const configPath = path.join(os.homedir(), '.hanimo', 'config.json');
         const cfg = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
         const currentMode = cfg.modePreset ?? 'auto';
         const assignments = cfg.modeAssignments ?? {};
@@ -350,7 +350,7 @@ const COMMAND_MAP: Record<string, CommandHandler> = {
       const fs = require('node:fs');
       const path = require('node:path');
       const os = require('node:os');
-      const configDir = path.join(os.homedir(), '.modol');
+      const configDir = path.join(os.homedir(), '.hanimo');
       fs.mkdirSync(configDir, { recursive: true });
       const configPath = path.join(configDir, 'config.json');
       let cfg: Record<string, unknown> = {};
@@ -361,7 +361,7 @@ const COMMAND_MAP: Record<string, CommandHandler> = {
       const icons: Record<string, string> = { auto: '🐶', turbo: '🚀', balanced: '⚖️', eco: '🌱' };
       const names: Record<string, string> = { auto: '자동', turbo: '터보', balanced: '균형', eco: '효율' };
       ctx.addSystemMessage(
-        `${icons[modeId]} Mode: ${names[modeId]} (${modeId})\nRestart modol to apply model assignments.\nOr use /mode show to see assignments.`,
+        `${icons[modeId]} Mode: ${names[modeId]} (${modeId})\nRestart hanimo to apply model assignments.\nOr use /mode show to see assignments.`,
       );
     } catch (err: unknown) {
       ctx.addSystemMessage(`Failed to save mode: ${err instanceof Error ? err.message : String(err)}`);
@@ -387,7 +387,7 @@ const COMMAND_MAP: Record<string, CommandHandler> = {
           '  /endpoint remove dgx',
           '  /endpoint list',
           '',
-          'Config file: ~/.modol/config.json (endpoints array)',
+          'Config file: ~/.hanimo/config.json (endpoints array)',
         ].join('\n'),
       );
       return;
@@ -398,7 +398,7 @@ const COMMAND_MAP: Record<string, CommandHandler> = {
         const fs = require('node:fs');
         const path = require('node:path');
         const os = require('node:os');
-        const configPath = path.join(os.homedir(), '.modol', 'config.json');
+        const configPath = path.join(os.homedir(), '.hanimo', 'config.json');
         const cfg = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
         const eps = cfg.endpoints ?? [];
         if (eps.length === 0) {
@@ -427,7 +427,7 @@ const COMMAND_MAP: Record<string, CommandHandler> = {
         const fs = require('node:fs');
         const path = require('node:path');
         const os = require('node:os');
-        const configDir = path.join(os.homedir(), '.modol');
+        const configDir = path.join(os.homedir(), '.hanimo');
         fs.mkdirSync(configDir, { recursive: true });
         const configPath = path.join(configDir, 'config.json');
         let cfg: Record<string, unknown> = {};
@@ -440,7 +440,7 @@ const COMMAND_MAP: Record<string, CommandHandler> = {
         filtered.push(newEp);
         cfg.endpoints = filtered;
         fs.writeFileSync(configPath, JSON.stringify(cfg, null, 2) + '\n', { mode: 0o600 });
-        ctx.addSystemMessage(`✅ Endpoint "${name}" added (${provider} @ ${url})${apiKey ? ' with API key' : ''}\nRestart modol to use new endpoint.`);
+        ctx.addSystemMessage(`✅ Endpoint "${name}" added (${provider} @ ${url})${apiKey ? ' with API key' : ''}\nRestart hanimo to use new endpoint.`);
       } catch (err: unknown) {
         ctx.addSystemMessage(`❌ Failed: ${err instanceof Error ? err.message : String(err)}`);
       }
@@ -457,7 +457,7 @@ const COMMAND_MAP: Record<string, CommandHandler> = {
         const fs = require('node:fs');
         const path = require('node:path');
         const os = require('node:os');
-        const configPath = path.join(os.homedir(), '.modol', 'config.json');
+        const configPath = path.join(os.homedir(), '.hanimo', 'config.json');
         const cfg = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
         const eps = (cfg.endpoints ?? []) as Array<Record<string, unknown>>;
         const before = eps.length;
@@ -467,7 +467,7 @@ const COMMAND_MAP: Record<string, CommandHandler> = {
           return;
         }
         fs.writeFileSync(configPath, JSON.stringify(cfg, null, 2) + '\n', { mode: 0o600 });
-        ctx.addSystemMessage(`✅ Endpoint "${name}" removed.\nRestart modol to apply.`);
+        ctx.addSystemMessage(`✅ Endpoint "${name}" removed.\nRestart hanimo to apply.`);
       } catch (err: unknown) {
         ctx.addSystemMessage(`❌ Failed: ${err instanceof Error ? err.message : String(err)}`);
       }

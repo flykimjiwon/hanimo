@@ -1,6 +1,6 @@
 {
-  // modol 설정 파일
-  // 이 파일을 ~/.modol/config.json 에 복사하여 사용하세요
+  // hanimo (하니모) 설정 파일
+  // 이 파일을 ~/.hanimo/config.json 에 복사하여 사용하세요
 
   // 기본 프로바이더 (openai, anthropic, google, ollama, custom 등)
   "provider": "ollama",

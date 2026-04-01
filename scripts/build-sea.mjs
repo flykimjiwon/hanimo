@@ -2,7 +2,7 @@ import { execSync } from 'node:child_process';
 import { copyFileSync } from 'node:fs';
 import { platform } from 'node:os';
 
-console.log('=== modol single binary builder ===');
+console.log('=== hanimo single binary builder ===');
 
 // 1. Bundle with esbuild
 console.log('[1/3] Bundling with esbuild...');
@@ -16,7 +16,7 @@ execSync('node --experimental-sea-config sea.config.json', { stdio: 'inherit' })
 console.log('[3/3] Creating binary...');
 
 const isWin = platform() === 'win32';
-const binaryName = isWin ? 'dist\\modol.exe' : 'dist/modol';
+const binaryName = isWin ? 'dist\\hanimo.exe' : 'dist/hanimo';
 
 // Copy current node binary
 copyFileSync(process.execPath, binaryName);

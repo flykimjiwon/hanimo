@@ -12,19 +12,19 @@ export interface ProjectContext {
 }
 
 /**
- * Load project instructions from `.modol.md` files.
- * Walks from CWD upward to find all .modol.md files (child overrides parent).
+ * Load project instructions from `.hanimo.md` files.
+ * Walks from CWD upward to find all .hanimo.md files (child overrides parent).
  */
 function loadProjectInstructions(cwd: string): string {
   const parts: string[] = [];
   let dir = cwd;
   const visited = new Set<string>();
 
-  // Walk upward collecting .modol.md files
+  // Walk upward collecting .hanimo.md files
   while (dir && !visited.has(dir)) {
     visited.add(dir);
     try {
-      const content = readFileSync(join(dir, '.modol.md'), 'utf-8').trim();
+      const content = readFileSync(join(dir, '.hanimo.md'), 'utf-8').trim();
       if (content) {
         const label = dir === cwd ? '(project root)' : `(${dir})`;
         parts.unshift(`${label}\n${content}`);
@@ -50,7 +50,7 @@ export function buildSystemPrompt(context: ProjectContext, role?: RoleDefinition
 
   const projectInstructions = loadProjectInstructions(context.cwd);
   const projectSection = projectInstructions
-    ? `\n\n## Project Instructions (.modol.md)\n${projectInstructions}`
+    ? `\n\n## Project Instructions (.hanimo.md)\n${projectInstructions}`
     : '';
 
   const roleSection = role
@@ -65,7 +65,7 @@ export function buildSystemPrompt(context: ProjectContext, role?: RoleDefinition
   const skills = loadSkills();
   const skillsSection = buildSkillsPrompt(skills);
 
-  return `You are modol, a terminal-based AI coding assistant.
+  return `You are hanimo (하니모), a terminal-based AI coding assistant.
 
 ## Capabilities
 - Read, write, and edit files in the project directory

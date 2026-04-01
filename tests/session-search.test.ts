@@ -9,7 +9,7 @@ describe('SessionStore.searchSessions', () => {
   let dir: string;
 
   beforeAll(() => {
-    dir = mkdtempSync(join(tmpdir(), 'modol-test-'));
+    dir = mkdtempSync(join(tmpdir(), 'hanimo-test-'));
     store = new SessionStore(dir);
 
     // Create test sessions

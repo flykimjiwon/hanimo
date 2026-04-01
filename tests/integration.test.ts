@@ -74,7 +74,7 @@ describe('Integration: Role System', () => {
 describe('Integration: System Prompt', () => {
   it('should build prompt with environment info', () => {
     const prompt = buildSystemPrompt({ cwd: '/test', platform: 'darwin' });
-    expect(prompt).toContain('modol');
+    expect(prompt).toContain('hanimo');
     expect(prompt).toContain('/test');
     expect(prompt).toContain('darwin');
     expect(prompt).toContain('Hash-anchored editing');
@@ -84,7 +84,7 @@ describe('Integration: System Prompt', () => {
 
 describe('Integration: Skills', () => {
   it('should return skills dir path', () => {
-    expect(getSkillsDir()).toContain('.modol/skills');
+    expect(getSkillsDir()).toContain('.hanimo/skills');
   });
 
   it('should build skills prompt', () => {
@@ -185,7 +185,7 @@ describe('Integration: Webfetch htmlToText', () => {
 
 describe('Integration: Session Store', () => {
   it('should create, save, search, delete', () => {
-    const dir = mkdtempSync(join(tmpdir(), 'modol-integ-'));
+    const dir = mkdtempSync(join(tmpdir(), 'hanimo-integ-'));
     const store = new SessionStore(dir);
 
     const id = store.createSession('ollama', 'qwen3:8b');

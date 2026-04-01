@@ -6,7 +6,7 @@ await esbuild.build({
   platform: 'node',
   target: 'node20',
   format: 'esm',
-  outfile: 'dist/modol-bundle.mjs',
+  outfile: 'dist/hanimo-bundle.mjs',
   sourcemap: false,
   minify: true,
   // Externalize native addons and packages that don't bundle cleanly.
@@ -32,4 +32,4 @@ await esbuild.build({
   },
 });
 
-console.log('Bundle built: dist/modol-bundle.mjs');
+console.log('Bundle built: dist/hanimo-bundle.mjs');

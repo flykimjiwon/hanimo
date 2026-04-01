@@ -9,7 +9,7 @@ describe('SessionStore', () => {
   let store: SessionStore;
 
   beforeEach(() => {
-    tmpDir = mkdtempSync(join(tmpdir(), 'modol-test-'));
+    tmpDir = mkdtempSync(join(tmpdir(), 'hanimo-test-'));
     store = new SessionStore(tmpDir);
   });
 
@@ -125,7 +125,7 @@ describe('SessionStore', () => {
     const { mkdtempSync } = require('node:fs');
     const { tmpdir } = require('node:os');
     const { join } = require('node:path');
-    const emptyDir = mkdtempSync(join(tmpdir(), 'modol-empty-'));
+    const emptyDir = mkdtempSync(join(tmpdir(), 'hanimo-empty-'));
     const emptyStore = new SessionStore(emptyDir);
     const results = emptyStore.searchSessions('anything');
     expect(results).toEqual([]);

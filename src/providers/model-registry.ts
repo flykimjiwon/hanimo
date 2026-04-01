@@ -34,7 +34,7 @@ interface OpenRouterModel {
   description?: string;
 }
 
-const CACHE_DIR = join(homedir(), '.modol', 'cache');
+const CACHE_DIR = join(homedir(), '.hanimo', 'cache');
 const CACHE_FILE = join(CACHE_DIR, 'model-registry.json');
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
 const OPENROUTER_API = 'https://openrouter.ai/api/v1/models';

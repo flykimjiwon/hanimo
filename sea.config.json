@@ -1,5 +1,5 @@
 {
-  "main": "dist/modol-bundle.mjs",
+  "main": "dist/hanimo-bundle.mjs",
   "output": "dist/sea-prep.blob",
   "disableExperimentalSEAWarning": true,
   "useCodeCache": true

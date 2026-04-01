@@ -1,10 +1,10 @@
 {
-  "name": "modol",
+  "name": "hanimo",
   "version": "0.1.0",
-  "description": "modol — cute terminal-based AI coding assistant",
+  "description": "hanimo (하니모) — cute terminal-based AI coding assistant",
   "type": "module",
   "bin": {
-    "modol": "./bin/modol.js"
+    "hanimo": "./bin/hanimo.js"
   },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",

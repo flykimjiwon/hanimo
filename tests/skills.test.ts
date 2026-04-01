@@ -40,14 +40,14 @@ describe('skills', () => {
   });
 
   describe('getSkillsDir', () => {
-    it('returns a path ending in .modol/skills', () => {
+    it('returns a path ending in .hanimo/skills', () => {
       const dir = getSkillsDir();
-      expect(dir).toMatch(/\.modol[/\\]skills$/);
+      expect(dir).toMatch(/\.hanimo[/\\]skills$/);
     });
   });
 
   describe('loadSkills with temp dir', () => {
-    const tmpSkillsDir = join(tmpdir(), `modol-skills-test-${process.pid}`);
+    const tmpSkillsDir = join(tmpdir(), `hanimo-skills-test-${process.pid}`);
 
     beforeEach(() => {
       mkdirSync(tmpSkillsDir, { recursive: true });

@@ -70,7 +70,7 @@ export const webfetchTool = tool({
 
       const response = await fetch(url, {
         headers: {
-          'User-Agent': 'modol/0.1 (AI coding assistant)',
+          'User-Agent': 'hanimo/0.1 (AI coding assistant)',
           Accept: 'text/html,application/xhtml+xml,text/plain,application/json',
         },
         signal: AbortSignal.timeout(TIMEOUT_MS),

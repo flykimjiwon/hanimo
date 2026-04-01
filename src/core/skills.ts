@@ -1,12 +1,12 @@
 /**
  * Skills System — load markdown knowledge files into system prompt
- * Files in ~/.modol/skills/*.md are auto-loaded
+ * Files in ~/.hanimo/skills/*.md are auto-loaded
  */
 import { readFileSync, readdirSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { homedir } from 'node:os';
 
-const SKILLS_DIR = join(homedir(), '.modol', 'skills');
+const SKILLS_DIR = join(homedir(), '.hanimo', 'skills');
 
 export interface Skill {
   id: string;        // filename without .md

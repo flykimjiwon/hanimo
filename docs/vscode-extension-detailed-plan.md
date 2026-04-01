@@ -1,4 +1,4 @@
-# modol VS Code Extension - Implementation Plan
+# hanimo VS Code Extension - Implementation Plan
 
 **Created:** 2026-03-27
 **Status:** Draft - Awaiting Confirmation
@@ -21,11 +21,11 @@
 
 ## 1. Architecture Decision
 
-### Decision: Monorepo with `@modol/core` Package Extraction
+### Decision: Monorepo with `@hanimo/core` Package Extraction
 
 **Why monorepo, not separate repo:**
-- modol is pre-1.0 and rapidly changing. Separate repos create version drift nightmares.
-- A single `pnpm workspace` lets the extension import `@modol/core` without publishing to npm.
+- hanimo is pre-1.0 and rapidly changing. Separate repos create version drift nightmares.
+- A single `pnpm workspace` lets the extension import `@hanimo/core` without publishing to npm.
 - Single CI pipeline, single PR for cross-cutting changes.
 
 **Why not "just import from CLI":**
@@ -35,13 +35,13 @@
 ### Monorepo Structure
 
 ```
-modol/                              # Root (was dev_anywhere/)
+hanimo/                              # Root (was dev_anywhere/)
   pnpm-workspace.yaml
   package.json                      # Root workspace scripts
   tsconfig.base.json                # Shared compiler options
 
   packages/
-    core/                           # @modol/core - headless engine
+    core/                           # @hanimo/core - headless engine
       package.json
       tsconfig.json
       src/
@@ -95,13 +95,13 @@ modol/                              # Root (was dev_anywhere/)
           client.ts                 # FROM src/mcp/client.ts
           network.ts                # FROM src/mcp/network.ts
 
-    cli/                            # @modol/cli - terminal interface
-      package.json                  # depends on @modol/core
+    cli/                            # @hanimo/cli - terminal interface
+      package.json                  # depends on @hanimo/core
       tsconfig.json
       bin/
-        modol                       # FROM bin/modol
+        hanimo                       # FROM bin/hanimo
       src/
-        cli.ts                      # FROM src/cli.ts (imports from @modol/core)
+        cli.ts                      # FROM src/cli.ts (imports from @hanimo/core)
         text-mode.ts                # FROM src/text-mode.ts
         onboarding.ts               # FROM src/onboarding.ts
         tui/                        # FROM src/tui/ (entire directory)
@@ -111,12 +111,12 @@ modol/                              # Root (was dev_anywhere/)
           components/
           hooks/
 
-    vscode/                         # @modol/vscode - VS Code extension
+    vscode/                         # @hanimo/vscode - VS Code extension
       package.json                  # VS Code extension manifest
       tsconfig.json
       src/
         extension.ts                # Activation entry point
-        modol-service.ts            # Wraps @modol/core for extension host
+        hanimo-service.ts            # Wraps @hanimo/core for extension host
         terminal-panel.ts           # Phase 1: embedded terminal
         sidebar-provider.ts         # Phase 2: webview sidebar
         inline-provider.ts          # Phase 3: inline completions
@@ -144,7 +144,7 @@ modol/                              # Root (was dev_anywhere/)
 
 ### Module Classification
 
-| Module | Goes to `@modol/core` | Why |
+| Module | Goes to `@hanimo/core` | Why |
 |--------|----------------------|-----|
 | `agent-loop.ts` | Yes | Headless, no UI dependency |
 | `types.ts` | Yes | Shared types |

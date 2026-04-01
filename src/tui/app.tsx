@@ -291,8 +291,8 @@ function App({
       if (!isLocal && !providerConfig?.apiKey) {
         agent.addSystemMessage(
           `⚠️ ${name} requires an API key.\n` +
-          `Set with: modol --provider ${name} --api-key YOUR_KEY\n` +
-          `Or add to ~/.modol/config.json:\n` +
+          `Set with: hanimo --provider ${name} --api-key YOUR_KEY\n` +
+          `Or add to ~/.hanimo/config.json:\n` +
           `  "providers": { "${name}": { "apiKey": "..." } }`,
         );
         return;
@@ -656,8 +656,8 @@ function App({
       case 'endpoint':
         agent.addSystemMessage(
           ko
-            ? '엔드포인트 관리:\n  /endpoint list                          등록된 엔드포인트 목록\n  /endpoint add <이름> <프로바이더> <URL> [API키]\n  /endpoint remove <이름>\n\n예시:\n  /endpoint add local ollama http://localhost:11434\n  /endpoint add openai-api openai https://api.openai.com/v1 sk-...\n  /endpoint add remote ollama http://192.168.1.100:11434\n\n또는 CLI에서:\n  modol --base-url <url> --api-key <key> --model <name>'
-            : 'Endpoint management:\n  /endpoint list                          Show registered endpoints\n  /endpoint add <name> <provider> <url> [apiKey]\n  /endpoint remove <name>\n\nExamples:\n  /endpoint add local ollama http://localhost:11434\n  /endpoint add openai-api openai https://api.openai.com/v1 sk-...\n  /endpoint add remote ollama http://192.168.1.100:11434\n\nOr from CLI:\n  modol --base-url <url> --api-key <key> --model <name>',
+            ? '엔드포인트 관리:\n  /endpoint list                          등록된 엔드포인트 목록\n  /endpoint add <이름> <프로바이더> <URL> [API키]\n  /endpoint remove <이름>\n\n예시:\n  /endpoint add local ollama http://localhost:11434\n  /endpoint add openai-api openai https://api.openai.com/v1 sk-...\n  /endpoint add remote ollama http://192.168.1.100:11434\n\n또는 CLI에서:\n  hanimo --base-url <url> --api-key <key> --model <name>'
+            : 'Endpoint management:\n  /endpoint list                          Show registered endpoints\n  /endpoint add <name> <provider> <url> [apiKey]\n  /endpoint remove <name>\n\nExamples:\n  /endpoint add local ollama http://localhost:11434\n  /endpoint add openai-api openai https://api.openai.com/v1 sk-...\n  /endpoint add remote ollama http://192.168.1.100:11434\n\nOr from CLI:\n  hanimo --base-url <url> --api-key <key> --model <name>',
         );
         setMenuState('none');
         break;
@@ -671,11 +671,11 @@ function App({
           const fs = require('node:fs');
           const path = require('node:path');
           const os = require('node:os');
-          const configPath = path.join(os.homedir(), '.modol', 'config.json');
+          const configPath = path.join(os.homedir(), '.hanimo', 'config.json');
           fs.writeFileSync(configPath, JSON.stringify({ provider: 'ollama', model: 'qwen3:8b' }, null, 2) + '\n', { mode: 0o600 });
           agent.addSystemMessage(ko
-            ? '✅ 설정이 초기화되었습니다. modol을 재시작하세요.'
-            : '✅ All settings reset to defaults. Restart modol to apply.',
+            ? '✅ 설정이 초기화되었습니다. hanimo를 재시작하세요.'
+            : '✅ All settings reset to defaults. Restart hanimo to apply.',
           );
         } catch (err: unknown) {
           agent.addSystemMessage(`❌ ${err instanceof Error ? err.message : String(err)}`);

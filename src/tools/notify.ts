@@ -31,7 +31,7 @@ export async function sendNotification(
         '[Windows.UI.Notifications.ToastNotificationManager, Windows.UI.Notifications, ContentType = WindowsRuntime] | Out-Null;',
         '$t = [Windows.UI.Notifications.ToastNotificationManager]::GetTemplateContent(0);',
         `$t.GetElementsByTagName('text')[0].AppendChild($t.CreateTextNode('${safeTitle}: ${safeMessage}')) | Out-Null;`,
-        `[Windows.UI.Notifications.ToastNotificationManager]::CreateToastNotifier('modol').Show([Windows.UI.Notifications.ToastNotification]::new($t))`,
+        `[Windows.UI.Notifications.ToastNotificationManager]::CreateToastNotifier('hanimo').Show([Windows.UI.Notifications.ToastNotification]::new($t))`,
         '"',
       ].join(' ');
       await execaCommand(ps, { shell: true, timeout: 5000, reject: false });

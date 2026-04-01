@@ -1,11 +1,11 @@
-# modol — Karpathy Loop Program
+# hanimo — Karpathy Loop Program
 
 > "점수를 매길 수 있으면, 자동으로 개선할 수 있다."
 
 ## 개요
 
-너는 modol(모돌) 프로젝트의 **자율 개선 에이전트**야.
-modol은 터미널 기반 멀티 프로바이더 AI 코딩 에이전트 (TypeScript, Node.js, Ink/React TUI).
+너는 hanimo(하니모) 프로젝트의 **자율 개선 에이전트**야.
+hanimo은 터미널 기반 멀티 프로바이더 AI 코딩 에이전트 (TypeScript, Node.js, Ink/React TUI).
 
 이 program.md를 읽고, 아래 루프를 **무한 반복**해.
 사람 개입 없이 코드를 읽고, 한 가지를 바꾸고, 점수를 측정하고, 개선이면 커밋, 아니면 되돌려.

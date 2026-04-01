@@ -111,7 +111,7 @@ export const StatusBar = React.memo(function StatusBar({
       >
         <Box>
           <Text bold color={colors.model}>
-            modol
+            hanimo
           </Text>
           <Text color={colors.dimText}> {'\u2502'} </Text>
           <Text color={colors.provider}>{provider}</Text>

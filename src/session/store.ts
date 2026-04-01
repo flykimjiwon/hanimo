@@ -7,7 +7,7 @@ import { randomUUID } from 'node:crypto';
 import type { Session, SessionMessage } from './types.js';
 
 // JSON file-based session storage (no native dependencies)
-// Layout: ~/.modol/sessions/<id>.json
+// Layout: ~/.hanimo/sessions/<id>.json
 
 interface SessionData {
   id: string;
@@ -27,7 +27,7 @@ export class SessionStore {
   private dir: string;
 
   constructor(dirPath?: string) {
-    this.dir = dirPath ?? join(homedir(), '.modol', 'sessions');
+    this.dir = dirPath ?? join(homedir(), '.hanimo', 'sessions');
     mkdirSync(this.dir, { recursive: true });
   }
 

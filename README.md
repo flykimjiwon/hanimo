@@ -1,16 +1,16 @@
-# modol 🐶
+# hanimo 🐶
 
 > **Terminal AI coding agent — works with any LLM, cloud or local.**
 
 [한국어](README.ko.md) · [GitHub](https://github.com/flykimjiwon/dev_anywhere)
 
-Named after **modol** (모돌), a fluffy white mini bichon dog — small, smart, and always ready to help.
+Named after **하니스모돌** — harness + modol (모돌), a fluffy white mini bichon dog — small, smart, and always ready to help.
 
 ---
 
-## What is modol?
+## What is hanimo?
 
-modol is a lightweight, terminal-based AI coding agent. Think Claude Code or Cursor, but **provider-agnostic** and **local-model-first**.
+hanimo is a lightweight, terminal-based AI coding agent. Think Claude Code or Cursor, but **provider-agnostic** and **local-model-first**.
 
 - **14 LLM providers** — OpenAI, Anthropic, Google, DeepSeek, Groq, Ollama, vLLM, LM Studio, and more
 - **16 built-in tools** — file editing, shell execution, git, web fetch, diagnostics, and more
@@ -31,13 +31,13 @@ Download the latest release for your OS from [GitHub Releases](https://github.co
 
 | OS | File | Install |
 |----|------|---------|
-| **macOS (Apple Silicon)** | `modol-macos-arm64` | `chmod +x modol-macos-arm64 && mv modol-macos-arm64 /usr/local/bin/modol` |
-| **Linux (x64)** | `modol-linux-x64` | `chmod +x modol-linux-x64 && sudo mv modol-linux-x64 /usr/local/bin/modol` |
-| **Windows (x64)** | `modol-windows-x64.exe` | Add to PATH or run directly |
+| **macOS (Apple Silicon)** | `hanimo-macos-arm64` | `chmod +x hanimo-macos-arm64 && mv hanimo-macos-arm64 /usr/local/bin/hanimo` |
+| **Linux (x64)** | `hanimo-linux-x64` | `chmod +x hanimo-linux-x64 && sudo mv hanimo-linux-x64 /usr/local/bin/hanimo` |
+| **Windows (x64)** | `hanimo-windows-x64.exe` | Add to PATH or run directly |
 
 Then just run:
 ```bash
-modol
+hanimo
 ```
 
 ### Option B: Install from source (Node.js required)
@@ -61,7 +61,7 @@ npm run dev
 
 # Or install globally
 npm link
-modol
+hanimo
 ```
 
 ### First run with Ollama (free, offline)
@@ -75,8 +75,8 @@ curl -fsSL https://ollama.com/install.sh | sh   # Linux
 # 2. Pull a model
 ollama pull qwen3:8b
 
-# 3. Start modol
-modol --provider ollama --model qwen3:8b
+# 3. Start hanimo
+hanimo --provider ollama --model qwen3:8b
 ```
 
 ### First run with OpenAI
@@ -85,8 +85,8 @@ modol --provider ollama --model qwen3:8b
 # Set your API key
 export OPENAI_API_KEY="sk-..."
 
-# Start modol
-modol --provider openai --model gpt-4o-mini
+# Start hanimo
+hanimo --provider openai --model gpt-4o-mini
 ```
 
 ---
@@ -114,7 +114,7 @@ modol --provider openai --model gpt-4o-mini
 
 ## Tools (16)
 
-modol gives the AI agent 16 built-in tools:
+hanimo gives the AI agent 16 built-in tools:
 
 ### Core File Operations
 | Tool | Description |
@@ -180,7 +180,7 @@ The agent loops automatically: reads code → makes changes → runs diagnostics
 
 ### Smart Context Compaction
 
-When conversations get long (40+ messages), modol uses the LLM to summarize earlier context instead of just truncating. This preserves the task goal, completed work, and current state.
+When conversations get long (40+ messages), hanimo uses the LLM to summarize earlier context instead of just truncating. This preserves the task goal, completed work, and current state.
 
 ### LSP Diagnostics
 
@@ -200,7 +200,7 @@ Runs `tsc --noEmit` + ESLint and returns structured results. The agent can read 
 /search auth              # Search sessions by keyword
 ```
 
-Sessions are stored as JSON files in `~/.modol/sessions/`.
+Sessions are stored as JSON files in `~/.hanimo/sessions/`.
 
 ### Role System
 
@@ -212,14 +212,14 @@ Three built-in roles control tool access:
 | **plan** (Assistant) | Read-only (8 tools) | Code review, analysis |
 | **chat** (Chat) | No tools | General conversation |
 
-modol auto-detects the right role based on model capabilities (e.g., small Ollama models get Chat role).
+hanimo auto-detects the right role based on model capabilities (e.g., small Ollama models get Chat role).
 
 ### MCP Support
 
-modol supports Model Context Protocol (MCP) for extending tools:
+hanimo supports Model Context Protocol (MCP) for extending tools:
 
 ```json
-// ~/.modol/config.json
+// ~/.hanimo/config.json
 {
   "mcp": {
     "servers": {
@@ -239,11 +239,11 @@ Supports both **stdio** and **SSE** transports. Servers tagged `onlineOnly` are 
 
 ## Configuration
 
-### Config file: `~/.modol/config.json`
+### Config file: `~/.hanimo/config.json`
 
 Copy the example config to get started:
 ```bash
-cp config.example.jsonc ~/.modol/config.json
+cp config.example.jsonc ~/.hanimo/config.json
 ```
 
 ```json
@@ -291,9 +291,9 @@ Connect any OpenAI-compatible API server by adding to `customProviders` in your 
 
 Custom providers appear in the `/provider` menu and support model discovery. See `config.example.jsonc` for more examples.
 
-### Project instructions: `.modol.md`
+### Project instructions: `.hanimo.md`
 
-Create a `.modol.md` file in your project root to give the AI context:
+Create a `.hanimo.md` file in your project root to give the AI context:
 
 ```markdown
 # Project: My App
@@ -304,7 +304,7 @@ Create a `.modol.md` file in your project root to give the AI context:
 - Database: PostgreSQL with Drizzle ORM
 ```
 
-modol walks up from CWD to find all `.modol.md` files — great for monorepos with per-package instructions.
+hanimo walks up from CWD to find all `.hanimo.md` files — great for monorepos with per-package instructions.
 
 ### Environment variables
 
@@ -320,11 +320,11 @@ GROQ_API_KEY=gsk_...           # Groq
 
 ## Multi-Endpoint System
 
-modol can connect to **multiple LLM servers simultaneously** and automatically discover available models from each.
+hanimo can connect to **multiple LLM servers simultaneously** and automatically discover available models from each.
 
 ### Setting up endpoints
 
-#### Method 1: TUI commands (inside modol)
+#### Method 1: TUI commands (inside hanimo)
 
 ```bash
 # Add endpoints
@@ -341,7 +341,7 @@ modol can connect to **multiple LLM servers simultaneously** and automatically d
 
 #### Method 2: Edit config file directly
 
-Edit `~/.modol/config.json`:
+Edit `~/.hanimo/config.json`:
 
 ```json
 {
@@ -387,7 +387,7 @@ Edit `~/.modol/config.json`:
 
 ### How it works
 
-- **Auto-discovery**: modol queries each endpoint for available models (Ollama: `/api/tags`, others: `/v1/models`)
+- **Auto-discovery**: hanimo queries each endpoint for available models (Ollama: `/api/tags`, others: `/v1/models`)
 - **Single endpoint**: Model uses that endpoint directly
 - **Same model on multiple endpoints**: Round-robin load balancing, sorted by priority
 - **Endpoint offline**: Silently skipped, other endpoints continue working
@@ -396,10 +396,10 @@ Edit `~/.modol/config.json`:
 
 ```bash
 # Export config (API keys masked for cloud, kept for local)
-modol --share-config
+hanimo --share-config
 
 # Team member imports
-modol --import-config modol-shared.json
+hanimo --import-config hanimo-shared.json
 # Then add their own API keys for cloud providers
 ```
 
@@ -435,16 +435,16 @@ modol --import-config modol-shared.json
 | `/clear` | Clear conversation |
 | `/save` | Save session |
 | `/load` | Load session |
-| `/exit` | Exit modol |
+| `/exit` | Exit hanimo |
 
 ---
 
 ## Multi-Agent Orchestration
 
-modol supports multi-agent mode for complex tasks:
+hanimo supports multi-agent mode for complex tasks:
 
 ```json
-// ~/.modol/config.json
+// ~/.hanimo/config.json
 {
   "subAgents": {
     "enabled": true,
@@ -460,7 +460,7 @@ The orchestrator decomposes tasks into subtasks, executes them in parallel with 
 
 ## Security
 
-modol has layered security:
+hanimo has layered security:
 
 1. **Path sandboxing** — file ops blocked outside project directory
 2. **Sensitive file protection** — `.ssh`, `.aws`, `.env`, `*.key`, `*.pem`, `credentials.*` always blocked
@@ -471,7 +471,7 @@ modol has layered security:
 
 ## Karpathy Loop (Autonomous Research)
 
-modol includes a `program.md` for running [Karpathy Loop](https://github.com/karpathy/autoresearch) style experiments:
+hanimo includes a `program.md` for running [Karpathy Loop](https://github.com/karpathy/autoresearch) style experiments:
 
 ```bash
 cd your-project
@@ -524,8 +524,8 @@ npm run format
 
 ## Comparison
 
-| Feature | modol | Claude Code | Cursor | Aider |
-|---------|:-----:|:-----------:|:------:|:-----:|
+| Feature | hanimo | Claude Code | Cursor | Aider |
+|---------|:------:|:-----------:|:------:|:-----:|
 | Open source | Yes | No | No | Yes |
 | Local models | 4 providers | No | No | Yes |
 | Cloud providers | 10 | 1 | 2 | 5 |
@@ -543,7 +543,7 @@ npm run format
 - [ ] Plugin system for third-party tools
 - [ ] VS Code extension
 - [ ] Web UI dashboard
-- [ ] modol.app ecosystem integration (ModolAI, ModolRAG)
+- [ ] hanimo.app ecosystem integration (HanimoAI, HanimoRAG)
 - [ ] Agent swarm mode (multiple agents collaborating)
 
 ---
@@ -555,5 +555,5 @@ MIT
 ---
 
 <p align="center">
-  Built with love by <a href="https://github.com/flykimjiwon">김지원</a> and modol 🐶
+  Built with love by <a href="https://github.com/flykimjiwon">김지원</a> and hanimo 🐶
 </p>

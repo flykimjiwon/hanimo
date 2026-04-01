@@ -1,4 +1,4 @@
-# modol 스킬 & 지식 시스템 가이드
+# hanimo 스킬 & 지식 시스템 가이드
 
 > 저사양 모델에 지식을 주입하여 고사양 모델 수준의 성능을 달성하는 방법
 
@@ -48,13 +48,13 @@ qwen3:8b가 아는 것:        Claude Opus가 아는 것:
 ### 문서 주입 후
 
 ```
-qwen3:8b + .modol.md + skills:
+qwen3:8b + .hanimo.md + skills:
 ├── Python 기본 문법
 ├── 일반적인 패턴
 ├── Next.js 15 App Router 세부 설정  ← skills에서
 ├── Drizzle ORM 마이그레이션 패턴     ← skills에서
 ├── Tailwind v4 변경사항              ← skills에서
-└── 프로젝트 특화 규칙               ← .modol.md에서
+└── 프로젝트 특화 규칙               ← .hanimo.md에서
 ```
 
 ### 측정된 효과 (연구 기반)
@@ -68,11 +68,11 @@ qwen3:8b + .modol.md + skills:
 
 ---
 
-## 3. modol에 적용하는 방법
+## 3. hanimo에 적용하는 방법
 
-### 계층 1: 프로젝트 지식 — `.modol.md`
+### 계층 1: 프로젝트 지식 — `.hanimo.md`
 
-프로젝트 루트에 `.modol.md` 파일을 만들면 자동으로 시스템 프롬프트에 주입됩니다.
+프로젝트 루트에 `.hanimo.md` 파일을 만들면 자동으로 시스템 프롬프트에 주입됩니다.
 
 ```markdown
 # 프로젝트: My App
@@ -90,14 +90,14 @@ qwen3:8b + .modol.md + skills:
 - 커밋: conventional commits 형식
 ```
 
-모노레포의 경우 각 패키지에 `.modol.md`를 넣으면 상위까지 모두 수집됩니다.
+모노레포의 경우 각 패키지에 `.hanimo.md`를 넣으면 상위까지 모두 수집됩니다.
 
-### 계층 2: 프레임워크 스킬 — `~/.modol/skills/` (계획 중)
+### 계층 2: 프레임워크 스킬 — `~/.hanimo/skills/` (계획 중)
 
 재사용 가능한 프레임워크/라이브러리 지식 파일:
 
 ```
-~/.modol/skills/
+~/.hanimo/skills/
 ├── nextjs15.md          # Next.js 15 변경사항, App Router 패턴
 ├── drizzle-orm.md       # Drizzle 마이그레이션, 쿼리 패턴
 ├── tailwind-v4.md       # v3→v4 마이그레이션, @theme 사용법
@@ -136,7 +136,7 @@ qwen3:8b + .modol.md + skills:
 
 ```
 사용자: Drizzle ORM의 마이그레이션 방법 알려줘
-modol: → webfetch https://orm.drizzle.team/docs/migrations
+hanimo: → webfetch https://orm.drizzle.team/docs/migrations
        → 최신 정보로 답변
 ```
 
@@ -145,7 +145,7 @@ modol: → webfetch https://orm.drizzle.team/docs/migrations
 ## 4. 권장 구성
 
 ```
-~/.modol/
+~/.hanimo/
 ├── config.json          # 프로바이더/엔드포인트 설정
 ├── skills/              # 프레임워크/라이브러리 지식 (전역)
 │   ├── nextjs15.md
@@ -156,7 +156,7 @@ modol: → webfetch https://orm.drizzle.team/docs/migrations
     └── senior-dev.json
 
 프로젝트/
-├── .modol.md            # 프로젝트 특화 규칙 (자동 로드)
+├── .hanimo.md            # 프로젝트 특화 규칙 (자동 로드)
 └── src/
 ```
 
@@ -166,7 +166,7 @@ modol: → webfetch https://orm.drizzle.team/docs/migrations
 
 > "측정할 수 있으면 개선할 수 있다" — Karpathy
 
-> "문서로 넣을 수 있으면 모델이 알 수 있다" — modol 원칙
+> "문서로 넣을 수 있으면 모델이 알 수 있다" — hanimo 원칙
 
 저사양 모델 + 좋은 문서 = 고사양 모델의 80% 성능을 10% 비용으로.
 
@@ -174,8 +174,8 @@ modol: → webfetch https://orm.drizzle.team/docs/migrations
 
 ## 6. 다음 단계 (개발 예정)
 
-- [ ] `~/.modol/skills/` 디렉토리 자동 로드
+- [ ] `~/.hanimo/skills/` 디렉토리 자동 로드
 - [ ] `/skill add <url>` — 공식 문서 URL에서 스킬 파일 자동 생성
 - [ ] `/skill list` — 로드된 스킬 목록
 - [ ] 스킬 버전 관리 (최신 문서로 자동 업데이트)
-- [ ] 커뮤니티 스킬 공유 (modol.app/skills)
+- [ ] 커뮤니티 스킬 공유 (hanimo.app/skills)

@@ -51,19 +51,19 @@ function getEnvOverrides(): Record<string, unknown> {
   const overrides: Record<string, unknown> = {};
   const providerOverrides: Record<string, Record<string, string>> = {};
 
-  // Explicit modol env vars
-  const provider = process.env['MODOL_PROVIDER'];
+  // Explicit hanimo env vars (MODOL_ kept for backwards compat)
+  const provider = process.env['HANIMO_PROVIDER'] ?? process.env['MODOL_PROVIDER'];
   if (provider) {
     overrides['provider'] = provider;
   }
 
-  const model = process.env['MODOL_MODEL'];
+  const model = process.env['HANIMO_MODEL'] ?? process.env['MODOL_MODEL'];
   if (model) {
     overrides['model'] = model;
   }
 
-  const baseURL = process.env['MODOL_BASE_URL'];
-  const apiKey = process.env['MODOL_API_KEY'];
+  const baseURL = process.env['HANIMO_BASE_URL'] ?? process.env['MODOL_BASE_URL'];
+  const apiKey = process.env['HANIMO_API_KEY'] ?? process.env['MODOL_API_KEY'];
 
   if (baseURL || apiKey) {
     const p = (provider ?? DEFAULT_CONFIG.provider) as string;
@@ -117,16 +117,16 @@ export async function loadConfig(cwd?: string): Promise<Config> {
     unknown
   >;
 
-  // Layer 2: User config (~/.modol/config.json)
-  const userConfigPath = join(homedir(), '.modol', 'config.json');
+  // Layer 2: User config (~/.hanimo/config.json)
+  const userConfigPath = join(homedir(), '.hanimo', 'config.json');
   const userConfig = await readJsonFile(userConfigPath);
   if (userConfig) {
     merged = deepMerge(merged, userConfig);
   }
 
-  // Layer 3: Project config (<cwd>/.modol.json)
+  // Layer 3: Project config (<cwd>/.hanimo.json)
   const projectDir = cwd ?? process.cwd();
-  const projectConfigPath = join(projectDir, '.modol.json');
+  const projectConfigPath = join(projectDir, '.hanimo.json');
   const projectConfig = await readJsonFile(projectConfigPath);
   if (projectConfig) {
     merged = deepMerge(merged, projectConfig);
