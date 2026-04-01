@@ -353,6 +353,7 @@ export async function main(): Promise<void> {
           roleManager,
           activeRole,
           networkMode,
+          streaming: config.streaming,
         });
         return;
       }
@@ -373,6 +374,7 @@ export async function main(): Promise<void> {
           roleManager,
           activeRole,
           networkMode,
+          streaming: config.streaming,
         });
       } catch {
         console.log('[TUI unavailable — falling back to text mode]');
@@ -388,6 +390,7 @@ export async function main(): Promise<void> {
           roleManager,
           activeRole,
           networkMode,
+          streaming: config.streaming,
         });
       }
     });

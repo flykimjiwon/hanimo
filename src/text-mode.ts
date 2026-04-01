@@ -178,6 +178,7 @@ interface TextModeOptions {
   roleManager?: RoleManager;
   activeRole?: RoleDefinition;
   networkMode?: string;
+  streaming?: boolean;
 }
 
 // Quick connection + model verification + warmup
@@ -881,6 +882,7 @@ export async function startTextMode(options: TextModeOptions): Promise<void> {
         maxSteps: toolsEnabled ? (options.maxSteps ?? 25) : 1,
         onEvent,
         abortSignal: abortController.signal,
+        streaming: options.streaming ?? true,
       });
       debug('response length:', result.response.length, '| gotToken:', gotToken);
       if (result.response) {

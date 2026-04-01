@@ -1,4 +1,4 @@
-import { streamText } from 'ai';
+import { streamText, generateText } from 'ai';
 import type {
   AgentLoopOptions,
   AgentLoopResult,
@@ -91,6 +91,7 @@ export async function runAgentLoop(
     maxSteps = 25,
     onEvent,
     abortSignal,
+    streaming = true,
   } = options;
 
   // Warm pricing cache for this model
@@ -122,6 +123,79 @@ export async function runAgentLoop(
     contextMessages = updatedMessages;
   }
 
+  // Non-streaming mode: use generateText for servers that don't support SSE
+  if (!streaming) {
+    try {
+      let result;
+      try {
+        result = await generateText({
+          model,
+          system: systemPrompt,
+          messages: contextMessages,
+          tools,
+          maxSteps,
+          abortSignal,
+        });
+      } catch (toolErr) {
+        // Retry without tools if server doesn't support function calling
+        const msg = toolErr instanceof Error ? toolErr.message : String(toolErr);
+        if (tools && (msg.includes('400') || msg.includes('Bad Request') || msg.includes('not support'))) {
+          emit({ type: 'token', content: '[tools not supported by this model — running without tools]\n' });
+          result = await generateText({
+            model,
+            system: systemPrompt,
+            messages: contextMessages,
+            maxSteps: 1,
+            abortSignal,
+          });
+        } else {
+          throw toolErr;
+        }
+      }
+
+      fullResponse = result.text;
+      emit({ type: 'token', content: fullResponse });
+
+      if (result.usage) {
+        totalUsage.promptTokens = result.usage.promptTokens || 0;
+        totalUsage.completionTokens = result.usage.completionTokens || 0;
+        totalUsage.totalTokens = result.usage.totalTokens || 0;
+      }
+
+      if (result.toolCalls && result.toolCalls.length > 0) {
+        for (const call of result.toolCalls) {
+          emit({ type: 'tool-call', toolName: call.toolName, args: call.args as Record<string, unknown> });
+        }
+      }
+
+      if (result.toolResults && result.toolResults.length > 0) {
+        for (const tr of result.toolResults) {
+          const trRecord = tr as Record<string, unknown>;
+          emit({
+            type: 'tool-result',
+            toolName: String(trRecord['toolName'] ?? 'unknown'),
+            result: typeof trRecord['result'] === 'string' ? trRecord['result'] : JSON.stringify(trRecord['result']),
+            isError: false,
+          });
+        }
+      }
+
+      if (fullResponse) {
+        updatedMessages.push({ role: 'assistant', content: fullResponse });
+      }
+
+      emit({ type: 'done', response: fullResponse, usage: totalUsage });
+      return { response: fullResponse, usage: totalUsage, messages: updatedMessages };
+    } catch (error) {
+      const err = error instanceof Error ? error : new Error(String(error));
+      if (err.name !== 'AbortError') {
+        emit({ type: 'error', error: err });
+      }
+      throw err;
+    }
+  }
+
+  // Streaming mode (default)
   try {
     const result = streamText({
       model,
@@ -212,6 +286,38 @@ export async function runAgentLoop(
     };
   } catch (error) {
     const err = error instanceof Error ? error : new Error(String(error));
+
+    // Retry without tools if server doesn't support function calling
+    if (tools && err.name !== 'AbortError' &&
+        (err.message.includes('400') || err.message.includes('Bad Request') || err.message.includes('not support'))) {
+      emit({ type: 'token', content: '[tools not supported by this model — running without tools]\n' });
+      try {
+        const fallback = await generateText({
+          model,
+          system: systemPrompt,
+          messages: contextMessages,
+          maxSteps: 1,
+          abortSignal,
+        });
+        fullResponse = fallback.text;
+        emit({ type: 'token', content: fullResponse });
+        if (fallback.usage) {
+          totalUsage.promptTokens = fallback.usage.promptTokens || 0;
+          totalUsage.completionTokens = fallback.usage.completionTokens || 0;
+          totalUsage.totalTokens = fallback.usage.totalTokens || 0;
+        }
+        if (fullResponse) {
+          updatedMessages.push({ role: 'assistant', content: fullResponse });
+        }
+        emit({ type: 'done', response: fullResponse, usage: totalUsage });
+        return { response: fullResponse, usage: totalUsage, messages: updatedMessages };
+      } catch (fallbackErr) {
+        const fbErr = fallbackErr instanceof Error ? fallbackErr : new Error(String(fallbackErr));
+        emit({ type: 'error', error: fbErr });
+        throw fbErr;
+      }
+    }
+
     // Don't emit error for abort — caller handles AbortError separately
     if (err.name !== 'AbortError') {
       emit({ type: 'error', error: err });

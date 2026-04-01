@@ -44,6 +44,7 @@ export interface AgentLoopOptions {
   maxSteps?: number;
   onEvent?: (event: AgentEvent) => void;
   abortSignal?: AbortSignal;
+  streaming?: boolean;  // default: true. Set false for servers that don't support SSE streaming
 }
 
 export interface AgentLoopResult {

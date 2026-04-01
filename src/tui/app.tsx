@@ -901,6 +901,7 @@ export interface StartAppOptions {
   roleManager?: RoleManager;
   activeRole?: RoleDefinition;
   networkMode?: string;
+  streaming?: boolean;
 }
 
 export function startApp(options: StartAppOptions): void {

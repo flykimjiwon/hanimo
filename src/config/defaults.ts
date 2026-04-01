@@ -6,6 +6,7 @@ export const DEFAULT_CONFIG: Config = {
   providers: undefined,
   maxWorkers: 4,
   maxSteps: 25,
+  streaming: true,
   shell: {
     timeout: 30000,
     requireApproval: true,
