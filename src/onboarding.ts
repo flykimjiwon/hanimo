@@ -461,6 +461,7 @@ async function selectModel(
 interface SavedConfig {
   provider: string;
   model: string;
+  streaming?: boolean;
   providers: Record<string, { apiKey?: string; baseURL?: string }>;
 }
 
@@ -689,9 +690,12 @@ export async function runOnboarding(): Promise<void> {
   rl.close();
 
   // Save config
+  // Local/custom providers often don't support SSE streaming reliably
+  const localProviders = new Set(['ollama', 'vllm', 'lmstudio', 'custom']);
   const savedConfig: SavedConfig = {
     provider,
     model,
+    ...(localProviders.has(provider) ? { streaming: false } : {}),
     providers: {},
   };
 

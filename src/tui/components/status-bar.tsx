@@ -94,6 +94,10 @@ export const StatusBar = React.memo(function StatusBar({
   const toolsTag = isReadOnly ? 'tools:READ' : toolsEnabled ? 'tools:ON' : 'tools:OFF';
   const toolsColor = isReadOnly ? colors.warning : toolsEnabled ? colors.success : colors.dimText;
 
+  // Truncate long model names to prevent status bar line wrapping
+  const maxModelLen = Math.max(15, (process.stdout.columns || 80) - 55);
+  const displayModel = model.length > maxModelLen ? model.slice(-maxModelLen) : model;
+
   // Role display: use role icon+name if available, otherwise model capability badge
   const roleDisplay = roleIcon && roleName
     ? `${roleIcon} ${roleName}`
@@ -116,7 +120,7 @@ export const StatusBar = React.memo(function StatusBar({
           <Text color={colors.dimText}> {'\u2502'} </Text>
           <Text color={colors.provider}>{provider}</Text>
           <Text color={colors.dimText}>/</Text>
-          <Text color={colors.model}>{model}</Text>
+          <Text color={colors.model}>{displayModel}</Text>
           <Text> </Text>
           <Text color={roleColor} bold>{roleDisplay}</Text>
           <Text color={colors.dimText}> {'\u2502'} </Text>
