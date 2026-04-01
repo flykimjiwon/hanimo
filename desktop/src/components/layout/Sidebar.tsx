@@ -1,15 +1,15 @@
-import { useState } from "react";
 import { useThemeStore } from "../../stores/theme-store";
+import { useSidebarStore } from "../../stores/sidebar-store";
 
-type ActivePanel = "explorer" | "search" | "chat" | "settings";
+type SidebarPanel = "files" | "search" | "chat" | "settings";
 
 export function Sidebar() {
   const { theme, toggle, mode } = useThemeStore();
   const c = theme.colors;
-  const [active, setActive] = useState<ActivePanel>("explorer");
+  const { activePanel, setActivePanel } = useSidebarStore();
 
-  const buttons: { id: ActivePanel; icon: string; label: string }[] = [
-    { id: "explorer", icon: "📁", label: "Explorer" },
+  const buttons: { id: SidebarPanel; icon: string; label: string }[] = [
+    { id: "files", icon: "📁", label: "Explorer" },
     { id: "search", icon: "🔍", label: "Search" },
     { id: "chat", icon: "💬", label: "Chat" },
     { id: "settings", icon: "⚙️", label: "Settings" },
@@ -24,14 +24,14 @@ export function Sidebar() {
         {buttons.map((btn) => (
           <button
             key={btn.id}
-            onClick={() => setActive(btn.id)}
+            onClick={() => setActivePanel(btn.id)}
             title={btn.label}
             className="flex items-center justify-center rounded-md text-lg transition-colors"
             style={{
               width: 40,
               height: 40,
-              color: active === btn.id ? c.sidebarIconActive : c.sidebarIcon,
-              background: active === btn.id ? c.bgSecondary : "transparent",
+              color: activePanel === btn.id ? c.sidebarIconActive : c.sidebarIcon,
+              background: activePanel === btn.id ? c.bgSecondary : "transparent",
             }}
           >
             {btn.icon}
