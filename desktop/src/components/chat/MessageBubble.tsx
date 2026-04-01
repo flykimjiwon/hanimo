@@ -1,3 +1,7 @@
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
+import { oneDark, oneLight } from "react-syntax-highlighter/dist/esm/styles/prism";
 import { useThemeStore } from "../../stores/theme-store";
 import type { ChatMessage } from "../../stores/chat-store";
 
@@ -36,7 +40,41 @@ export function MessageBubble({ message }: MessageBubbleProps) {
           border: `1px solid ${c.border}`,
         }}
       >
-        {message.content}
+        {isUser ? (
+          message.content
+        ) : (
+          <ReactMarkdown
+            remarkPlugins={[remarkGfm]}
+            components={{
+              code({ className, children, ...props }) {
+                const match = /language-(\w+)/.exec(className || "");
+                const codeString = String(children).replace(/\n$/, "");
+                if (match) {
+                  return (
+                    <div style={{ position: "relative" }}>
+                      <button
+                        onClick={() => navigator.clipboard.writeText(codeString)}
+                        style={{ position: "absolute", right: 4, top: 4, background: c.bgTertiary, border: `1px solid ${c.border}`, borderRadius: 4, padding: "2px 6px", fontSize: 11, color: c.textSecondary, cursor: "pointer", zIndex: 1 }}
+                      >
+                        Copy
+                      </button>
+                      <SyntaxHighlighter
+                        style={theme.name === "dark" ? oneDark : oneLight}
+                        language={match[1]}
+                        PreTag="div"
+                      >
+                        {codeString}
+                      </SyntaxHighlighter>
+                    </div>
+                  );
+                }
+                return <code className={className} style={{ background: c.bgTertiary, padding: "1px 4px", borderRadius: 3, fontSize: "0.9em" }} {...props}>{children}</code>;
+              },
+            }}
+          >
+            {message.content}
+          </ReactMarkdown>
+        )}
       </div>
     </div>
   );

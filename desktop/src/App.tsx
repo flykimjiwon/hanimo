@@ -3,6 +3,7 @@ import { FileTree } from "./components/layout/FileTree";
 import { EditorArea } from "./components/layout/EditorArea";
 import { ChatPanel } from "./components/layout/ChatPanel";
 import { SettingsPanel } from "./components/settings/SettingsPanel";
+import { StatusBar } from "./components/layout/StatusBar";
 import { useThemeStore } from "./stores/theme-store";
 import { OnboardingWizard } from "./components/onboarding/OnboardingWizard";
 import { useOnboardingStore } from "./stores/onboarding-store";
@@ -17,11 +18,14 @@ export function App() {
   if (!completed) return <OnboardingWizard />;
 
   return (
-    <div className="h-screen flex overflow-hidden" style={{ background: c.bg, color: c.text }}>
-      <Sidebar />
-      {activePanel === "settings" ? <SettingsPanel /> : <FileTree />}
-      <EditorArea />
-      <ChatPanel />
+    <div className="h-screen flex flex-col" style={{ background: c.bg, color: c.text }}>
+      <div className="flex flex-1 overflow-hidden">
+        <Sidebar />
+        {activePanel === "settings" ? <SettingsPanel /> : <FileTree />}
+        <EditorArea />
+        <ChatPanel />
+      </div>
+      <StatusBar />
     </div>
   );
 }

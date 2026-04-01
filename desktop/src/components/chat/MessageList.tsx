@@ -1,4 +1,6 @@
 import { useEffect, useRef } from "react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { useThemeStore } from "../../stores/theme-store";
 import { useChatStore } from "../../stores/chat-store";
 import { MessageBubble } from "./MessageBubble";
@@ -66,7 +68,7 @@ export function MessageList({ onRetry }: { onRetry?: () => void }) {
               border: `1px solid ${c.border}`,
             }}
           >
-            {streamingContent}
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>{streamingContent}</ReactMarkdown>
             <span className="animate-pulse">▊</span>
           </div>
         </div>

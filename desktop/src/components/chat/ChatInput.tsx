@@ -20,8 +20,47 @@ export function ChatInput({ onSend, onStop, disabled }: ChatInputProps) {
   const canSend = connectionStatus === "connected" && !isStreaming && input.trim().length > 0 && !disabled;
 
   const handleSend = useCallback(() => {
-    if (!canSend) return;
     const trimmed = input.trim();
+    if (!trimmed) return;
+
+    // Handle slash commands locally
+    if (trimmed.startsWith("/")) {
+      const [cmd] = trimmed.split(" ");
+      switch (cmd) {
+        case "/clear":
+          useChatStore.getState().clear();
+          setInput("");
+          return;
+        case "/help":
+          useChatStore.getState().addMessage({
+            role: "assistant",
+            content: "Available commands:\n- `/clear` — Clear chat history\n- `/help` — Show this help\n- `/model` — Show current model\n- `/usage` — Show token usage",
+          });
+          setInput("");
+          return;
+        case "/model":
+          useChatStore.getState().addMessage({
+            role: "assistant",
+            content: `Current model: ${useOnboardingStore.getState().provider}/${useOnboardingStore.getState().model}`,
+          });
+          setInput("");
+          return;
+        case "/usage": {
+          const { totalUsage } = useChatStore.getState();
+          useChatStore.getState().addMessage({
+            role: "assistant",
+            content: `Token usage:\n- Prompt: ${totalUsage.promptTokens.toLocaleString()}\n- Completion: ${totalUsage.completionTokens.toLocaleString()}\n- Total: ${totalUsage.totalTokens.toLocaleString()}`,
+          });
+          setInput("");
+          return;
+        }
+        default:
+          // Unknown command, send to LLM as regular message
+          break;
+      }
+    }
+
+    if (!canSend) return;
     onSend(trimmed);
     setHistory((prev) => [...prev, trimmed]);
     setHistoryIndex(-1);

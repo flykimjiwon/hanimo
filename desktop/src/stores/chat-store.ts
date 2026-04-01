@@ -15,6 +15,8 @@ interface ChatState {
   streamingContent: string;
   connectionStatus: "disconnected" | "connecting" | "connected" | "error";
   connectionError: string | null;
+  totalUsage: { promptTokens: number; completionTokens: number; totalTokens: number };
+  totalCost: number;
   addMessage: (msg: Omit<ChatMessage, "id" | "timestamp">) => void;
   setStreaming: (streaming: boolean) => void;
   appendStreamingContent: (content: string) => void;
@@ -23,6 +25,7 @@ interface ChatState {
   clear: () => void;
   setConnectionStatus: (status: "disconnected" | "connecting" | "connected" | "error") => void;
   setConnectionError: (error: string | null) => void;
+  updateUsage: (usage: { promptTokens: number; completionTokens: number; totalTokens: number }) => void;
 }
 
 let idCounter = 0;
@@ -33,6 +36,8 @@ export const useChatStore = create<ChatState>((set) => ({
   streamingContent: "",
   connectionStatus: "disconnected",
   connectionError: null,
+  totalUsage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
+  totalCost: 0,
   addMessage: (msg) =>
     set((state) => ({
       messages: [
@@ -60,4 +65,12 @@ export const useChatStore = create<ChatState>((set) => ({
   clear: () => set({ messages: [], isStreaming: false, streamingContent: "" }),
   setConnectionStatus: (status) => set({ connectionStatus: status }),
   setConnectionError: (error) => set({ connectionError: error }),
+  updateUsage: (usage) =>
+    set((state) => ({
+      totalUsage: {
+        promptTokens: state.totalUsage.promptTokens + (usage.promptTokens || 0),
+        completionTokens: state.totalUsage.completionTokens + (usage.completionTokens || 0),
+        totalTokens: state.totalUsage.totalTokens + (usage.totalTokens || 0),
+      },
+    })),
 }));
