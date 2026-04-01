@@ -1,10 +1,79 @@
-import { useState } from "react";
+import { useCallback } from "react";
 import { useThemeStore } from "../../stores/theme-store";
+import { useChatStore } from "../../stores/chat-store";
+import { useSidecar } from "../../hooks/use-sidecar";
+import { MessageList } from "../chat/MessageList";
+import { ChatInput } from "../chat/ChatInput";
+import type { SidecarEvent } from "../../lib/ipc";
 
 export function ChatPanel() {
   const { theme } = useThemeStore();
   const c = theme.colors;
-  const [input, setInput] = useState("");
+  const {
+    addMessage,
+    setStreaming,
+    appendStreamingContent,
+    clearStreamingContent,
+    isStreaming,
+    streamingContent,
+  } = useChatStore();
+
+  const handleEvent = useCallback(
+    (event: SidecarEvent) => {
+      switch (event.type) {
+        case "text":
+          appendStreamingContent(String(event.data ?? ""));
+          break;
+        case "tool-call": {
+          const data = event.data as { toolName?: string; content?: string } | null;
+          addMessage({
+            role: "tool-call",
+            content: String(data?.content ?? JSON.stringify(event.data)),
+            toolName: data?.toolName,
+          });
+          break;
+        }
+        case "tool-result": {
+          const data = event.data as { toolName?: string; content?: string } | null;
+          addMessage({
+            role: "tool-result",
+            content: String(data?.content ?? JSON.stringify(event.data)),
+            toolName: data?.toolName,
+          });
+          break;
+        }
+        case "done": {
+          const content = streamingContent;
+          clearStreamingContent();
+          if (content) {
+            addMessage({ role: "assistant", content });
+          }
+          setStreaming(false);
+          break;
+        }
+        case "error": {
+          clearStreamingContent();
+          addMessage({
+            role: "assistant",
+            content: String(event.data ?? "An error occurred"),
+            isError: true,
+          });
+          setStreaming(false);
+          break;
+        }
+      }
+    },
+    [addMessage, setStreaming, appendStreamingContent, clearStreamingContent, streamingContent]
+  );
+
+  const { send } = useSidecar({ onEvent: handleEvent });
+
+  const handleSend = async (content: string) => {
+    addMessage({ role: "user", content });
+    setStreaming(true);
+    clearStreamingContent();
+    await send(content);
+  };
 
   return (
     <div
@@ -22,38 +91,11 @@ export function ChatPanel() {
         </span>
       </div>
 
-      {/* Messages area */}
-      <div className="flex-1 overflow-y-auto px-3 py-4">
-        <p className="text-sm text-center" style={{ color: c.textMuted }}>
-          No messages yet. Start a conversation!
-        </p>
-      </div>
+      {/* Messages */}
+      <MessageList />
 
-      {/* Input area */}
-      <div
-        className="flex items-center gap-2 px-3 py-2 flex-shrink-0"
-        style={{ borderTop: `1px solid ${c.border}` }}
-      >
-        <input
-          type="text"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          placeholder="Type a message..."
-          className="flex-1 rounded-md px-3 py-1.5 text-sm outline-none"
-          style={{
-            background: c.inputBg,
-            border: `1px solid ${c.inputBorder}`,
-            color: c.text,
-          }}
-        />
-        <button
-          className="px-3 py-1.5 rounded-md text-sm font-medium transition-colors"
-          style={{ background: c.accent, color: "#ffffff" }}
-          onClick={() => setInput("")}
-        >
-          Send
-        </button>
-      </div>
+      {/* Input */}
+      <ChatInput onSend={handleSend} disabled={isStreaming} />
     </div>
   );
 }
