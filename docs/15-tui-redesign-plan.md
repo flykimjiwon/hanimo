@@ -225,6 +225,62 @@ This avoids the current problem where every streaming chunk triggers a full Ink 
 
 ---
 
+## Framework 대안 평가: OpenTUI
+
+현재 hanimo TUI는 Ink(React for terminal)을 사용하지만, TUI 폴리시 문제의 근본 원인 중 상당수가 Ink의 한계에서 비롯됩니다. OpenTUI는 유력한 대안입니다.
+
+### OpenTUI란?
+
+- **3가지 프레임워크**: Core (imperative), React reconciler, Solid reconciler
+- **Bun 기반**, Zig 네이티브 빌드
+- **내장 컴포넌트**: Markdown 스트리밍, Code viewer, Diff viewer, TextTable, ScrollBox 등 20+
+- **레이아웃**: Yoga/Flexbox 엔진 + Absolute positioning
+- **키보드**: Focus management, 단축키, 클립보드
+- **테스트**: 스냅샷 + 인터랙션 테스트 내장
+- **주요 사용처**: opencode, codex, github-copilot, gemini-cli, amp, kimi-cli (주간 2K 설치)
+
+### Ink vs OpenTUI 비교
+
+| 항목 | Ink 5 | OpenTUI (React) |
+|------|-------|-----------------|
+| 런타임 | Node.js | Bun |
+| 레이아웃 | 자체 (불안정) | Yoga (검증됨) |
+| 스크롤 | 없음 (수동 구현) | ScrollBox 내장 |
+| Markdown 렌더링 | 없음 (수동 구현) | 내장 (스트리밍 지원) |
+| Diff viewer | 없음 | 내장 |
+| 줄바꿈 제어 | 약함 (overflow 이슈) | 강함 (Yoga 기반) |
+| 와이드 문자 | 미지원 | 지원 |
+| 커뮤니티 | 성숙하지만 활발하지 않음 | 신생이지만 빠르게 성장 |
+
+### 마이그레이션 전략
+
+**단기 (현재)**: Phase 1-2에서 Ink 내에서 최대한 수정
+**중기**: OpenTUI React reconciler로 마이그레이션 검토
+- hanimo가 이미 React 기반이므로 컴포넌트 구조 재사용 가능
+- Core 엔진 (agent-loop, tools, providers)은 무관
+- TUI 컴포넌트만 교체 (chat-view, status-bar, input-bar, select-menu)
+
+**마이그레이션 시 고려사항**:
+- Bun 의존성 추가 (현재는 Node.js만)
+- OpenTUI가 아직 알파/베타 단계
+- create-tui CLI로 프로젝트 구조 생성 필요
+- `process.exit()` 대신 `renderer.destroy()` 사용 필수
+
+### 결론
+
+Phase 1-2를 Ink에서 진행하고, Phase 3(뷰포트 스크롤) 시점에서 OpenTUI 마이그레이션 여부를 결정합니다. OpenTUI의 ScrollBox + Markdown 스트리밍이 내장되어 있으므로 Phase 3-5를 통째로 대체할 수 있습니다.
+
+---
+
+## TUI Studio 참고
+
+[TUI Studio](https://tui.studio)는 터미널 UI를 시각적으로 설계할 수 있는 Figma 유사 도구입니다:
+- Ink, BubbleTea, OpenTUI 등 6개 프레임워크 코드 내보내기 예정 (현재 알파)
+- hanimo TUI 레이아웃 설계에 활용 가능
+- `.tui` JSON 파일로 팀 간 디자인 공유
+
+---
+
 ## Success Criteria
 
 - [ ] Status bar never wraps to 2 lines at any terminal width >= 60 cols
