@@ -239,17 +239,10 @@ export const ChatView = React.memo(function ChatView({
         <MessageBubble key={msg.id} message={msg} maxToolLines={maxToolLines} />
       ))}
 
-      {/* Active streaming text — truncate to fit available height */}
+      {/* Active streaming text — clipped by parent overflowY="hidden" */}
       {isStreaming && (
-        <Box paddingX={1} flexDirection="column" height={Math.min(height - visibleMessages.length * 2, Math.max(3, height / 2))} overflowY="hidden">
-          <Text color={colors.assistantText} wrap="wrap">{
-            (() => {
-              const maxLines = Math.max(5, Math.floor(height / 2));
-              const lines = streamingText.split('\n');
-              if (lines.length <= maxLines) return streamingText;
-              return lines.slice(-maxLines).join('\n');
-            })()
-          }</Text>
+        <Box paddingX={1} flexDirection="column" overflowY="hidden">
+          <Text color={colors.assistantText} wrap="wrap">{streamingText}</Text>
         </Box>
       )}
 
