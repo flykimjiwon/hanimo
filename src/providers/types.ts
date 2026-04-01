@@ -27,11 +27,11 @@ export interface ProviderConfig {
 }
 
 // Providers that run locally (no API key needed, tools may not work)
+// Note: 'custom' is intentionally excluded — it can be remote (DGX SPARK, etc.)
 export const LOCAL_PROVIDERS = new Set<ProviderName>([
   'ollama',
   'vllm',
   'lmstudio',
-  'custom',
 ]);
 
 // Default base URLs for OpenAI-compatible providers
