@@ -683,6 +683,156 @@ Anthropic 프로토콜 (Claude 호환):
 
 ---
 
+## 팀 배포 가이드 (관리자용)
+
+팀원들이 설정 없이 바로 `hanimo`를 쓸 수 있도록 사전 구성하는 방법입니다.
+
+### 목표
+
+```
+팀원이 터미널에서 hanimo 입력 → 바로 TUI 시작 (온보딩 없음)
+```
+
+hanimo는 `~/.hanimo/config.json`에 `provider`가 설정되어 있으면 온보딩을 건너뛰고 바로 TUI를 시작합니다.
+
+---
+
+### 방법 1: 설치 스크립트에 config 포함 (가장 간단)
+
+팀원에게 배포할 설치 스크립트에 config 생성을 포함합니다:
+
+```bash
+#!/bin/bash
+# install-hanimo.sh — 팀 배포용 설치 스크립트
+
+# 1. hanimo 설치
+npm install -g hanimo
+
+# 2. config 디렉토리 생성
+mkdir -p ~/.hanimo
+
+# 3. 팀 공용 설정 파일 생성
+cat > ~/.hanimo/config.json << 'EOF'
+{
+  "provider": "dgx-spark",
+  "model": "gpt-oss:20b",
+  "defaultRole": "hanimo",
+  "customProviders": [
+    {
+      "name": "dgx-spark",
+      "baseURL": "https://spark3-share.tech-2030.net/api/v1",
+      "apiKey": "f0a26c072bd83b635a4daad40a51be068bb80d5a7540adfe",
+      "models": [
+        "gpt-oss:20b",
+        "gpt-oss:120b",
+        "mistral-small3.2:latest",
+        "deepseek-v3:latest",
+        "qwen2.5:32b-instruct",
+        "qwen3-coder-next:q8_0"
+      ]
+    }
+  ]
+}
+EOF
+
+# 4. 파일 권한 설정 (API 키 보호)
+chmod 700 ~/.hanimo
+chmod 600 ~/.hanimo/config.json
+
+echo "✅ hanimo 설치 완료! 'hanimo' 명령으로 바로 시작하세요."
+```
+
+팀원은 이 스크립트만 실행하면 됩니다:
+
+```bash
+curl -sL https://your-internal-server/install-hanimo.sh | bash
+hanimo  # → 바로 TUI 시작!
+```
+
+---
+
+### 방법 2: `--share-config` + `--import-config`
+
+hanimo 내장 기능으로 config를 공유합니다:
+
+**관리자:**
+
+```bash
+# 설정 내보내기 (클라우드 API 키는 자동 마스킹, 로컬/커스텀은 유지)
+hanimo --share-config team-config.json
+```
+
+**팀원:**
+
+```bash
+# 설정 가져오기
+hanimo --import-config team-config.json
+hanimo  # → 바로 TUI
+```
+
+> **참고**: `--share-config`는 클라우드 프로바이더(OpenAI, Anthropic 등)의 API 키를 `<YOUR_API_KEY>`로 마스킹합니다. 로컬/커스텀 프로바이더의 키는 유지됩니다.
+
+---
+
+### 방법 3: 환경변수로 배포
+
+Docker, CI/CD, 또는 공용 서버 환경에서:
+
+```bash
+# .bashrc 또는 .zshrc에 추가
+export OPENAI_API_KEY="not-used"  # 온보딩 스킵용 (아무 값이나)
+export HANIMO_PROVIDER="dgx-spark"
+export HANIMO_MODEL="gpt-oss:20b"
+```
+
+또는 Docker:
+
+```dockerfile
+FROM node:22-slim
+RUN npm install -g hanimo
+RUN mkdir -p /root/.hanimo && echo '{"provider":"dgx-spark","model":"gpt-oss:20b","customProviders":[{"name":"dgx-spark","baseURL":"https://spark3-share.tech-2030.net/api/v1","apiKey":"your-key","models":["gpt-oss:20b"]}]}' > /root/.hanimo/config.json
+CMD ["hanimo", "--text"]
+```
+
+---
+
+### 방법 4: 프로젝트별 `.hanimo.json`
+
+프로젝트 레포지토리 루트에 `.hanimo.json`을 두면 해당 프로젝트에서 hanimo 실행 시 자동으로 설정이 적용됩니다:
+
+```json
+{
+  "provider": "dgx-spark",
+  "model": "qwen3-coder-next:q8_0",
+  "customProviders": [
+    {
+      "name": "dgx-spark",
+      "baseURL": "https://spark3-share.tech-2030.net/api/v1",
+      "apiKey": "team-shared-token",
+      "models": ["qwen3-coder-next:q8_0", "gpt-oss:20b"]
+    }
+  ]
+}
+```
+
+> **보안 참고**: `.hanimo.json`에 API 키를 포함할 경우 `.gitignore`에 추가하세요. 또는 API 키는 `~/.hanimo/config.json`에만 두고, `.hanimo.json`에서는 프로바이더/모델만 지정하세요.
+
+---
+
+### 배포 체크리스트
+
+| 단계 | 확인 |
+|------|------|
+| 서버 접근성 | 팀원 네트워크에서 엔드포인트 접근 가능? |
+| API 키 | 공용 키 발급 또는 개인 키 안내? |
+| 모델 가용성 | 사용할 모델이 서버에 로드되어 있는지? |
+| Node.js 버전 | 팀원 환경에 Node.js 18+ 설치? |
+| config 배포 | 위 방법 중 하나로 config 사전 배포? |
+| 테스트 | `hanimo` 실행 시 바로 TUI 뜨는지? |
+| 권한 | `~/.hanimo/config.json` 파일 권한 600? |
+
+---
+
 ## 추가 리소스
 
 ### 공식 문서
