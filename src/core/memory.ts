@@ -53,12 +53,28 @@ export function writeMemory(content: string, topic?: string): void {
   const fileName = topic ? `${sanitizeTopic(topic)}.md` : MEMORY_FILE;
   const path = join(MEMORY_DIR, fileName);
 
+  let combined: string;
   if (existsSync(path)) {
     const existing = readFileSync(path, 'utf-8');
-    writeFileSync(path, existing + '\n' + content);
+    combined = existing + '\n' + content;
   } else {
-    writeFileSync(path, content);
+    combined = content;
   }
+
+  // Enforce size limits on write to prevent unbounded growth
+  const lines = combined.split('\n');
+  if (lines.length > MAX_LINES) {
+    combined = lines.slice(-MAX_LINES).join('\n');
+  }
+  if (Buffer.byteLength(combined, 'utf-8') > MAX_BYTES) {
+    const allLines = combined.split('\n');
+    while (allLines.length > 1 && Buffer.byteLength(allLines.join('\n'), 'utf-8') > MAX_BYTES) {
+      allLines.shift();
+    }
+    combined = allLines.join('\n');
+  }
+
+  writeFileSync(path, combined);
 }
 
 export function readMemoryTopic(topic: string): string {

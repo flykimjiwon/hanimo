@@ -148,7 +148,6 @@ async function quickProbe(
       const resp = await fetch(`${origin}/api/tags`, opts);
       if (resp.ok) {
         const data = await resp.json() as { models?: Array<{ name: string }> };
-        clearTimeout(timer);
         return {
           reachable: true,
           type: 'ollama',
@@ -170,7 +169,6 @@ async function quickProbe(
         const resp = await fetch(modelsURL, opts);
         if (resp.ok) {
           const data = await resp.json() as { data?: Array<{ id: string }> };
-          clearTimeout(timer);
           // Derive the correct base URL from the successful models URL
           const normalizedURL = modelsURL.replace(/\/models$/, '');
           return {
@@ -187,16 +185,15 @@ async function quickProbe(
     try {
       const resp = await fetch(origin, { ...opts, method: 'HEAD' });
       if (resp.ok || resp.status < 500) {
-        clearTimeout(timer);
         return { reachable: true, type: 'unknown' };
       }
     } catch { /* continue */ }
 
-    clearTimeout(timer);
     return null;
   } catch {
-    clearTimeout(timer);
     return null;
+  } finally {
+    clearTimeout(timer);
   }
 }
 
@@ -234,6 +231,45 @@ async function probeWithVariants(
   }
 
   return null;
+}
+
+/**
+ * Send a minimal test chat completion request to verify the server works.
+ */
+async function testChatCompletion(
+  baseURL: string,
+  model: string,
+  apiKey?: string,
+  timeoutMs = 10000,
+): Promise<{ success: boolean; error?: string }> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (apiKey) headers['Authorization'] = `Bearer ${apiKey}`;
+
+    const chatURL = baseURL.endsWith('/v1') ? `${baseURL}/chat/completions` : `${baseURL}/v1/chat/completions`;
+    const resp = await fetch(chatURL, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        model,
+        messages: [{ role: 'user', content: 'ping' }],
+        max_tokens: 1,
+        stream: false,
+      }),
+      signal: controller.signal,
+    });
+
+    if (resp.ok) return { success: true };
+    const text = await resp.text().catch(() => '');
+    return { success: false, error: `HTTP ${resp.status}: ${text.slice(0, 200)}` };
+  } catch (e) {
+    return { success: false, error: e instanceof Error ? e.message : String(e) };
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 /**
@@ -289,6 +325,26 @@ async function validateEndpoint(
     const preview = probe.models.slice(0, 5).join(', ');
     const more = probe.models.length > 5 ? ` 외 ${probe.models.length - 5}개` : '';
     console.log(`  ✓ 사용 가능한 모델: ${preview}${more}`);
+  }
+
+  // Handle unknown server type: warn and test with a real chat completion
+  if (probe.type === 'unknown') {
+    console.log();
+    console.log('  ⚠ 서버 타입을 감지할 수 없습니다 (Ollama /api/tags, OpenAI /models 모두 응답 없음).');
+    console.log('  채팅 완성 요청으로 서버 동작을 확인합니다...');
+    const testModel = 'default';
+    const testResult = await testChatCompletion(finalURL, testModel);
+    if (!testResult.success) {
+      console.log(`  ✗ 테스트 요청 실패: ${testResult.error ?? '알 수 없는 오류'}`);
+      console.log();
+      const proceed = await rl.question('  서버가 제대로 동작하지 않을 수 있습니다. 그래도 진행할까요? [y/N]: ');
+      if (proceed.trim().toLowerCase() !== 'y') {
+        console.log('  설정을 취소합니다. 다시 시도하세요.');
+        process.exit(0);
+      }
+    } else {
+      console.log('  ✓ 채팅 완성 요청 성공 — OpenAI 호환 서버로 간주합니다.');
+    }
   }
 
   // Check for provider/endpoint mismatch
@@ -575,6 +631,10 @@ export async function runOnboarding(): Promise<void> {
     if (modelOverride.trim()) model = modelOverride.trim();
   }
 
+  process.removeListener('SIGINT', exitHandler);
+  if (process.platform === 'win32') {
+    process.removeListener('SIGBREAK', exitHandler);
+  }
   rl.close();
 
   // Save config

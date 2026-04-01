@@ -1,5 +1,9 @@
+import { readFile } from 'node:fs/promises';
+import { join } from 'node:path';
+import { homedir } from 'node:os';
 import { execa } from 'execa';
 import { isEnabled } from './feature-flags.js';
+import { HookConfigSchema } from '../config/schema.js';
 import type { HookConfig, HookDef } from '../config/schema.js';
 
 export type HookEvent = 'PreToolUse' | 'PostToolUse' | 'SessionStart' | 'SessionStop' | 'UserPromptSubmit';
@@ -14,16 +18,40 @@ export interface HookResult {
   systemReminders: string[];
 }
 
+/**
+ * Load hooks exclusively from the user-level config (~/.hanimo/config.json).
+ * Project-level hooks (.hanimo.json) are intentionally ignored to prevent
+ * arbitrary command execution from malicious repository configs.
+ */
+async function loadUserHooks(event: HookEvent): Promise<HookDef[]> {
+  try {
+    const userConfigPath = join(homedir(), '.hanimo', 'config.json');
+    const content = await readFile(userConfigPath, 'utf-8');
+    const parsed: unknown = JSON.parse(content);
+    if (parsed === null || typeof parsed !== 'object' || Array.isArray(parsed)) {
+      return [];
+    }
+    const raw = parsed as Record<string, unknown>;
+    const hooksRaw = raw['hooks'];
+    if (hooksRaw === undefined) return [];
+    const hookConfig = HookConfigSchema.parse(hooksRaw);
+    return hookConfig[event] ?? [];
+  } catch {
+    return [];
+  }
+}
+
 export async function executeHooks(
   event: HookEvent,
   context: HookContext,
-  config: HookConfig,
+  _config: HookConfig,
 ): Promise<HookResult> {
   if (!isEnabled('HOOK_SYSTEM')) {
     return { blocked: false, systemReminders: [] };
   }
 
-  const hooks: HookDef[] = config[event] ?? [];
+  // Only execute hooks from user-level config to prevent project-level RCE.
+  const hooks: HookDef[] = await loadUserHooks(event);
   if (hooks.length === 0) {
     return { blocked: false, systemReminders: [] };
   }

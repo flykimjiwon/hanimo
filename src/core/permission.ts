@@ -50,6 +50,9 @@ function globMatch(pattern: string, text: string): boolean {
   if (!regex) {
     // Limit pattern complexity to prevent ReDoS
     if (pattern.length > 200) return false;
+    // Limit wildcard count to prevent catastrophic backtracking
+    const wildcardCount = (pattern.match(/\*/g) ?? []).length;
+    if (wildcardCount > 5) return false;
     const escaped = pattern
       .replace(/[.+^${}()|[\]\\]/g, '\\$&')
       .replace(/\*/g, '.*?')
