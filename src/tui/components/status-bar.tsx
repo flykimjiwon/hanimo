@@ -85,9 +85,9 @@ export const StatusBar = React.memo(function StatusBar({
   usage,
   roleIcon,
   roleName,
-  subAgentStatus,
+  subAgentStatus: _subAgentStatus,
   elapsedMs,
-  verbose,
+  verbose: _verbose,
 }: StatusBarProps): React.ReactElement {
   const totalTokens = usage.promptTokens + usage.completionTokens;
   const isReadOnly = toolsEnabled && roleName?.toLowerCase() === 'plan';
@@ -106,17 +106,27 @@ export const StatusBar = React.memo(function StatusBar({
     : modelRole === 'assistant' ? colors.warning
     : colors.dimText;
 
+  // Build status line as a single string to prevent Ink line wrapping
+  const cols = process.stdout.columns || 80;
+
+  // Left section: provider/model role tools
+  const left = `hanimo \u2502 ${provider}/${displayModel} ${roleDisplay} \u2502 ${toolsTag}`;
+
+  // Right section: status + tokens + cost
+  const elapsed = elapsedMs && elapsedMs > 0 ? ` ${formatElapsed(elapsedMs)}` : '';
+  const statusText = status === 'idle' ? '\u25CF Ready'
+    : status === 'thinking' ? `\u25CB Thinking...${elapsed}`
+    : `\u25CB ${currentTool ?? 'tool...'}${elapsed}`;
+  const right = `${statusText}  ${formatTokens(totalTokens)} tok \u2502 ${formatCost(usage.totalCost)}`;
+
+  // Pad middle to fill terminal width (single line guaranteed)
+  const padding = Math.max(1, cols - left.length - right.length - 2);
+
   return (
     <Box flexDirection="column" width="100%">
-      <Box
-        width="100%"
-        justifyContent="space-between"
-        paddingX={1}
-      >
-        <Box>
-          <Text bold color={colors.model}>
-            hanimo
-          </Text>
+      <Box width="100%" paddingX={1} height={1} overflow="hidden">
+        <Text>
+          <Text bold color={colors.model}>hanimo</Text>
           <Text color={colors.dimText}> {'\u2502'} </Text>
           <Text color={colors.provider}>{provider}</Text>
           <Text color={colors.dimText}>/</Text>
@@ -125,35 +135,15 @@ export const StatusBar = React.memo(function StatusBar({
           <Text color={roleColor} bold>{roleDisplay}</Text>
           <Text color={colors.dimText}> {'\u2502'} </Text>
           <Text color={toolsColor}>{toolsTag}</Text>
-          {verbose && (
-            <>
-              <Text color={colors.dimText}> {'\u2502'} </Text>
-              <Text color={colors.warning}>verbose</Text>
-            </>
-          )}
-          {subAgentStatus ? (
-            <>
-              <Text color={colors.dimText}> {'\u2502'} </Text>
-              <Text color={colors.statusThinking}>{subAgentStatus}</Text>
-            </>
-          ) : null}
-        </Box>
-
-        <Box>
-          <StatusIndicator status={status} currentTool={currentTool} elapsedMs={elapsedMs} />
-        </Box>
-
-        <Box>
-          <Text color={colors.dimText}>
-            {formatTokens(totalTokens)} tok
-          </Text>
-          <Text color={colors.dimText}> {'\u2502'} </Text>
+          <Text>{' '.repeat(padding)}</Text>
+          <Text color={status === 'idle' ? colors.statusIdle : colors.statusThinking}>{statusText}</Text>
+          <Text color={colors.dimText}>  {formatTokens(totalTokens)} tok {'\u2502'} </Text>
           <Text color={colors.cost}>{formatCost(usage.totalCost)}</Text>
-        </Box>
+        </Text>
       </Box>
       <Box width="100%">
         <Text color={colors.border}>
-          {'\u2500'.repeat(process.stdout.columns || 80)}
+          {'\u2500'.repeat(cols)}
         </Text>
       </Box>
     </Box>
