@@ -27,4 +27,21 @@ export const DEFAULT_CONFIG: Config = {
   },
   endpoints: [],
   customProviders: [],
+  featureFlags: {
+    HOOK_SYSTEM: false,
+    MEMORY_SYSTEM: false,
+    HEADLESS_MODE: false,
+    SESSION_FORK: false,
+    PROMPT_CACHE: false,
+    PERMISSION_GLOB_RULES: false,
+    MULTI_STAGE_COMPACTION: false,
+  },
+  hooks: {
+    PreToolUse: [],
+    PostToolUse: [],
+    SessionStart: [],
+    SessionStop: [],
+    UserPromptSubmit: [],
+  },
+  permissionRules: [],
 };

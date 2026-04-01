@@ -165,6 +165,36 @@ export class SessionStore {
     return results.slice(0, limit);
   }
 
+  /**
+   * Fork a session: copy messages up to a given index into a new session.
+   */
+  forkSession(sourceId: string, atMessageIndex?: number): string | null {
+    const data = this.readSession(sourceId);
+    if (!data) return null;
+
+    // Validate index bounds
+    if (atMessageIndex !== undefined && (atMessageIndex < 0 || atMessageIndex > data.messages.length)) {
+      return null;
+    }
+
+    const newId = randomUUID();
+    const now = new Date().toISOString();
+    const messages = atMessageIndex !== undefined
+      ? data.messages.slice(0, atMessageIndex)
+      : [...data.messages];
+
+    this.writeSession({
+      id: newId,
+      createdAt: now,
+      updatedAt: now,
+      provider: data.provider,
+      model: data.model,
+      messages,
+    });
+
+    return newId;
+  }
+
   close(): void {
     // No-op (JSON files don't need cleanup)
   }

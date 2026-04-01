@@ -3,6 +3,7 @@ import { join } from 'node:path';
 import type { RoleDefinition } from '../roles/types.js';
 import { loadGlobalInstructions } from './instructions.js';
 import { loadSkills, buildSkillsPrompt } from './skills.js';
+import { buildMemoryPrompt } from './memory.js';
 
 export interface ProjectContext {
   cwd: string;
@@ -92,5 +93,5 @@ export function buildSystemPrompt(context: ProjectContext, role?: RoleDefinition
 - Current time: ${new Date().toISOString()}
 ${context.platform === 'win32' ? '- Shell: Use PowerShell-compatible commands (dir instead of ls, Get-Content instead of cat, Select-String instead of grep)\n' : ''}${gitInfo}
 
-When referencing files, use paths relative to the working directory.${globalSection}${projectSection}${roleSection}${skillsSection}`;
+When referencing files, use paths relative to the working directory.${globalSection}${buildMemoryPrompt()}${projectSection}${roleSection}${skillsSection}`;
 }

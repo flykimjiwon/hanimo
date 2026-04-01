@@ -1,4 +1,24 @@
 import { z } from 'zod';
+import { FeatureFlagSchema } from '../core/feature-flags.js';
+
+export const HookDefSchema = z.object({
+  command: z.string(),
+  timeout: z.number().default(5000),
+});
+
+export const HookConfigSchema = z.object({
+  PreToolUse: z.array(HookDefSchema).default([]),
+  PostToolUse: z.array(HookDefSchema).default([]),
+  SessionStart: z.array(HookDefSchema).default([]),
+  SessionStop: z.array(HookDefSchema).default([]),
+  UserPromptSubmit: z.array(HookDefSchema).default([]),
+}).default({});
+
+export const PermissionRuleSchema = z.object({
+  tool: z.string(),
+  argMatch: z.string().optional(),
+  action: z.enum(['allow', 'deny', 'ask']),
+});
 
 export const ProviderConfigSchema = z.object({
   apiKey: z.string().optional(),
@@ -77,6 +97,9 @@ export const ConfigSchema = z.object({
     .default({}),
   endpoints: z.array(EndpointSchema).default([]),
   customProviders: z.array(CustomProviderSchema).default([]),
+  featureFlags: FeatureFlagSchema.default({}),
+  hooks: HookConfigSchema,
+  permissionRules: z.array(PermissionRuleSchema).default([]),
 });
 
 export type Config = z.infer<typeof ConfigSchema>;
@@ -84,3 +107,6 @@ export type ProviderConfigEntry = z.infer<typeof ProviderConfigSchema>;
 export type McpServerConfig = z.infer<typeof McpServerConfigSchema>;
 export type Endpoint = z.infer<typeof EndpointSchema>;
 export type CustomProvider = z.infer<typeof CustomProviderSchema>;
+export type HookDef = z.infer<typeof HookDefSchema>;
+export type HookConfig = z.infer<typeof HookConfigSchema>;
+export type PermissionRule = z.infer<typeof PermissionRuleSchema>;

@@ -9,6 +9,7 @@ import type {
 
 import { compactMessages } from './compaction.js';
 import { getModelPricing } from '../providers/model-registry.js';
+import { isEnabled } from './feature-flags.js';
 
 // Max messages before triggering compaction
 const MAX_CONTEXT_MESSAGES = 40;
@@ -129,6 +130,11 @@ export async function runAgentLoop(
       tools,
       maxSteps,
       abortSignal,
+      ...(isEnabled('PROMPT_CACHE') ? {
+        experimental_providerMetadata: {
+          anthropic: { cacheControl: { type: 'ephemeral' } },
+        },
+      } : {}),
       onStepFinish(event) {
         if (event.usage) {
           // Step-level usage tracked for debugging; final totals come from finalUsage

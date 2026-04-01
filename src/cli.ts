@@ -10,6 +10,8 @@ import type { ProviderName } from './providers/types.js';
 import { RoleManager } from './roles/role-manager.js';
 import { McpBridge } from './mcp/bridge.js';
 import { detectNetworkMode } from './mcp/network.js';
+import { initFeatureFlags, isEnabled } from './core/feature-flags.js';
+import { setPermissionRules } from './core/permission.js';
 
 export async function main(): Promise<void> {
   const program = new Command();
@@ -30,6 +32,8 @@ export async function main(): Promise<void> {
     .option('--role <id>', 'Active role (chat, dev, plan, or custom)')
     .option('--offline', 'Force offline mode (disable online-only MCP servers)')
     .option('--list-sessions', 'List saved sessions')
+    .option('--fork <session>', 'Fork a session (format: sessionId[:messageIndex])')
+    .option('--headless', 'Headless mode (JSON stdin/stdout)')
     .option('--setup', 'Re-run initial setup')
     .option('--share-config [file]', 'Export shareable config (default: hanimo-shared.json)')
     .option('--import-config <file>', 'Import a shared config file')
@@ -44,6 +48,8 @@ export async function main(): Promise<void> {
       role?: string;
       offline?: boolean;
       listSessions?: boolean;
+      fork?: string;
+      headless?: boolean;
       setup?: boolean;
       shareConfig?: string | boolean;
       importConfig?: string;
@@ -105,6 +111,14 @@ export async function main(): Promise<void> {
       }
 
       const config = await loadConfig();
+
+      // Initialize feature flags (config → env overrides)
+      initFeatureFlags(config.featureFlags);
+
+      // Initialize permission rules from config
+      if (config.permissionRules.length > 0) {
+        setPermissionRules(config.permissionRules);
+      }
 
       // Register custom providers from config
       if (config.customProviders.length > 0) {
@@ -208,6 +222,47 @@ export async function main(): Promise<void> {
         store.close();
       }
 
+      // Fork session mode
+      if (options.fork && isEnabled('SESSION_FORK')) {
+        const store = new SessionStore();
+        const parts = options.fork.split(':');
+        const sourceId = parts[0] ?? '';
+        const parsedIndex = parts[1] ? parseInt(parts[1], 10) : undefined;
+        if (parts[1] && (parsedIndex === undefined || Number.isNaN(parsedIndex) || parsedIndex < 0)) {
+          console.log(`Invalid message index: ${parts[1]}`);
+          store.close();
+          return;
+        }
+        const atIndex = parsedIndex;
+
+        // Find matching session (supports partial IDs)
+        const sessions = store.listSessions();
+        const match = sessions.find(s => s.id === sourceId || s.id.startsWith(sourceId));
+        if (!match) {
+          console.log(`Session not found: ${sourceId}`);
+          store.close();
+          return;
+        }
+
+        const newId = store.forkSession(match.id, atIndex);
+        if (!newId) {
+          console.log('Failed to fork session');
+          store.close();
+          return;
+        }
+
+        console.log(`Forked session ${match.id.slice(0, 8)} → ${newId.slice(0, 8)}`);
+        // Set up resume with the forked session
+        const msgs = store.getMessages(newId);
+        resumeSession = {
+          sessionId: newId,
+          messages: msgs.map(m => ({ role: m.role, content: m.content })),
+        };
+        if (!options.provider) config.provider = match.provider as typeof config.provider;
+        if (!options.model) config.model = match.model;
+        store.close();
+      }
+
       // Initialize role system
       const roleManager = new RoleManager();
       await roleManager.loadCustomRoles();
@@ -261,6 +316,18 @@ export async function main(): Promise<void> {
 
       // Cleanup MCP on exit
       process.on('exit', () => { mcpBridge.disconnectAll().catch(() => {}); });
+
+      // Headless mode: JSON stdin/stdout (no interactive UI)
+      if (options.headless && isEnabled('HEADLESS_MODE')) {
+        const { startHeadlessMode } = await import('./headless.js');
+        await startHeadlessMode({
+          modelInstance,
+          systemPrompt,
+          tools,
+          maxSteps,
+        });
+        return;
+      }
 
       if (options.text) {
         // Text mode: lightweight readline-based interactive loop

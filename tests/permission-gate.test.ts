@@ -19,14 +19,16 @@ describe('wrapToolsWithPermission', () => {
     expect(wrapped).toBe(tools);
   });
 
-  it('does not wrap read-only tools', async () => {
-    const readTool = makeTool('read');
-    const tools = { read_file: readTool, glob_search: makeTool('glob') };
+  it('does not require approval for read-only tools', async () => {
+    const tools = { read_file: makeTool('read'), glob_search: makeTool('glob') };
     const handler = { requestApproval: vi.fn() };
     const wrapped = wrapToolsWithPermission(tools, true, handler);
-    // Read-only tools should pass through unchanged
-    expect(wrapped.read_file).toBe(readTool);
+    // Read-only tools should execute without calling approval
+    const rf = wrapped.read_file as unknown as { execute: (args: Record<string, unknown>) => Promise<unknown> };
+    const result = await rf.execute({ path: 'test.txt' });
     expect(handler.requestApproval).not.toHaveBeenCalled();
+    expect(typeof result).toBe('string');
+    expect(result).toContain('executed');
   });
 
   it('wraps destructive tools and calls approval handler', async () => {

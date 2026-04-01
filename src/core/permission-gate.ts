@@ -21,15 +21,6 @@ export function wrapToolsWithPermission(
   const wrapped: Record<string, unknown> = {};
 
   for (const [name, toolDef] of Object.entries(tools)) {
-    const level = getPermissionLevel(name, requireApproval);
-
-    if (level !== 'ask') {
-      // read-only or no approval needed — pass through
-      wrapped[name] = toolDef;
-      continue;
-    }
-
-    // Wrap destructive tool with approval gate
     const original = toolDef as { execute?: (...args: unknown[]) => unknown; [k: string]: unknown };
     if (!original.execute) {
       wrapped[name] = toolDef;
@@ -40,11 +31,20 @@ export function wrapToolsWithPermission(
     const wrappedTool = { ...original };
     wrappedTool.execute = async (...args: unknown[]) => {
       const toolArgs = (args[0] ?? {}) as Record<string, unknown>;
-      const description = formatApprovalPrompt(name, toolArgs);
-      const approved = await handler.requestApproval(description);
-      if (!approved) {
-        return `[Permission denied] User rejected: ${description}`;
+      const level = getPermissionLevel(name, requireApproval, toolArgs);
+
+      if (level === 'deny') {
+        return `[Permission denied] Tool "${name}" is blocked by permission rules`;
       }
+
+      if (level === 'ask') {
+        const description = formatApprovalPrompt(name, toolArgs);
+        const approved = await handler.requestApproval(description);
+        if (!approved) {
+          return `[Permission denied] User rejected: ${description}`;
+        }
+      }
+
       return originalExecute(...args);
     };
 

@@ -9,6 +9,8 @@ import { webfetchTool } from './webfetch.js';
 import { todoTool } from './todo.js';
 import { batchTool } from './batch.js';
 import { lspDiagnosticsTool } from './lsp-diagnostics.js';
+import { memoryWriteTool, memoryReadTool } from './memory.js';
+import { isEnabled } from '../core/feature-flags.js';
 
 export function createToolRegistry() {
   return {
@@ -33,6 +35,7 @@ export function createToolRegistry() {
     todo: todoTool,
     batch: batchTool,
     diagnostics: lspDiagnosticsTool,
+    ...(isEnabled('MEMORY_SYSTEM') ? { memory_write: memoryWriteTool, memory_read: memoryReadTool } : {}),
   };
 }
 

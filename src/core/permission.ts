@@ -1,5 +1,7 @@
 // Permission gate — intercepts tool calls and requires user approval for destructive operations
 import { resolve, relative, isAbsolute } from 'node:path';
+import { isEnabled } from './feature-flags.js';
+import type { PermissionRule } from '../config/schema.js';
 
 export type PermissionLevel = 'allow' | 'ask' | 'deny';
 
@@ -25,6 +27,64 @@ const SENSITIVE_PATHS = [
   /AppData[/\\]Roaming[/\\]\.aws/i,
   /AppData[/\\]Roaming[/\\]npm[/\\]\.npmrc/i,
 ];
+
+// Module-level permission rules (set from config)
+let permissionRules: PermissionRule[] = [];
+
+/**
+ * Set permission rules from config.
+ */
+export function setPermissionRules(rules: PermissionRule[]): void {
+  permissionRules = rules;
+}
+
+// Cache compiled regex patterns to avoid repeated compilation on every tool call
+const globCache = new Map<string, RegExp>();
+
+/**
+ * Simple glob matching: * matches any chars, ? matches single char.
+ * Uses non-greedy quantifiers to avoid ReDoS with pathological patterns.
+ */
+function globMatch(pattern: string, text: string): boolean {
+  let regex = globCache.get(pattern);
+  if (!regex) {
+    // Limit pattern complexity to prevent ReDoS
+    if (pattern.length > 200) return false;
+    const escaped = pattern
+      .replace(/[.+^${}()|[\]\\]/g, '\\$&')
+      .replace(/\*/g, '.*?')
+      .replace(/\?/g, '.');
+    regex = new RegExp(`^${escaped}$`);
+    globCache.set(pattern, regex);
+  }
+  return regex.test(text);
+}
+
+/**
+ * Check glob rules for a tool call. Returns null if no rule matched.
+ * Evaluates deny rules first, then ask, then allow.
+ */
+function checkGlobRules(toolName: string, args?: Record<string, unknown>): PermissionLevel | null {
+  if (!isEnabled('PERMISSION_GLOB_RULES') || permissionRules.length === 0) {
+    return null;
+  }
+
+  const argsStr = args ? JSON.stringify(args) : '';
+
+  // Sort by priority: deny > ask > allow
+  const sorted = [...permissionRules].sort((a, b) => {
+    const order = { deny: 0, ask: 1, allow: 2 };
+    return order[a.action] - order[b.action];
+  });
+
+  for (const rule of sorted) {
+    if (!globMatch(rule.tool, toolName)) continue;
+    if (rule.argMatch && !globMatch(rule.argMatch, argsStr)) continue;
+    return rule.action;
+  }
+
+  return null;
+}
 
 /**
  * Check if a path is within the allowed sandbox (project working directory).
@@ -53,7 +113,12 @@ export function checkPathSandbox(filePath: string, cwd: string): string | null {
 /**
  * Determine if a tool call needs user permission.
  */
-export function getPermissionLevel(toolName: string, requireApproval: boolean): PermissionLevel {
+export function getPermissionLevel(toolName: string, requireApproval: boolean, args?: Record<string, unknown>): PermissionLevel {
+  // Check glob rules first (if enabled)
+  const globResult = checkGlobRules(toolName, args);
+  if (globResult !== null) return globResult;
+
+  // Existing static logic
   if (READ_ONLY_TOOLS.has(toolName)) return 'allow';
   if (!requireApproval) return 'allow';
   if (DESTRUCTIVE_TOOLS.has(toolName)) return 'ask';
