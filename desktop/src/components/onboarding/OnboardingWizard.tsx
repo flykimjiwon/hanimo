@@ -9,32 +9,41 @@ export function OnboardingWizard() {
     provider,
     apiKey,
     model,
+    baseUrl,
     setProvider,
     setApiKey,
     setModel,
+    setBaseUrl,
     nextStep,
     prevStep,
     complete,
   } = useOnboardingStore();
 
   const selectedProvider = PROVIDERS.find((p) => p.id === provider);
+  const isLocal = selectedProvider && !selectedProvider.needsApiKey;
+  const needsBaseUrl = selectedProvider && (selectedProvider as { needsBaseUrl?: boolean }).needsBaseUrl;
+  const hasModels = selectedProvider && selectedProvider.models.length > 0;
 
   const subtitles = [
     "Choose your AI provider",
-    "Enter your API key",
+    isLocal ? "Configure local endpoint" : "Enter your API key",
     "Select a model",
   ];
 
   const handleProviderSelect = (providerId: string) => {
+    const p = PROVIDERS.find((pr) => pr.id === providerId);
     setProvider(providerId);
-    // Ollama skips the API key step
-    if (providerId === "ollama") {
+    if (p && !p.needsApiKey) {
+      // Local providers: set apiKey to "local" and skip to model step
+      setApiKey("local");
       nextStep();
       nextStep();
     } else {
       nextStep();
     }
   };
+
+  const canProceedFromApiKey = isLocal || (apiKey.trim().length > 0);
 
   return (
     <div
@@ -76,9 +85,23 @@ export function OnboardingWizard() {
           </div>
         )}
 
-        {/* Step 1: API Key */}
+        {/* Step 1: API Key / Base URL */}
         {step === 1 && (
           <div className="flex flex-col gap-4">
+            {needsBaseUrl && (
+              <input
+                type="text"
+                placeholder="Base URL (e.g. https://api.example.com/v1)"
+                value={baseUrl}
+                onChange={(e) => setBaseUrl(e.target.value)}
+                className="w-full rounded-lg px-4 py-3 text-sm outline-none"
+                style={{
+                  background: c.inputBg,
+                  border: `1px solid ${c.inputBorder}`,
+                  color: c.text,
+                }}
+              />
+            )}
             <input
               type="password"
               placeholder="Enter your API key"
@@ -105,13 +128,13 @@ export function OnboardingWizard() {
               </button>
               <button
                 onClick={nextStep}
-                disabled={!apiKey.trim()}
+                disabled={!canProceedFromApiKey}
                 className="flex-1 rounded-lg px-4 py-2 text-sm font-medium transition-opacity"
                 style={{
                   background: c.accent,
                   color: "#ffffff",
-                  opacity: apiKey.trim() ? 1 : 0.4,
-                  cursor: apiKey.trim() ? "pointer" : "not-allowed",
+                  opacity: canProceedFromApiKey ? 1 : 0.4,
+                  cursor: canProceedFromApiKey ? "pointer" : "not-allowed",
                 }}
               >
                 Next
@@ -124,7 +147,7 @@ export function OnboardingWizard() {
         {step === 2 && (
           <div className="flex flex-col gap-4">
             <div className="flex flex-col gap-2">
-              {selectedProvider && selectedProvider.models.length > 0 ? (
+              {hasModels ? (
                 selectedProvider.models.map((m) => (
                   <button
                     key={m}
@@ -140,9 +163,18 @@ export function OnboardingWizard() {
                   </button>
                 ))
               ) : (
-                <p className="text-sm text-center py-4" style={{ color: c.textMuted }}>
-                  No models configured. You can set the model manually later.
-                </p>
+                <input
+                  type="text"
+                  placeholder="Enter model name (e.g. llama3.2, mistral)"
+                  value={model}
+                  onChange={(e) => setModel(e.target.value)}
+                  className="w-full rounded-lg px-4 py-3 text-sm outline-none"
+                  style={{
+                    background: c.inputBg,
+                    border: `1px solid ${c.inputBorder}`,
+                    color: c.text,
+                  }}
+                />
               )}
             </div>
             <div className="flex gap-3">
