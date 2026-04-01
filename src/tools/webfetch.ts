@@ -110,6 +110,8 @@ export const webfetchTool = tool({
       let html = raw;
       if (selector) {
         // Simple tag-based extraction (e.g. "main", "article")
+        // Note: non-greedy match — doesn't handle nested same-name tags (e.g. <main><main>...)
+        // This is acceptable since target selectors (main, article, section) are rarely nested.
         const tagRegex = new RegExp(`<${selector}[^>]*>([\\s\\S]*?)<\\/${selector}>`, 'gi');
         const matches = [...html.matchAll(tagRegex)].map((m) => m[1]).filter(Boolean);
         if (matches.length > 0) {

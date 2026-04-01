@@ -107,6 +107,7 @@ function selectMenu(
       if (typeof stdin.setRawMode === 'function') {
         stdin.setRawMode(wasRaw ?? false);
       }
+      stdin.pause();
       if (drawnLines > 0) {
         process.stdout.write(`\x1b[${drawnLines}A\x1b[J`);
       }
@@ -930,8 +931,8 @@ export async function startTextMode(options: TextModeOptions): Promise<void> {
   // ── Esc key detection on empty input ──
   let menuResolve: (() => void) | null = null;
 
-  function setupEscHandler(rl_: RLInterface): void {
-    stdin.on('keypress', (_ch: string | undefined, key: { name?: string; ctrl?: boolean; sequence?: string }) => {
+  function setupEscHandler(rl_: RLInterface): () => void {
+    const handler = (_ch: string | undefined, key: { name?: string; ctrl?: boolean; sequence?: string }) => {
       if (key?.name === 'escape' && !isRunning) {
         // Clear current line and open menu
         rl_.write(null, { ctrl: true, name: 'u' }); // clear input
@@ -943,14 +944,17 @@ export async function startTextMode(options: TextModeOptions): Promise<void> {
           }
         }).catch(() => {});
       }
-    });
+    };
+    stdin.on('keypress', handler);
+    return () => { stdin.removeListener('keypress', handler); };
   }
 
   // Enable keypress events
+  let cleanupEscHandler: (() => void) | null = null;
   if (typeof stdin.setRawMode === 'function') {
     const { emitKeypressEvents } = await import('node:readline');
     emitKeypressEvents(stdin);
-    setupEscHandler(rl);
+    cleanupEscHandler = setupEscHandler(rl);
   }
 
   // Handle initial prompt
@@ -986,6 +990,7 @@ export async function startTextMode(options: TextModeOptions): Promise<void> {
     if (!shouldContinue) break;
   }
 
+  cleanupEscHandler?.();
   rl.close();
   console.log('  Bye!');
 }

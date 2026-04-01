@@ -25,6 +25,7 @@ interface SessionData {
 
 export class SessionStore {
   private dir: string;
+  private writeLocks = new Set<string>();
 
   constructor(dirPath?: string) {
     this.dir = dirPath ?? join(homedir(), '.hanimo', 'sessions');
@@ -57,11 +58,21 @@ export class SessionStore {
   }
 
   saveMessage(sessionId: string, role: string, content: string): void {
-    const data = this.readSession(sessionId);
-    if (!data) return;
-    data.messages.push({ id: randomUUID(), role, content, createdAt: new Date().toISOString() });
-    data.updatedAt = new Date().toISOString();
-    this.writeSession(data);
+    // Simple mutex: skip if another write is in progress
+    if (this.writeLocks.has(sessionId)) return;
+    this.writeLocks.add(sessionId);
+    try {
+      const data = this.readSession(sessionId);
+      if (!data) {
+        console.warn(`[session] Warning: session ${sessionId.slice(0, 8)} not found, message not saved`);
+        return;
+      }
+      data.messages.push({ id: randomUUID(), role, content, createdAt: new Date().toISOString() });
+      data.updatedAt = new Date().toISOString();
+      this.writeSession(data);
+    } finally {
+      this.writeLocks.delete(sessionId);
+    }
   }
 
   getSession(id: string): Session | undefined {
