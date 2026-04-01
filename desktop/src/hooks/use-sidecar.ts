@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState, useCallback } from "react";
 import {
   startSidecar,
   stopSidecar,
@@ -7,6 +7,7 @@ import {
   type SidecarEvent,
 } from "../lib/ipc";
 import { useOnboardingStore } from "../stores/onboarding-store";
+import { useChatStore } from "../stores/chat-store";
 
 export function useSidecar({
   onEvent,
@@ -15,27 +16,40 @@ export function useSidecar({
   onEvent: (event: SidecarEvent) => void;
   role?: string;
 }) {
-  const { provider, apiKey, model } = useOnboardingStore();
+  const { provider, apiKey, model, baseUrl } = useOnboardingStore();
+  const { setConnectionStatus, setConnectionError } = useChatStore();
+  const [retryCount, setRetryCount] = useState(0);
 
   useEffect(() => {
     let unlisten: (() => void) | undefined;
 
     const init = async () => {
-      await startSidecar({ provider, model, apiKey, role });
-      unlisten = await onSidecarEvent(onEvent);
+      try {
+        setConnectionStatus("connecting");
+        await startSidecar({ provider, model, apiKey, role, baseUrl });
+        unlisten = await onSidecarEvent(onEvent);
+        setConnectionStatus("connected");
+      } catch (err) {
+        setConnectionStatus("error");
+        setConnectionError(err instanceof Error ? err.message : String(err));
+      }
     };
 
-    init().catch(console.error);
+    init();
 
     return () => {
       unlisten?.();
       stopSidecar().catch(console.error);
     };
-  }, [onEvent, provider, model, apiKey, role]);
+  }, [onEvent, provider, model, apiKey, role, baseUrl, retryCount]);
 
   const send = async (content: string) => {
     await sendPrompt(content);
   };
 
-  return { send };
+  const retry = useCallback(() => {
+    setRetryCount((n) => n + 1);
+  }, []);
+
+  return { send, retry };
 }

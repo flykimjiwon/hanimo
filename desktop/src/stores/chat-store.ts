@@ -13,11 +13,15 @@ interface ChatState {
   messages: ChatMessage[];
   isStreaming: boolean;
   streamingContent: string;
+  connectionStatus: "disconnected" | "connecting" | "connected" | "error";
+  connectionError: string | null;
   addMessage: (msg: Omit<ChatMessage, "id" | "timestamp">) => void;
   setStreaming: (streaming: boolean) => void;
   appendStreamingContent: (content: string) => void;
   clearStreamingContent: () => void;
   clear: () => void;
+  setConnectionStatus: (status: "disconnected" | "connecting" | "connected" | "error") => void;
+  setConnectionError: (error: string | null) => void;
 }
 
 let idCounter = 0;
@@ -26,6 +30,8 @@ export const useChatStore = create<ChatState>((set) => ({
   messages: [],
   isStreaming: false,
   streamingContent: "",
+  connectionStatus: "disconnected",
+  connectionError: null,
   addMessage: (msg) =>
     set((state) => ({
       messages: [
@@ -38,4 +44,6 @@ export const useChatStore = create<ChatState>((set) => ({
     set((state) => ({ streamingContent: state.streamingContent + content })),
   clearStreamingContent: () => set({ streamingContent: "" }),
   clear: () => set({ messages: [], isStreaming: false, streamingContent: "" }),
+  setConnectionStatus: (status) => set({ connectionStatus: status }),
+  setConnectionError: (error) => set({ connectionError: error }),
 }));

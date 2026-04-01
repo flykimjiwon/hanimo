@@ -76,7 +76,7 @@ export function ChatPanel() {
     []
   );
 
-  const { send } = useSidecar({ onEvent: handleEvent, role });
+  const { send, retry } = useSidecar({ onEvent: handleEvent, role });
 
   const handleSend = async (content: string) => {
     addMessage({ role: "user", content });
@@ -123,7 +123,7 @@ export function ChatPanel() {
       </div>
 
       {/* Messages */}
-      <MessageList />
+      <MessageList onRetry={retry} />
 
       {/* Input */}
       <ChatInput onSend={handleSend} disabled={isStreaming} />

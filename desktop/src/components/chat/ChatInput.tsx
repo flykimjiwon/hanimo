@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useThemeStore } from "../../stores/theme-store";
+import { useChatStore } from "../../stores/chat-store";
 
 interface ChatInputProps {
   onSend: (content: string) => void;
@@ -10,8 +11,9 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
   const { theme } = useThemeStore();
   const c = theme.colors;
   const [input, setInput] = useState("");
+  const { isStreaming, connectionStatus } = useChatStore();
 
-  const canSend = input.trim().length > 0 && !disabled;
+  const canSend = connectionStatus === "connected" && !isStreaming && input.trim().length > 0 && !disabled;
 
   const handleSend = () => {
     if (!canSend) return;
