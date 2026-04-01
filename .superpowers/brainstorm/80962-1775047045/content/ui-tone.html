@@ -1,0 +1,93 @@
+<h2>hanimo 데스크톱 앱 — UI 디자인 톤</h2>
+<p class="subtitle">어떤 분위기의 앱을 원하시나요?</p>
+
+<div class="cards">
+  <!-- Option A: Minimal/Clean -->
+  <div class="card" data-choice="a" onclick="toggleSelect(this)">
+    <div class="card-image" style="background: #0a0a0a; padding: 20px; border-radius: 8px;">
+      <div style="font-family: monospace; color: #e0e0e0; font-size: 13px;">
+        <div style="background: #111; border-radius: 8px; padding: 16px; border: 1px solid #222;">
+          <div style="display: flex; gap: 6px; margin-bottom: 12px;">
+            <div style="width: 10px; height: 10px; border-radius: 50%; background: #ff5f57;"></div>
+            <div style="width: 10px; height: 10px; border-radius: 50%; background: #febc2e;"></div>
+            <div style="width: 10px; height: 10px; border-radius: 50%; background: #28c840;"></div>
+          </div>
+          <div style="color: #666; margin-bottom: 8px;">hanimo 🐶</div>
+          <div style="background: #1a1a1a; border-radius: 6px; padding: 12px; margin-bottom: 8px; border: 1px solid #2a2a2a;">
+            <span style="color: #888;">You:</span> <span style="color: #ccc;">API 서버 만들어줘</span>
+          </div>
+          <div style="background: #0d1117; border-radius: 6px; padding: 12px; border: 1px solid #1a2332;">
+            <span style="color: #7ee787;">hanimo:</span> <span style="color: #b0b0b0;">Express 서버를 생성하겠습니다...</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>A. 미니멀 다크</h3>
+      <p>Claude Code / 터미널 느낌. 깔끔하고 개발자 친화적. 검정 배경에 단색 포인트.</p>
+    </div>
+  </div>
+
+  <!-- Option B: Modern/Soft -->
+  <div class="card" data-choice="b" onclick="toggleSelect(this)">
+    <div class="card-image" style="background: #f8f9fa; padding: 20px; border-radius: 8px;">
+      <div style="font-family: -apple-system, sans-serif; color: #333; font-size: 13px;">
+        <div style="background: white; border-radius: 12px; padding: 16px; box-shadow: 0 2px 12px rgba(0,0,0,0.08);">
+          <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+            <div style="width: 28px; height: 28px; border-radius: 8px; background: linear-gradient(135deg, #667eea, #764ba2); display: flex; align-items: center; justify-content: center; color: white; font-size: 14px;">🐶</div>
+            <span style="font-weight: 600; color: #333;">hanimo</span>
+          </div>
+          <div style="background: #e8f4fd; border-radius: 10px; padding: 10px 14px; margin-bottom: 8px; margin-left: auto; max-width: 80%; text-align: right; color: #1a73e8;">API 서버 만들어줘</div>
+          <div style="background: #f0f0f0; border-radius: 10px; padding: 10px 14px; max-width: 80%; color: #444;">Express 서버를 생성하겠습니다...</div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>B. 모던 소프트</h3>
+      <p>ChatGPT / iMessage 느낌. 라이트 모드 기본, 둥근 모서리, 부드러운 그림자. 일반인 친화적.</p>
+    </div>
+  </div>
+
+  <!-- Option C: Glassmorphism -->
+  <div class="card" data-choice="c" onclick="toggleSelect(this)">
+    <div class="card-image" style="background: linear-gradient(135deg, #0f0c29, #302b63, #24243e); padding: 20px; border-radius: 8px;">
+      <div style="font-family: -apple-system, sans-serif; font-size: 13px;">
+        <div style="background: rgba(255,255,255,0.08); backdrop-filter: blur(10px); border-radius: 12px; padding: 16px; border: 1px solid rgba(255,255,255,0.12);">
+          <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+            <div style="width: 28px; height: 28px; border-radius: 8px; background: rgba(255,255,255,0.15); display: flex; align-items: center; justify-content: center; font-size: 14px;">🐶</div>
+            <span style="font-weight: 500; color: rgba(255,255,255,0.9);">hanimo</span>
+          </div>
+          <div style="background: rgba(99,132,255,0.2); border-radius: 10px; padding: 10px 14px; margin-bottom: 8px; margin-left: auto; max-width: 80%; text-align: right; color: rgba(255,255,255,0.9); border: 1px solid rgba(99,132,255,0.2);">API 서버 만들어줘</div>
+          <div style="background: rgba(255,255,255,0.06); border-radius: 10px; padding: 10px 14px; max-width: 80%; color: rgba(255,255,255,0.75); border: 1px solid rgba(255,255,255,0.08);">Express 서버를 생성하겠습니다...</div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>C. 글래스모피즘</h3>
+      <p>Warp / Arc 브라우저 느낌. 반투명 유리 효과, 그라데이션 배경. 세련되고 트렌디.</p>
+    </div>
+  </div>
+
+  <!-- Option D: Hybrid -->
+  <div class="card" data-choice="d" onclick="toggleSelect(this)">
+    <div class="card-image" style="background: #1a1b2e; padding: 20px; border-radius: 8px;">
+      <div style="font-family: -apple-system, sans-serif; font-size: 13px;">
+        <div style="background: #1e1f35; border-radius: 12px; padding: 16px; border: 1px solid #2a2b45;">
+          <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+            <div style="width: 28px; height: 28px; border-radius: 8px; background: linear-gradient(135deg, #f093fb, #f5576c); display: flex; align-items: center; justify-content: center; color: white; font-size: 14px;">🐶</div>
+            <span style="font-weight: 500; color: #e0e0e0;">hanimo</span>
+            <span style="margin-left: auto; font-size: 11px; padding: 2px 8px; border-radius: 4px; background: #2a2b45; color: #8b8fa3;">dev mode</span>
+          </div>
+          <div style="background: rgba(99,132,255,0.15); border-radius: 10px; padding: 10px 14px; margin-bottom: 8px; margin-left: auto; max-width: 80%; text-align: right; color: #a8b4ff;">API 서버 만들어줘</div>
+          <div style="background: #252640; border-radius: 10px; padding: 10px 14px; max-width: 80%; color: #b0b3c5; border: 1px solid #2a2b45;">
+            <span style="color: #7ee787;">✓</span> Express 서버를 생성하겠습니다...
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>D. 다크 모던</h3>
+      <p>Cursor / Discord 느낌. 다크 기본이지만 부드러운 색감과 둥근 UI. 개발자 + 일반인 모두 편안.</p>
+    </div>
+  </div>
+</div>

@@ -57,15 +57,62 @@ Multiple small issues compound: no separator between the chat area and input bar
 
 ## Design Reference — Best Practices from Production TUIs
 
-**lazygit / btop / opencode / Claude Code patterns:**
+### 프레임워크별 현황
+
+| 도구 | 프레임워크 | 특징 |
+|------|-----------|------|
+| opencode | Bubble Tea + Lipgloss (Go) | MUV 패턴, 뷰포트 스크롤 내장 |
+| tenere | Ratatui (Rust) | Vim 모달 편집, 탭 포커스 |
+| elia | Textual (Python) | CSS 스타일 레이아웃, 도킹 |
+| codex/gemini-cli/copilot | OpenTUI (TS) | React reconciler, ScrollBox 내장 |
+| hanimo (현재) | Ink (TS) | 스크롤 없음, 레이아웃 약함 |
+
+### Ink의 한계 (chat-heavy 앱에 부적합)
+
+- **네이티브 스크롤 없음** — 수동 구현 필요 (현재 estimateLines 방식이 깨짐)
+- **레이아웃 분리 불가** — header/footer가 flex children이라 스크롤에 포함됨
+- **더티 렉탱글 최적화 없음** — 매 렌더마다 전체 트리 재렌더
+- **폼 UI에 적합**, 채팅 UI에 부적합
+
+### Production TUI 공통 패턴
+
+**lazygit / btop / opencode / Claude Code:**
 
 - Header and footer are **fixed 1-line regions** at top and bottom — never flex children
 - Content area fills the remaining height using `height = terminalHeight - headerLines - footerLines`
 - Scroll is **viewport-based**: a slice of a message buffer, not DOM overflow
+- **텍스트는 렌더 전에 wrapping** (렌더 중 아님)
+- **수평 스크롤 비활성화** — 헤더 정렬 유지
 - No blank lines between sections
 - Terminal resize recalculates viewport height and re-renders once
 - Wide character widths are computed with `wcwidth` or equivalent (each CJK/emoji = 2 columns)
 - ANSI escape sequences are stripped before measuring visible length
+
+### 채팅 레이아웃 패턴 (Bubble Tea 기준)
+
+```
+Header (고정 높이, 스크롤 불가)
+─────────────────────
+Viewport (스크롤 가능, height = terminal - header - textarea)
+  ├─ 이전 메시지들 (위로 스크롤)
+  └─ 최신 메시지 + 스트리밍
+─────────────────────
+Textarea (고정 높이, 하단 고정)
+```
+
+### 입력 영역 패턴
+- Enter = 메시지 전송 (줄바꿈 아님)
+- Shift+Enter = 멀티라인 (필요 시)
+- Esc = 메뉴/취소
+- 고정 높이, 하단 도킹
+
+### 권장 전략: OpenTUI 마이그레이션
+
+Ink 내에서 Phase 1-2를 수정하되, **Phase 3에서 OpenTUI React reconciler로 전환**하면:
+- ScrollBox 내장 → 뷰포트 스크롤 구현 불필요
+- Markdown 스트리밍 내장 → renderMarkdown 교체
+- Yoga 레이아웃 → 고정 영역 분리 해결
+- 코드 뷰어/Diff 뷰어 내장 → 도구 결과 렌더링 개선
 
 ---
 

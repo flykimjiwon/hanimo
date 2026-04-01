@@ -1,0 +1,156 @@
+<h2>hanimo 데스크톱 앱 — 레이아웃 구조</h2>
+<p class="subtitle">채팅 모드 ↔ 에디터 모드 하이브리드 — 어떤 배치가 좋으세요?</p>
+
+<div class="cards">
+  <!-- Option A: Chat-First -->
+  <div class="card" data-choice="a" onclick="toggleSelect(this)">
+    <div class="card-image" style="background: #0a0a0a; padding: 16px; border-radius: 8px;">
+      <div style="font-family: monospace; font-size: 11px;">
+        <!-- Top bar -->
+        <div style="background: #1a1a1a; border-radius: 8px 8px 0 0; padding: 8px 12px; display: flex; align-items: center; gap: 8px; border: 1px solid #2a2a2a; border-bottom: none;">
+          <div style="display: flex; gap: 4px;">
+            <div style="width: 8px; height: 8px; border-radius: 50%; background: #ff5f57;"></div>
+            <div style="width: 8px; height: 8px; border-radius: 50%; background: #febc2e;"></div>
+            <div style="width: 8px; height: 8px; border-radius: 50%; background: #28c840;"></div>
+          </div>
+          <span style="color: #888; font-size: 11px;">hanimo 🐶</span>
+          <div style="margin-left: auto; display: flex; gap: 4px;">
+            <span style="padding: 2px 8px; border-radius: 4px; background: #333; color: #aaa; font-size: 10px; border: 1px solid #444;">💬 Chat</span>
+            <span style="padding: 2px 8px; border-radius: 4px; background: #1a1a1a; color: #666; font-size: 10px; border: 1px solid #333;">📝 Editor</span>
+          </div>
+        </div>
+        <!-- Main area: full chat -->
+        <div style="background: #111; border-radius: 0 0 8px 8px; padding: 12px; border: 1px solid #2a2a2a; border-top: none; min-height: 150px;">
+          <div style="background: #1a1a1a; border-radius: 6px; padding: 8px 10px; margin-bottom: 6px; color: #888; font-size: 11px;">
+            <span style="color: #666;">You:</span> 로그인 페이지 만들어줘
+          </div>
+          <div style="background: #0d1117; border-radius: 6px; padding: 8px 10px; margin-bottom: 6px; color: #7ee787; font-size: 11px;">
+            ✓ src/login.tsx 생성 완료
+          </div>
+          <div style="background: #0d1117; border-radius: 6px; padding: 8px 10px; color: #b0b0b0; font-size: 11px;">
+            <span style="color: #7ee787;">hanimo:</span> 로그인 폼을 만들었습니다. 미리보기를 확인해보세요.
+          </div>
+          <div style="margin-top: 10px; background: #1a1a1a; border-radius: 6px; padding: 8px; border: 1px solid #333;">
+            <span style="color: #666; font-size: 10px;">📎 파일 미리보기가 여기에 인라인으로 표시</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>A. 채팅 퍼스트</h3>
+      <p>채팅이 풀스크린 메인. 상단 탭으로 에디터 모드 전환. 파일 미리보기는 채팅 내 인라인.</p>
+      <div class="pros-cons">
+        <div class="pros"><h4>장점</h4><ul><li>일반 사용자 친화적</li><li>심플한 UX</li></ul></div>
+        <div class="cons"><h4>단점</h4><ul><li>코드 편집 시 전환 필요</li></ul></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Option B: Split View -->
+  <div class="card" data-choice="b" onclick="toggleSelect(this)">
+    <div class="card-image" style="background: #0a0a0a; padding: 16px; border-radius: 8px;">
+      <div style="font-family: monospace; font-size: 11px;">
+        <!-- Top bar -->
+        <div style="background: #1a1a1a; border-radius: 8px 8px 0 0; padding: 8px 12px; display: flex; align-items: center; gap: 8px; border: 1px solid #2a2a2a; border-bottom: none;">
+          <div style="display: flex; gap: 4px;">
+            <div style="width: 8px; height: 8px; border-radius: 50%; background: #ff5f57;"></div>
+            <div style="width: 8px; height: 8px; border-radius: 50%; background: #febc2e;"></div>
+            <div style="width: 8px; height: 8px; border-radius: 50%; background: #28c840;"></div>
+          </div>
+          <span style="color: #888; font-size: 11px;">hanimo 🐶</span>
+          <span style="margin-left: auto; color: #666; font-size: 10px;">⊞ Split</span>
+        </div>
+        <!-- Split: left chat, right editor -->
+        <div style="display: flex; border: 1px solid #2a2a2a; border-top: none; border-radius: 0 0 8px 8px; overflow: hidden; min-height: 150px;">
+          <!-- Left: Chat -->
+          <div style="flex: 1; background: #111; padding: 10px; border-right: 1px solid #2a2a2a;">
+            <div style="color: #555; font-size: 9px; margin-bottom: 6px;">💬 CHAT</div>
+            <div style="background: #1a1a1a; border-radius: 4px; padding: 6px 8px; margin-bottom: 4px; color: #888; font-size: 10px;">
+              로그인 페이지 만들어줘
+            </div>
+            <div style="background: #0d1117; border-radius: 4px; padding: 6px 8px; color: #b0b0b0; font-size: 10px;">
+              <span style="color: #7ee787;">✓</span> 생성 완료
+            </div>
+          </div>
+          <!-- Right: Editor -->
+          <div style="flex: 1; background: #0d1117; padding: 10px;">
+            <div style="color: #555; font-size: 9px; margin-bottom: 6px;">📝 src/login.tsx</div>
+            <div style="font-size: 10px; color: #7ee787; line-height: 1.6;">
+              <span style="color: #444;">1</span> <span style="color: #ff7b72;">import</span> React<br>
+              <span style="color: #444;">2</span> <br>
+              <span style="color: #444;">3</span> <span style="color: #ff7b72;">export</span> <span style="color: #d2a8ff;">function</span> Login<br>
+              <span style="color: #444;">4</span> &nbsp;&nbsp;<span style="color: #ff7b72;">return</span> (<br>
+              <span style="color: #444;">5</span> &nbsp;&nbsp;&nbsp;&nbsp;&lt;<span style="color: #7ee787;">form</span>&gt;...
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>B. 스플릿 뷰</h3>
+      <p>좌: 채팅 / 우: 에디터를 나란히 표시. Cursor와 유사. 드래그로 비율 조절.</p>
+      <div class="pros-cons">
+        <div class="pros"><h4>장점</h4><ul><li>대화하면서 코드 실시간 확인</li><li>개발자 생산성 높음</li></ul></div>
+        <div class="cons"><h4>단점</h4><ul><li>작은 화면에서 비좁음</li></ul></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Option C: Sidebar + Main -->
+  <div class="card" data-choice="c" onclick="toggleSelect(this)">
+    <div class="card-image" style="background: #0a0a0a; padding: 16px; border-radius: 8px;">
+      <div style="font-family: monospace; font-size: 11px;">
+        <!-- Top bar -->
+        <div style="background: #1a1a1a; border-radius: 8px 8px 0 0; padding: 8px 12px; display: flex; align-items: center; gap: 8px; border: 1px solid #2a2a2a; border-bottom: none;">
+          <div style="display: flex; gap: 4px;">
+            <div style="width: 8px; height: 8px; border-radius: 50%; background: #ff5f57;"></div>
+            <div style="width: 8px; height: 8px; border-radius: 50%; background: #febc2e;"></div>
+            <div style="width: 8px; height: 8px; border-radius: 50%; background: #28c840;"></div>
+          </div>
+          <span style="color: #888; font-size: 11px;">hanimo 🐶</span>
+        </div>
+        <!-- Sidebar + Main -->
+        <div style="display: flex; border: 1px solid #2a2a2a; border-top: none; border-radius: 0 0 8px 8px; overflow: hidden; min-height: 150px;">
+          <!-- Sidebar: icons -->
+          <div style="width: 40px; background: #0d0d0d; padding: 8px 0; display: flex; flex-direction: column; align-items: center; gap: 12px; border-right: 1px solid #2a2a2a;">
+            <div style="font-size: 14px; opacity: 0.5;">💬</div>
+            <div style="font-size: 14px; opacity: 1; background: #333; border-radius: 4px; padding: 2px 4px;">📁</div>
+            <div style="font-size: 14px; opacity: 0.5;">🔍</div>
+            <div style="font-size: 14px; opacity: 0.5;">⚙️</div>
+          </div>
+          <!-- File tree -->
+          <div style="width: 120px; background: #111; padding: 8px; border-right: 1px solid #2a2a2a;">
+            <div style="color: #555; font-size: 9px; margin-bottom: 6px;">EXPLORER</div>
+            <div style="color: #888; font-size: 10px; line-height: 1.8;">
+              📂 src/<br>
+              &nbsp;&nbsp;📄 login.tsx<br>
+              &nbsp;&nbsp;📄 app.tsx<br>
+              📂 public/<br>
+              📄 package.json
+            </div>
+          </div>
+          <!-- Main: Editor -->
+          <div style="flex: 1; background: #0d1117; padding: 10px;">
+            <div style="display: flex; gap: 1px; margin-bottom: 8px;">
+              <span style="padding: 3px 10px; background: #1a1a1a; border-radius: 4px 4px 0 0; color: #aaa; font-size: 10px; border: 1px solid #333;">login.tsx</span>
+              <span style="padding: 3px 10px; background: #0d1117; color: #666; font-size: 10px;">app.tsx</span>
+            </div>
+            <div style="font-size: 10px; color: #7ee787; line-height: 1.6;">
+              <span style="color: #444;">1</span> <span style="color: #ff7b72;">import</span> React<br>
+              <span style="color: #444;">2</span> <br>
+              <span style="color: #444;">3</span> <span style="color: #ff7b72;">export</span> <span style="color: #d2a8ff;">function</span> Login
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>C. VSCode 스타일</h3>
+      <p>왼쪽 아이콘 사이드바 + 파일 트리 + 메인 에디터. 채팅은 사이드바 아이콘으로 전환. 가장 익숙한 IDE 패턴.</p>
+      <div class="pros-cons">
+        <div class="pros"><h4>장점</h4><ul><li>개발자에게 가장 익숙</li><li>파일 탐색 편리</li></ul></div>
+        <div class="cons"><h4>단점</h4><ul><li>비개발자에게 복잡해보임</li></ul></div>
+      </div>
+    </div>
+  </div>
+</div>
