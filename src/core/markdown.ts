@@ -154,7 +154,32 @@ function renderInline(line: string): string {
   return line;
 }
 
+/** Create an OSC 8 clickable hyperlink for terminal emulators */
+function fileLink(filePath: string): string {
+  const absPath = filePath.startsWith('/') ? filePath : filePath;
+  return `\x1b]8;;file://${absPath}\x1b\\${CYAN}${filePath}${RESET}\x1b]8;;\x1b\\`;
+}
+
+/** Convert file paths in text to clickable terminal links */
+function linkifyFilePaths(line: string): string {
+  // Match absolute paths like /Users/... or ~/... or relative paths like src/foo.ts:123
+  // Negative lookbehind excludes URLs (http://, https://, file://)
+  return line.replace(
+    /(?<!:\/|:\/\/)(?:\/(?:Users|home|tmp|var|etc|opt)\/[\w./-]+(?::\d+)?|~\/[\w./-]+(?::\d+)?|(?:src|tests|docs|dist)\/[\w./-]+(?::\d+)?)/g,
+    (match) => fileLink(match),
+  );
+}
+
+/** Strip or dim <think>...</think> blocks from reasoning models */
+function filterThinkingTags(text: string): string {
+  // Remove <think>...</think> blocks (multi-line)
+  return text.replace(/<think>[\s\S]*?<\/think>\s*/g, '');
+}
+
 export function renderMarkdown(text: string): string {
+  // Filter out reasoning model thinking blocks
+  text = filterThinkingTags(text);
+
   const lines = text.split('\n');
   const output: string[] = [];
   let inCodeBlock = false;
@@ -241,8 +266,8 @@ export function renderMarkdown(text: string): string {
       continue;
     }
 
-    // Regular line with inline formatting
-    output.push(renderInline(line));
+    // Regular line with inline formatting + clickable file paths
+    output.push(linkifyFilePaths(renderInline(line)));
   }
 
   // Close unclosed code block
