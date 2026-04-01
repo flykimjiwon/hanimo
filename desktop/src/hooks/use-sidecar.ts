@@ -10,8 +10,10 @@ import { useOnboardingStore } from "../stores/onboarding-store";
 
 export function useSidecar({
   onEvent,
+  role = "hanimo",
 }: {
   onEvent: (event: SidecarEvent) => void;
+  role?: string;
 }) {
   const { provider, apiKey, model } = useOnboardingStore();
 
@@ -19,7 +21,7 @@ export function useSidecar({
     let unlisten: (() => void) | undefined;
 
     const init = async () => {
-      await startSidecar({ provider, model, apiKey, role: "hanimo" });
+      await startSidecar({ provider, model, apiKey, role });
       unlisten = await onSidecarEvent(onEvent);
     };
 
@@ -29,7 +31,7 @@ export function useSidecar({
       unlisten?.();
       stopSidecar().catch(console.error);
     };
-  }, [onEvent, provider, model, apiKey]);
+  }, [onEvent, provider, model, apiKey, role]);
 
   const send = async (content: string) => {
     await sendPrompt(content);
