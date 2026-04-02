@@ -145,12 +145,7 @@ export const Banner = React.memo(function Banner({
           ))}
         </>
       )}
-      <Box justifyContent="center" width="100%" marginTop={1}>
-        <Text color={colors.dimText}>
-          {'v' + version}
-          {tagline ? ` \u2014 ${tagline}` : ''}
-        </Text>
-      </Box>
+      {/* Version/tagline removed — keep banner clean */}
     </Box>
   );
 });

@@ -17,8 +17,7 @@ interface WelcomeScreenProps {
 }
 
 const DEFAULT_TIPS = [
-  'Enter \uC804\uC1A1  |  Esc \uBA54\uB274  |  Ctrl+K \uD314\uB808\uD2B8  |  /help \uB3C4\uC6C0\uB9D0',
-  'Tab \uC5ED\uD560 \uC804\uD658  |  Ctrl+X \uB9AC\uB354\uD0A4  |  /theme \uD14C\uB9C8 \uBCC0\uACBD',
+  '\uD504\uB86C\uD504\uD2B8\uB97C \uC785\uB825\uD558\uBA74 \uB300\uD654\uAC00 \uC2DC\uC791\uB429\uB2C8\uB2E4',
 ];
 
 export const WelcomeScreen = React.memo(function WelcomeScreen({
@@ -46,7 +45,7 @@ export const WelcomeScreen = React.memo(function WelcomeScreen({
         <Text color={colors.model} bold>{model}</Text>
         {roleIcon && roleName && (
           <>
-            <Text color={colors.dimText}>  \u00B7  </Text>
+            <Text color={colors.dimText}>  {'\u00B7'}  </Text>
             <Text color={colors.success}>{roleIcon} {roleName}</Text>
           </>
         )}

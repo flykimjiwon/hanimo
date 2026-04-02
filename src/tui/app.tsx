@@ -72,7 +72,7 @@ function KeyHints({ isLoading, menuOpen, leaderActive, lang, statusInfo }: {
       <Text color={colors.hint}>
         {isLoading
           ? ko ? 'Ctrl+C \uCDE8\uC18C' : 'Ctrl+C cancel'
-          : ko ? 'Esc \uBA54\uB274  |  / \uBA85\uB839\uC5B4' : 'Esc menu  |  / commands'}
+          : ko ? 'Esc \uBA54\uB274' : 'Esc menu'}
       </Text>
       {statusInfo && <Text color={colors.dimText}>{statusInfo}</Text>}
     </Box>
