@@ -366,6 +366,7 @@ function App({
         </box>
         <input
           value={inputValue}
+          onInput={(v: string) => setInputValue(v)}
           onChange={(v: string) => setInputValue(v)}
           onSubmit={(v: unknown) => { setInputValue(''); sendMessage(String(v)); }}
           placeholder={isLoading ? '응답 대기 중...' : '메시지를 입력하세요...'}
