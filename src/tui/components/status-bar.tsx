@@ -124,28 +124,25 @@ export const StatusBar = React.memo(function StatusBar({
 
   return (
     <Box flexDirection="column" width="100%">
-      <Box width="100%" paddingX={1} height={1} overflow="hidden">
-        <Text>
-          <Text bold color={colors.model}>hanimo</Text>
-          <Text color={colors.dimText}> {'\u2502'} </Text>
-          <Text color={colors.provider}>{provider}</Text>
-          <Text color={colors.dimText}>/</Text>
-          <Text color={colors.model}>{displayModel}</Text>
-          <Text> </Text>
-          <Text color={roleColor} bold>{roleDisplay}</Text>
-          <Text color={colors.dimText}> {'\u2502'} </Text>
-          <Text color={toolsColor}>{toolsTag}</Text>
-          <Text>{' '.repeat(padding)}</Text>
-          <Text color={status === 'idle' ? colors.statusIdle : colors.statusThinking}>{statusText}</Text>
-          <Text color={colors.dimText}>  {formatTokens(totalTokens)} tok {'\u2502'} </Text>
-          <Text color={colors.cost}>{formatCost(usage.totalCost)}</Text>
-        </Text>
-      </Box>
-      <Box width="100%">
-        <Text color={colors.border}>
-          {'\u2500'.repeat(cols)}
-        </Text>
-      </Box>
+      <Text wrap="truncate-end">
+        {' '}
+        <Text bold color={colors.model}>hanimo</Text>
+        <Text color={colors.dimText}> {'\u2502'} </Text>
+        <Text color={colors.provider}>{provider}</Text>
+        <Text color={colors.dimText}>/</Text>
+        <Text color={colors.model}>{displayModel}</Text>
+        <Text> </Text>
+        <Text color={roleColor} bold>{roleDisplay}</Text>
+        <Text color={colors.dimText}> {'\u2502'} </Text>
+        <Text color={toolsColor}>{toolsTag}</Text>
+        <Text>{' '.repeat(padding)}</Text>
+        <Text color={status === 'idle' ? colors.statusIdle : colors.statusThinking}>{statusText}</Text>
+        <Text color={colors.dimText}>  {formatTokens(totalTokens)} tok {'\u2502'} </Text>
+        <Text color={colors.cost}>{formatCost(usage.totalCost)}</Text>
+      </Text>
+      <Text wrap="truncate-end" color={colors.border}>
+        {'\u2500'.repeat(cols)}
+      </Text>
     </Box>
   );
 });
