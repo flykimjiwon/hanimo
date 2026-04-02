@@ -10,7 +10,7 @@ interface WelcomeScreenProps {
   roleIcon?: string;
   roleName?: string;
   cols?: number;
-  rows?: number;
+  height?: number;
   themeId?: string;
   tips?: string[];
   notifications?: Array<{ type: 'info' | 'warning' | 'success' | 'error'; title?: string; message: string }>;
@@ -27,7 +27,7 @@ export const WelcomeScreen = React.memo(function WelcomeScreen({
   roleIcon,
   roleName,
   cols = 80,
-  rows = 24,
+  height,
   themeId,
   tips,
   notifications,
@@ -37,8 +37,8 @@ export const WelcomeScreen = React.memo(function WelcomeScreen({
   const boxWidth = Math.min(cols - 4, 70);
 
   return (
-    <Box flexDirection="column" width="100%" height={rows - 3} alignItems="center">
-      <Banner version="0.1.0" tagline="\uD130\uBBF8\uB110 AI \uCF54\uB529 \uC5B4\uC2DC\uC2A4\uD134\uD2B8" cols={cols} themeId={themeId} />
+    <Box flexDirection="column" width="100%" height={height} alignItems="center">
+      <Banner version="0.1.0" tagline={'\uD130\uBBF8\uB110 AI \uCF54\uB529 \uC5B4\uC2DC\uC2A4\uD134\uD2B8'} cols={cols} themeId={themeId} />
 
       {/* Provider/model info */}
       <Box justifyContent="center" width="100%" marginTop={1}>

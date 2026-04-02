@@ -816,7 +816,7 @@ function App({
           roleIcon={currentRole?.icon}
           roleName={currentRole?.name}
           cols={stdout?.columns ?? 80}
-          rows={termRows}
+          height={chatHeight}
           themeId={currentThemeId}
         />
       ) : (
