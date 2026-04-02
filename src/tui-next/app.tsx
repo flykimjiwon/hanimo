@@ -248,23 +248,7 @@ function App({
     <box flexDirection="column" flexGrow={1}>
       <SIGINTHandler />
 
-      {/* Esc menu overlay */}
-      {showEscMenu && (
-        <box borderStyle="rounded" paddingX={2} paddingY={1} flexDirection="column">
-          <text attributes={TextAttributes.BOLD} content="메뉴  (Esc 닫기)" />
-          <text content="" />
-          <text content={`  현재: ${roleIcon} ${roleName}  ·  ${provider}/${model}`} />
-          <text content="" />
-          <text attributes={TextAttributes.DIM} content="  Tab        역할 전환 (hanimo/dev/plan)" />
-          <text attributes={TextAttributes.DIM} content="  /config    설정 보기" />
-          <text attributes={TextAttributes.DIM} content="  /theme     테마 변경" />
-          <text attributes={TextAttributes.DIM} content="  /model     모델 변경" />
-          <text attributes={TextAttributes.DIM} content="  /clear     대화 초기화" />
-          <text attributes={TextAttributes.DIM} content="  /save      세션 저장" />
-          <text attributes={TextAttributes.DIM} content="  /load      세션 불러오기" />
-          <text attributes={TextAttributes.DIM} content="  Ctrl+C     종료" />
-        </box>
-      )}
+      {/* Esc menu — rendered above input, not at top */}
 
       {/* Chat area */}
       <scrollbox flexGrow={1}>
@@ -360,27 +344,54 @@ function App({
         </box>
       )}
 
+      {/* Esc menu — right above input */}
+      {showEscMenu && (
+        <box borderStyle="rounded" paddingX={2} paddingY={1} flexDirection="column">
+          <text attributes={TextAttributes.BOLD} content={`메뉴  ${roleIcon} ${roleName}  ·  ${provider}/${model}  (Esc 닫기)`} />
+          <text content="" />
+          <text fg="cyan" content="  단축키" />
+          <text attributes={TextAttributes.DIM} content="  Tab          역할 전환 (hanimo/dev/plan)" />
+          <text attributes={TextAttributes.DIM} content="  Ctrl+C       종료 (로딩 중: 취소)" />
+          <text content="" />
+          <text fg="cyan" content="  명령어" />
+          <text attributes={TextAttributes.DIM} content="  /model       모델 변경" />
+          <text attributes={TextAttributes.DIM} content="  /provider    프로바이더 변경" />
+          <text attributes={TextAttributes.DIM} content="  /mode        모드 프리셋 (turbo/balanced/eco/auto)" />
+          <text attributes={TextAttributes.DIM} content="  /theme       테마 변경" />
+          <text attributes={TextAttributes.DIM} content="  /lang        언어 변경 (ko/en/ja/zh)" />
+          <text attributes={TextAttributes.DIM} content="  /config      현재 설정 보기" />
+          <text attributes={TextAttributes.DIM} content="  /usage       토큰 사용량 & 비용" />
+          <text content="" />
+          <text fg="cyan" content="  세션" />
+          <text attributes={TextAttributes.DIM} content="  /save        현재 세션 저장" />
+          <text attributes={TextAttributes.DIM} content="  /load        세션 불러오기" />
+          <text attributes={TextAttributes.DIM} content="  /clear       대화 초기화" />
+          <text attributes={TextAttributes.DIM} content="  /auto        자율 모드 (완료까지 자동 실행)" />
+          <text content="" />
+          <text fg="cyan" content="  도구" />
+          <text attributes={TextAttributes.DIM} content="  /skill       스킬 관리" />
+          <text attributes={TextAttributes.DIM} content="  /endpoint    엔드포인트 설정" />
+          <text attributes={TextAttributes.DIM} content="  /diagnostics TypeScript/ESLint 진단" />
+        </box>
+      )}
+
       {/* Input */}
       <box borderStyle="rounded" paddingX={1} flexDirection="column">
         <box justifyContent="space-between">
-          <text content="" />
           <text attributes={TextAttributes.BOLD} content={`${roleIcon} ${roleName}`} />
-          <text attributes={TextAttributes.DIM} content={'Shift+Enter ↵  Tab ⇄ mode'} />
+          <text attributes={TextAttributes.DIM} content={'Shift+Enter ↵  Tab ⇄'} />
         </box>
-        {!isLoading && inputValue.length === 0 && (
-          <text attributes={TextAttributes.DIM} content={
-            roleName === 'Hanimo' ? '의도 자동 감지 — 코딩, 대화, 분석, 시스템 관리 모두 가능'
-            : roleName === 'Dev' ? '코딩 에이전트 — 파일 읽기/쓰기, 셸, git'
-            : roleName === 'Plan' ? '분석/계획 — 읽기 전용, 수정 불가'
-            : ''
-          } />
-        )}
         <input
           value={inputValue}
           onInput={(v: string) => setInputValue(v)}
           onChange={(v: string) => setInputValue(v)}
           onSubmit={(v: unknown) => { setInputValue(''); sendMessage(String(v)); }}
-          placeholder={isLoading ? '응답 대기 중...' : '메시지를 입력하세요...'}
+          placeholder={isLoading ? '응답 대기 중...' : (
+            roleName === 'Hanimo' ? '의도 자동 감지 — 코딩, 대화, 분석, 시스템 관리 모두 가능'
+            : roleName === 'Dev' ? '코딩 에이전트 — 파일 읽기/쓰기, 셸, git'
+            : roleName === 'Plan' ? '분석/계획 — 읽기 전용, 수정 불가'
+            : '메시지를 입력하세요...'
+          )}
         />
       </box>
 
