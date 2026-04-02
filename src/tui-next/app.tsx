@@ -344,43 +344,50 @@ function App({
         </box>
       )}
 
-      {/* Esc menu — right above input */}
+      {/* Esc menu — interactive select above input */}
       {showEscMenu && (
-        <box borderStyle="rounded" paddingX={2} paddingY={1} flexDirection="column">
-          <text attributes={TextAttributes.BOLD} content={`메뉴  ${roleIcon} ${roleName}  ·  ${provider}/${model}  (Esc 닫기)`} />
-          <text content="" />
-          <text fg="cyan" content="  단축키" />
-          <text attributes={TextAttributes.DIM} content="  Tab          역할 전환 (hanimo/dev/plan)" />
-          <text attributes={TextAttributes.DIM} content="  Ctrl+C       종료 (로딩 중: 취소)" />
-          <text content="" />
-          <text fg="cyan" content="  명령어" />
-          <text attributes={TextAttributes.DIM} content="  /model       모델 변경" />
-          <text attributes={TextAttributes.DIM} content="  /provider    프로바이더 변경" />
-          <text attributes={TextAttributes.DIM} content="  /mode        모드 프리셋 (turbo/balanced/eco/auto)" />
-          <text attributes={TextAttributes.DIM} content="  /theme       테마 변경" />
-          <text attributes={TextAttributes.DIM} content="  /lang        언어 변경 (ko/en/ja/zh)" />
-          <text attributes={TextAttributes.DIM} content="  /config      현재 설정 보기" />
-          <text attributes={TextAttributes.DIM} content="  /usage       토큰 사용량 & 비용" />
-          <text content="" />
-          <text fg="cyan" content="  세션" />
-          <text attributes={TextAttributes.DIM} content="  /save        현재 세션 저장" />
-          <text attributes={TextAttributes.DIM} content="  /load        세션 불러오기" />
-          <text attributes={TextAttributes.DIM} content="  /clear       대화 초기화" />
-          <text attributes={TextAttributes.DIM} content="  /auto        자율 모드 (완료까지 자동 실행)" />
-          <text content="" />
-          <text fg="cyan" content="  도구" />
-          <text attributes={TextAttributes.DIM} content="  /skill       스킬 관리" />
-          <text attributes={TextAttributes.DIM} content="  /endpoint    엔드포인트 설정" />
-          <text attributes={TextAttributes.DIM} content="  /diagnostics TypeScript/ESLint 진단" />
+        <box borderStyle="rounded" paddingX={1} paddingY={1} flexDirection="column">
+          <text attributes={TextAttributes.BOLD} content={`메뉴  ${roleIcon} ${roleName}  (Esc 닫기)`} />
+          <select
+            focused={showEscMenu}
+            options={[
+              { name: '모델 변경', description: '/model', value: 'model' },
+              { name: '프로바이더 변경', description: '/provider', value: 'provider' },
+              { name: '언어 변경', description: 'ko/en/ja/zh', value: 'lang' },
+              { name: '테마 변경', description: '/theme', value: 'theme' },
+              { name: '모드 프리셋', description: 'turbo/balanced/eco', value: 'mode' },
+              { name: '설정 보기', description: '/config', value: 'config' },
+              { name: '토큰 사용량', description: '/usage', value: 'usage' },
+              { name: '세션 저장', description: '/save', value: 'save' },
+              { name: '세션 불러오기', description: '/load', value: 'load' },
+              { name: '대화 초기화', description: '/clear', value: 'clear' },
+              { name: '자율 모드', description: '/auto', value: 'auto' },
+              { name: '설정 초기화', description: 'reset', value: 'reset-config' },
+              { name: '종료', description: 'Ctrl+C', value: 'exit' },
+            ]}
+            onSelect={(_idx: number, opt: { value?: unknown } | null) => {
+              setShowEscMenu(false);
+              if (!opt || !opt.value) return;
+              const action = String(opt.value);
+              switch (action) {
+                case 'exit': process.exit(0); break;
+                case 'clear':
+                  setMessages([]);
+                  conversationRef.current = [];
+                  break;
+                default:
+                  // Inject as slash command
+                  sendMessage(`/${action}`);
+                  break;
+              }
+            }}
+          />
         </box>
       )}
 
       {/* Input */}
       <box borderStyle="rounded" paddingX={1} flexDirection="column">
-        <box justifyContent="space-between">
-          <text attributes={TextAttributes.BOLD} content={`${roleIcon} ${roleName}`} />
-          <text attributes={TextAttributes.DIM} content={'Shift+Enter ↵  Tab ⇄'} />
-        </box>
+        <text content={`${roleIcon} ${roleName}                                        Shift+Enter ↵  Tab ⇄`} />
         <input
           value={inputValue}
           onInput={(v: string) => setInputValue(v)}
