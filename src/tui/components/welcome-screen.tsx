@@ -1,7 +1,7 @@
 import React from 'react';
 import { Box, Text } from 'ink';
 import { Banner } from './banner.js';
-import { NotifyBox, NotifyInline } from './notify-box.js';
+import { NotifyInline } from './notify-box.js';
 import { colors } from '../theme.js';
 
 interface WelcomeScreenProps {
@@ -33,42 +33,35 @@ export const WelcomeScreen = React.memo(function WelcomeScreen({
   notifications,
 }: WelcomeScreenProps): React.ReactElement {
   const displayTips = tips ?? DEFAULT_TIPS;
-  // Constrain notification box width to terminal width
-  const boxWidth = Math.min(cols - 4, 70);
 
   return (
-    <Box flexDirection="column" width="100%" height={height} alignItems="center">
+    <Box flexDirection="column" width="100%" height={height} justifyContent="center" alignItems="center">
       <Banner version="0.1.0" tagline={'\uD130\uBBF8\uB110 AI \uCF54\uB529 \uC5B4\uC2DC\uC2A4\uD134\uD2B8'} cols={cols} themeId={themeId} />
 
-      {/* Provider/model info */}
+      {/* Provider/model info — compact single line */}
       <Box justifyContent="center" width="100%" marginTop={1}>
-        <Text color={colors.dimText}>{'\u250C'}{'\u2500'.repeat(boxWidth - 2)}{'\u2510'}</Text>
-      </Box>
-      <Box justifyContent="center" width="100%">
-        <Text color={colors.dimText}>{'\u2502'} </Text>
+        <Text color={colors.dimText}>{'\u2500\u2500\u2500'} </Text>
         <Text color={colors.provider} bold>{provider}</Text>
         <Text color={colors.dimText}>/</Text>
         <Text color={colors.model} bold>{model}</Text>
         {roleIcon && roleName && (
           <>
-            <Text color={colors.dimText}>  {'\u2502'}  </Text>
+            <Text color={colors.dimText}>  \u00B7  </Text>
             <Text color={colors.success}>{roleIcon} {roleName}</Text>
           </>
         )}
-        <Text>{' '.repeat(Math.max(1, boxWidth - provider.length - model.length - (roleIcon && roleName ? roleName.length + 8 : 0) - 5))}</Text>
-        <Text color={colors.dimText}>{'\u2502'}</Text>
-      </Box>
-      <Box justifyContent="center" width="100%">
-        <Text color={colors.dimText}>{'\u2514'}{'\u2500'.repeat(boxWidth - 2)}{'\u2518'}</Text>
+        <Text color={colors.dimText}> {'\u2500\u2500\u2500'}</Text>
       </Box>
 
       {/* Notifications */}
       {notifications && notifications.length > 0 && (
-        <Box flexDirection="column" marginTop={1} width={boxWidth + 2} alignItems="center">
+        <Box flexDirection="column" marginTop={1} alignItems="center" width="100%">
           {notifications.map((n, i) => (
-            <NotifyBox key={i} type={n.type} title={n.title} width={boxWidth}>
-              {n.message}
-            </NotifyBox>
+            <Box key={i} justifyContent="center" width="100%">
+              <Text color={n.type === 'warning' ? colors.warning : n.type === 'error' ? colors.error : colors.hint}>
+                {n.type === 'warning' ? '\u26A0' : n.type === 'error' ? '\u2718' : '\u2139'} {n.title ? `${n.title}: ` : ''}{n.message}
+              </Text>
+            </Box>
           ))}
         </Box>
       )}
@@ -84,7 +77,7 @@ export const WelcomeScreen = React.memo(function WelcomeScreen({
 
       {/* Start prompt */}
       <Box justifyContent="center" width="100%" marginTop={1}>
-        <Text color={colors.dimText} italic>
+        <Text color={colors.dimText} dimColor>
           {'\uD504\uB86C\uD504\uD2B8\uB97C \uC785\uB825\uD558\uBA74 \uB300\uD654\uAC00 \uC2DC\uC791\uB429\uB2C8\uB2E4...'}
         </Text>
       </Box>
