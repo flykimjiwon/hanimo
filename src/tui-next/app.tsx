@@ -69,7 +69,7 @@ const LOGO_LINES = [
   ' ██   ██ ██   ██ ██   ███ ██ ██     ██  ██████ ',
 ];
 
-const LOGO_COLORS = ['#FFD700', '#FFA500', '#FF6347', '#FF4500', '#FF1493'];
+const LOGO_COLORS = ['#FFE4A0', '#FFCC80', '#FFB088', '#FFA090', '#FF90B0'];
 
 // ── SIGINTHandler component — uses useRenderer to call destroy ──
 
