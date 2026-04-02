@@ -399,11 +399,14 @@ export async function startTextMode(options: TextModeOptions): Promise<void> {
   process.on('SIGINT', () => {
     if (isRunning && abortController) {
       abortController.abort();
-      console.log(`\n  ${dim('(취소됨)')}`);
+      // Clear any waiting spinners
+      process.stdout.write('\r\x1b[K'); // clear current line
+      console.log(`  ${dim('(취소됨)')}`);
       isRunning = false;
       abortController = null;
     } else {
-      console.log('\n  Bye!');
+      process.stdout.write('\r\x1b[K'); // clear current line
+      console.log('  Bye!');
       rl.close();
       process.exit(0);
     }
@@ -571,7 +574,7 @@ export async function startTextMode(options: TextModeOptions): Promise<void> {
         console.log(`  ${green('✓')} 대화 초기화됨.`);
         break;
       case 'help':     await handleInput('/help'); break;
-      case 'exit':     rl.close(); process.exit(0);
+      case 'exit':     process.stdout.write('\r\x1b[K'); rl.close(); process.exit(0);
     }
   }
 
