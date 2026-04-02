@@ -247,8 +247,19 @@ function App({
 
       {/* Esc menu overlay */}
       {showEscMenu && (
-        <box borderStyle="rounded" paddingX={2} paddingY={1}>
+        <box borderStyle="rounded" paddingX={2} paddingY={1} flexDirection="column">
           <text attributes={TextAttributes.BOLD} content="메뉴  (Esc 닫기)" />
+          <text content="" />
+          <text content={`  현재: ${roleIcon} ${roleName}  ·  ${provider}/${model}`} />
+          <text content="" />
+          <text attributes={TextAttributes.DIM} content="  Tab        역할 전환 (hanimo/dev/plan)" />
+          <text attributes={TextAttributes.DIM} content="  /config    설정 보기" />
+          <text attributes={TextAttributes.DIM} content="  /theme     테마 변경" />
+          <text attributes={TextAttributes.DIM} content="  /model     모델 변경" />
+          <text attributes={TextAttributes.DIM} content="  /clear     대화 초기화" />
+          <text attributes={TextAttributes.DIM} content="  /save      세션 저장" />
+          <text attributes={TextAttributes.DIM} content="  /load      세션 불러오기" />
+          <text attributes={TextAttributes.DIM} content="  Ctrl+C     종료" />
         </box>
       )}
 
