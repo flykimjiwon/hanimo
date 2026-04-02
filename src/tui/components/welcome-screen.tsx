@@ -65,21 +65,7 @@ export const WelcomeScreen = React.memo(function WelcomeScreen({
         </Box>
       )}
 
-      {/* Tips */}
-      <Box flexDirection="column" marginTop={1} alignItems="center" width="100%">
-        {displayTips.map((tip, i) => (
-          <NotifyInline key={i} type="tip">
-            <Text color={colors.hint}>{tip}</Text>
-          </NotifyInline>
-        ))}
-      </Box>
-
-      {/* Start prompt */}
-      <Box justifyContent="center" width="100%" marginTop={1}>
-        <Text color={colors.dimText} dimColor>
-          {'\uD504\uB86C\uD504\uD2B8\uB97C \uC785\uB825\uD558\uBA74 \uB300\uD654\uAC00 \uC2DC\uC791\uB429\uB2C8\uB2E4...'}
-        </Text>
-      </Box>
+      {/* Notifications only — tips and start prompt removed for cleaner look */}
     </Box>
   );
 });

@@ -226,7 +226,7 @@ function App({
     setCurrentTools(newTools);
     // Auto-toggle tools based on role
     setToolsEnabled(role.tools.length > 0);
-    const newPrompt = buildSystemPrompt({ cwd: process.cwd(), platform: process.platform }, role);
+    const newPrompt = buildSystemPrompt({ cwd: process.cwd(), platform: process.platform, lang: currentLang }, role);
     setCurrentSystemPrompt(newPrompt);
     const desc = currentLang === 'ko' ? (ROLE_DESC_KO[role.id] ?? role.description) : role.description;
     const toolsNote = role.tools.length === 0
@@ -774,7 +774,7 @@ function App({
     setCurrentRole(role);
     setCurrentTools(roleManager.createToolSet(role));
     setToolsEnabled(role.tools.length > 0);
-    setCurrentSystemPrompt(buildSystemPrompt({ cwd: process.cwd(), platform: process.platform }, role));
+    setCurrentSystemPrompt(buildSystemPrompt({ cwd: process.cwd(), platform: process.platform, lang: currentLang }, role));
   }, [roleManager, currentRole]);
 
   // Command palette items (respect language)
