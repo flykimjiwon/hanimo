@@ -1,6 +1,10 @@
-# hanimo 🐶
+# hanimo ⚡
 
 > **Terminal AI coding agent — works with any LLM, cloud or local.**
+
+<p align="center">
+  <img src="docs/images/hanimo-screenshot.png" alt="HANIMO Screenshot" width="700" />
+</p>
 
 [한국어](README.ko.md) · [GitHub](https://github.com/flykimjiwon/dev_anywhere)
 
@@ -13,7 +17,7 @@ Named after **하니스모돌** — harness + modol (모돌), a fluffy white min
 hanimo is a lightweight, terminal-based AI coding agent. Think Claude Code or Cursor, but **provider-agnostic** and **local-model-first**.
 
 - **14 LLM providers** — OpenAI, Anthropic, Google, DeepSeek, Groq, Ollama, vLLM, LM Studio, and more
-- **16 built-in tools** — file editing, shell execution, git, web fetch, diagnostics, and more
+- **18 built-in tools** — file editing, shell execution, git, web search, patch, diagnostics, and more
 - **Hash-anchored editing** — verified edits that prevent stale-line errors
 - **Autonomous mode** — agent works until the task is done, no babysitting
 - **Smart context compaction** — LLM-based conversation summarization
@@ -555,5 +559,5 @@ MIT
 ---
 
 <p align="center">
-  Built with love by <a href="https://github.com/flykimjiwon">김지원</a> and hanimo 🐶
+  Built with love by <a href="https://github.com/flykimjiwon">김지원</a> and hanimo ⚡
 </p>
