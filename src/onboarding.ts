@@ -676,6 +676,17 @@ export async function runOnboarding(): Promise<void> {
 
   apiKey = apiKey.trim();
 
+  // Require API key for cloud providers (not local/custom)
+  const localProviderSet = new Set(['ollama', 'vllm', 'lmstudio', 'custom']);
+  if (!localProviderSet.has(provider) && !apiKey) {
+    console.log();
+    console.log('  ⚠ 클라우드 프로바이더는 API 키가 필요합니다.');
+    console.log(`  ${provider} API 키를 발급받은 후 다시 시도하세요.`);
+    console.log();
+    rl.close();
+    process.exit(0);
+  }
+
   // Ask for model override
   if (provider !== 'ollama') {
     console.log();

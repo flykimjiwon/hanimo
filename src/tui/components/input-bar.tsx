@@ -1,6 +1,7 @@
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useRef, useMemo } from 'react';
 import { Box, Text, useInput } from 'ink';
 import { colors } from '../theme.js';
+import { COMMAND_LIST } from '../hooks/use-commands.js';
 
 const MAX_HISTORY = 50;
 
@@ -189,7 +190,30 @@ export const InputBar = React.memo(function InputBar({
   };
   const modeHint = roleName ? (modeHints[roleName] ?? '') : '';
 
+  // Command dropdown: show when input starts with /
+  const ko = true; // TODO: pass lang prop
+  const commandMatches = useMemo(() => {
+    if (!value.startsWith('/')) return [];
+    const query = value.slice(1).toLowerCase();
+    return COMMAND_LIST
+      .filter(c => query.length === 0 || c.name.startsWith(query))
+      .slice(0, 8); // max 8 suggestions
+  }, [value]);
+
   return (
+    <Box flexDirection="column" width="100%">
+      {/* Command dropdown — appears above input when typing / */}
+      {commandMatches.length > 0 && (
+        <Box flexDirection="column" paddingX={2} marginBottom={0}>
+          {commandMatches.map((cmd, i) => (
+            <Box key={cmd.name}>
+              <Text color={colors.hint}>  /</Text>
+              <Text color={colors.model} bold>{cmd.name.padEnd(16)}</Text>
+              <Text color={colors.dimText}>{ko ? cmd.descriptionKo : cmd.description}</Text>
+            </Box>
+          ))}
+        </Box>
+      )}
     <Box
       borderStyle="round"
       borderColor={isDisabled ? colors.border : colors.borderFocus}
@@ -228,6 +252,7 @@ export const InputBar = React.memo(function InputBar({
           <Text color={colors.dimText}> {'\u21B5'}</Text>
         )}
       </Box>
+    </Box>
     </Box>
   );
 });
