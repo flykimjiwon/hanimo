@@ -364,11 +364,11 @@ export async function main(): Promise<void> {
         return;
       }
 
-      // Default: TUI mode (fullscreen Ink app)
+      // Default: TUI mode (OpenTUI React)
       // Falls back to text mode if TUI dependencies are unavailable (e.g. binary build)
       try {
-        const { startApp } = await import('./tui/app.js');
-        startApp({
+        const { startApp } = await import('./tui-next/app.js');
+        await startApp({
           provider: config.provider,
           model: config.model,
           modelInstance,

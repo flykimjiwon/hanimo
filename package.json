@@ -44,6 +44,8 @@
     "@ai-sdk/google": "^1.0.0",
     "@ai-sdk/openai": "^1.0.0",
     "@modelcontextprotocol/sdk": "^1.28.0",
+    "@opentui/core": "^0.1.95",
+    "@opentui/react": "^0.1.95",
     "ai": "^4.0.0",
     "commander": "^12.0.0",
     "execa": "^9.0.0",
