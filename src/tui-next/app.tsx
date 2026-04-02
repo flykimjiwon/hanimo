@@ -3,8 +3,8 @@
  * Hanimo TUI — built with OpenTUI React
  */
 import { createCliRenderer, TextAttributes, SyntaxStyle } from '@opentui/core';
-import { createRoot } from '@opentui/react';
-import { useState, useCallback, useRef } from 'react';
+import { createRoot, useKeyboard, useRenderer } from '@opentui/react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import type { LanguageModelV1, ToolSet } from 'ai';
 import { runAgentLoop, estimateCost } from '../core/agent-loop.js';
 import type { AgentEvent, Message } from '../core/types.js';
@@ -31,6 +31,7 @@ interface AppProps {
   initialPrompt?: string;
   activeRole?: RoleDefinition;
   streaming?: boolean;
+  roleManager?: RoleManager;
 }
 
 // ── Helpers ──
@@ -50,18 +51,60 @@ function formatCost(cost: number): string {
   return `$${cost.toFixed(2)}`;
 }
 
+// ── Banner lines (mascot + logo) ──
+
+const MASCOT_LINES = [
+  '  ▄▀▀▀▀▄ ',
+  '  █◕ᴥ◕ █ ',
+  '  ▀▄▄▄▄▀ ',
+  '  ≋█  █≋ ',
+  '    ▀▀   ',
+];
+
+const LOGO_LINES = [
+  ' ██   ██  █████  ███   ██ ██ ███   ███  ██████ ',
+  ' ██   ██ ██   ██ ████  ██ ██ ████ ████ ██    ██',
+  ' ███████ ███████ ██ ██ ██ ██ ██ ███ ██ ██    ██',
+  ' ██   ██ ██   ██ ██  ████ ██ ██     ██ ██    ██',
+  ' ██   ██ ██   ██ ██   ███ ██ ██     ██  ██████ ',
+];
+
+const LOGO_COLORS = ['#FFD700', '#FFA500', '#FF6347', '#FF4500', '#FF1493'];
+
+// ── SIGINTHandler component — uses useRenderer to call destroy ──
+
+function SIGINTHandler(): null {
+  const renderer = useRenderer();
+  useEffect(() => {
+    const handler = () => {
+      renderer.destroy();
+      process.exit(0);
+    };
+    process.on('SIGINT', handler);
+    return () => {
+      process.off('SIGINT', handler);
+    };
+  }, [renderer]);
+  return null;
+}
+
 // ── App Component ──
 
 function App({
   provider,
   model,
   modelInstance,
-  systemPrompt,
-  tools,
+  systemPrompt: initialSystemPrompt,
+  tools: initialTools,
   maxSteps = 25,
-  activeRole,
+  activeRole: initialActiveRole,
   streaming = true,
+  roleManager,
 }: AppProps) {
+  // ready gate to avoid duplicate rendering
+  const [ready, setReady] = useState(false);
+  useEffect(() => { setReady(true); }, []);
+
   const [messages, setMessages] = useState<DisplayMessage[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -69,14 +112,44 @@ function App({
   const [isStreaming, setIsStreaming] = useState(false);
   const [usage, setUsage] = useState({ promptTokens: 0, completionTokens: 0, totalCost: 0 });
   const [currentTool, setCurrentTool] = useState<string | null>(null);
+  const [showEscMenu, setShowEscMenu] = useState(false);
+
+  // Role cycling state
+  const allRoles = roleManager ? roleManager.getAllRoles() : (initialActiveRole ? [initialActiveRole] : []);
+  const [currentRoleIndex, setCurrentRoleIndex] = useState(
+    initialActiveRole && allRoles.length > 0
+      ? Math.max(0, allRoles.findIndex((r: RoleDefinition) => r.id === initialActiveRole.id))
+      : 0
+  );
+  const currentRole = allRoles.length > 0 ? allRoles[currentRoleIndex] : initialActiveRole;
+  const [systemPrompt, setSystemPrompt] = useState(initialSystemPrompt);
+  const [tools, setTools] = useState(initialTools);
 
   const conversationRef = useRef<Message[]>([]);
   const abortRef = useRef<AbortController | null>(null);
 
   const syntaxStyle = useRef(SyntaxStyle.create()).current;
-  const roleIcon = activeRole?.icon ?? '\u26A1';
-  const roleName = activeRole?.name ?? 'Hanimo';
+  const roleIcon = currentRole?.icon ?? '⚡';
+  const roleName = currentRole?.name ?? 'Hanimo';
   const cwd = process.cwd().replace(process.env['HOME'] ?? '', '~');
+
+  // ── Keyboard handling ──
+  useKeyboard((key) => {
+    if (key.name === 'escape' || (key.name === 'Escape')) {
+      setShowEscMenu(prev => !prev);
+    }
+    if (key.name === 'tab' && !inputValue && allRoles.length > 1) {
+      const nextIndex = (currentRoleIndex + 1) % allRoles.length;
+      setCurrentRoleIndex(nextIndex);
+      const nextRole = allRoles[nextIndex]!;
+      if (nextRole.systemPrompt) setSystemPrompt(nextRole.systemPrompt);
+    }
+    if (key.ctrl && key.name === 'c') {
+      if (isLoading && abortRef.current) {
+        abortRef.current.abort();
+      }
+    }
+  });
 
   const sendMessage = useCallback(async (text: string) => {
     if (!text.trim() || isLoading) return;
@@ -87,6 +160,7 @@ function App({
     setIsLoading(true);
     setStreamingText('');
     setIsStreaming(true);
+    setShowEscMenu(false);
 
     conversationRef.current.push({ role: 'user', content: text });
     const controller = new AbortController();
@@ -141,10 +215,10 @@ function App({
       conversationRef.current = result.messages;
     } catch (err) {
       if (err instanceof Error && err.name === 'AbortError') {
-        setMessages((prev: DisplayMessage[]) => [...prev, { id: msgId(), role: 'system' as const, content: '(\uCDE8\uC18C\uB428)' }]);
+        setMessages((prev: DisplayMessage[]) => [...prev, { id: msgId(), role: 'system' as const, content: '(취소됨)' }]);
       } else {
         const msg = err instanceof Error ? err.message : String(err);
-        setMessages((prev: DisplayMessage[]) => [...prev, { id: msgId(), role: 'system' as const, content: `\u274C ${msg}` }]);
+        setMessages((prev: DisplayMessage[]) => [...prev, { id: msgId(), role: 'system' as const, content: `❌ ${msg}` }]);
       }
     } finally {
       setIsLoading(false);
@@ -154,6 +228,8 @@ function App({
       abortRef.current = null;
     }
   }, [isLoading, modelInstance, systemPrompt, tools, maxSteps, streaming]);
+
+  if (!ready) return <box />;
 
   // Command matches
   const commandMatches = inputValue.startsWith('/')
@@ -167,19 +243,34 @@ function App({
 
   return (
     <box flexDirection="column" flexGrow={1}>
+      <SIGINTHandler />
+
+      {/* Esc menu overlay */}
+      {showEscMenu && (
+        <box borderStyle="rounded" paddingX={2} paddingY={1}>
+          <text attributes={TextAttributes.BOLD} content="메뉴  (Esc 닫기)" />
+        </box>
+      )}
+
       {/* Chat area */}
       <scrollbox flexGrow={1}>
         {!hasMessages ? (
           <box justifyContent="center" alignItems="center" flexGrow={1}>
             <box flexDirection="column" alignItems="center" gap={1}>
-              <text content={[
-                '  \u2584\u2580\u2580\u2580\u2580\u2584    \u2588\u2588   \u2588\u2588  \u2588\u2588\u2588\u2588\u2588  \u2588\u2588\u2588   \u2588\u2588 \u2588\u2588 \u2588\u2588\u2588   \u2588\u2588\u2588  \u2588\u2588\u2588\u2588\u2588\u2588',
-                '  \u2588\u25D5\u1D25\u25D5 \u2588    \u2588\u2588   \u2588\u2588 \u2588\u2588   \u2588\u2588 \u2588\u2588\u2588\u2588  \u2588\u2588 \u2588\u2588 \u2588\u2588\u2588\u2588 \u2588\u2588\u2588\u2588 \u2588\u2588    \u2588\u2588',
-                '  \u2580\u2584\u2584\u2584\u2584\u2580    \u2588\u2588\u2588\u2588\u2588\u2588\u2588 \u2588\u2588\u2588\u2588\u2588\u2588\u2588 \u2588\u2588 \u2588\u2588 \u2588\u2588 \u2588\u2588 \u2588\u2588 \u2588\u2588\u2588 \u2588\u2588 \u2588\u2588    \u2588\u2588',
-                '  \u224B\u2588  \u2588\u224B    \u2588\u2588   \u2588\u2588 \u2588\u2588   \u2588\u2588 \u2588\u2588  \u2588\u2588\u2588\u2588 \u2588\u2588 \u2588\u2588     \u2588\u2588 \u2588\u2588    \u2588\u2588',
-                '    \u2580\u2580      \u2588\u2588   \u2588\u2588 \u2588\u2588   \u2588\u2588 \u2588\u2588   \u2588\u2588\u2588 \u2588\u2588 \u2588\u2588     \u2588\u2588  \u2588\u2588\u2588\u2588\u2588\u2588',
-              ].join('\n')} />
-              <text attributes={TextAttributes.DIM} content={`\u2500\u2500\u2500 ${provider}/${model}  \u00B7  ${roleIcon} ${roleName} \u2500\u2500\u2500`} />
+              {/* Banner: mascot + logo side by side */}
+              <box flexDirection="row" gap={1}>
+                <box flexDirection="column">
+                  {MASCOT_LINES.map((line, i) => (
+                    <text key={`m${i}`} fg={LOGO_COLORS[i % LOGO_COLORS.length]} content={line} />
+                  ))}
+                </box>
+                <box flexDirection="column">
+                  {LOGO_LINES.map((line, i) => (
+                    <text key={`l${i}`} fg={LOGO_COLORS[i]!} attributes={TextAttributes.BOLD} content={line} />
+                  ))}
+                </box>
+              </box>
+              <text attributes={TextAttributes.DIM} content={`─── ${provider}/${model}  ·  ${roleIcon} ${roleName} ───`} />
             </box>
           </box>
         ) : (
@@ -189,7 +280,7 @@ function App({
                 case 'user':
                   return (
                     <box key={msg.id}>
-                      <text attributes={TextAttributes.BOLD} fg="cyan" content={'\u276F '} />
+                      <text attributes={TextAttributes.BOLD} fg="cyan" content="❯ " />
                       <text attributes={TextAttributes.BOLD} content={msg.content} />
                     </box>
                   );
@@ -202,7 +293,7 @@ function App({
                 case 'tool-call':
                   return (
                     <box key={msg.id}>
-                      <text fg="yellow" content={`\u26A1 ${msg.toolName}`} />
+                      <text fg="yellow" content={`⚡ ${msg.toolName}`} />
                     </box>
                   );
                 case 'tool-result': {
@@ -210,7 +301,7 @@ function App({
                   const preview = lines.length > 5 ? lines.slice(0, 5).join('\n') + `\n... (${lines.length - 5} more)` : msg.content;
                   return (
                     <box key={msg.id} flexDirection="column">
-                      <text attributes={TextAttributes.DIM} content={`\u2514 ${msg.toolName}`} />
+                      <text attributes={TextAttributes.DIM} content={`└ ${msg.toolName}`} />
                       <box paddingLeft={2}>
                         <text attributes={TextAttributes.DIM} fg={msg.content.startsWith('Error:') ? 'red' : undefined} content={preview} />
                       </box>
@@ -236,7 +327,7 @@ function App({
             {/* Loading */}
             {isLoading && !streamingText && (
               <box>
-                <text fg="cyan" content={currentTool ? `\u26A1 ${currentTool}...` : '\u25CF Thinking...'} />
+                <text fg="cyan" content={currentTool ? `⚡ ${currentTool}...` : '● Thinking...'} />
               </box>
             )}
           </box>
@@ -260,19 +351,19 @@ function App({
       <box borderStyle="rounded" paddingX={1} flexDirection="column">
         <box justifyContent="space-between">
           <text attributes={TextAttributes.BOLD} content={`${roleIcon} ${roleName}`} />
-          <text attributes={TextAttributes.DIM} content={'Shift+Enter \u21B5  Tab \u21C4 mode'} />
+          <text attributes={TextAttributes.DIM} content={'Shift+Enter ↵  Tab ⇄ mode'} />
         </box>
         <input
           value={inputValue}
           onChange={(v: string) => setInputValue(v)}
-          onSubmit={(v: unknown) => sendMessage(String(v))}
-          placeholder={isLoading ? '\uC751\uB2F5 \uB300\uAE30 \uC911...' : '\uBA54\uC2DC\uC9C0\uB97C \uC785\uB825\uD558\uC138\uC694...'}
+          onSubmit={(v: unknown) => { setInputValue(''); sendMessage(String(v)); }}
+          placeholder={isLoading ? '응답 대기 중...' : '메시지를 입력하세요...'}
         />
       </box>
 
       {/* Bottom hints */}
       <box justifyContent="space-between" paddingX={1}>
-        <text attributes={TextAttributes.DIM} content={isLoading ? 'Ctrl+C \uCDE8\uC18C' : 'Esc \uBA54\uB274'} />
+        <text attributes={TextAttributes.DIM} content={isLoading ? 'Ctrl+C 취소' : 'Esc 메뉴'} />
         <text attributes={TextAttributes.DIM} content={statusRight} />
       </box>
     </box>
@@ -300,6 +391,11 @@ export async function startApp(options: StartAppOptions): Promise<void> {
   const renderer = await createCliRenderer();
   const root = createRoot(renderer);
 
+  process.on('SIGINT', () => {
+    renderer.destroy();
+    process.exit(0);
+  });
+
   root.render(
     <App
       provider={options.provider}
@@ -311,6 +407,7 @@ export async function startApp(options: StartAppOptions): Promise<void> {
       initialPrompt={options.initialPrompt}
       activeRole={options.activeRole}
       streaming={options.streaming}
+      roleManager={options.roleManager}
     />
   );
 }
