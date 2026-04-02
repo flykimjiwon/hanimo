@@ -71,12 +71,8 @@ function KeyHints({ isLoading, menuOpen, leaderActive, lang, statusInfo }: {
     <Box width="100%" paddingX={1} justifyContent="space-between">
       <Text color={colors.hint}>
         {isLoading
-          ? ko
-            ? 'Ctrl+C \uCDE8\uC18C  |  Shift+\u2191\u2193 \uC2A4\uD06C\uB864  |  Ctrl+O \uC0C1\uC138'
-            : 'Ctrl+C cancel  |  Shift+\u2191\u2193 scroll  |  Ctrl+O verbose'
-          : ko
-            ? 'Enter \uC804\uC1A1  |  Esc \uBA54\uB274  |  Ctrl+K \uD314\uB808\uD2B8  |  /help'
-            : 'Enter send  |  Esc menu  |  Ctrl+K palette  |  /help'}
+          ? ko ? 'Ctrl+C \uCDE8\uC18C' : 'Ctrl+C cancel'
+          : ko ? 'Esc \uBA54\uB274  |  / \uBA85\uB839\uC5B4' : 'Esc menu  |  / commands'}
       </Text>
       {statusInfo && <Text color={colors.dimText}>{statusInfo}</Text>}
     </Box>
@@ -936,7 +932,13 @@ function App({
         menuOpen={menuState !== 'none'}
         leaderActive={leader.leaderActive}
         lang={currentLang}
-        statusInfo={`${currentProvider}/${currentModel}  ${(agent.usage.promptTokens + agent.usage.completionTokens) >= 1000 ? `${((agent.usage.promptTokens + agent.usage.completionTokens) / 1000).toFixed(1)}k` : String(agent.usage.promptTokens + agent.usage.completionTokens)} tok  ${agent.usage.totalCost === 0 ? '$0' : agent.usage.totalCost < 0.01 ? `$${agent.usage.totalCost.toFixed(4)}` : `$${agent.usage.totalCost.toFixed(2)}`}`}
+        statusInfo={(() => {
+          const cwd = process.cwd().replace(process.env['HOME'] ?? '', '~');
+          const tok = (agent.usage.promptTokens + agent.usage.completionTokens);
+          const tokStr = tok >= 1000 ? `${(tok / 1000).toFixed(1)}k` : String(tok);
+          const cost = agent.usage.totalCost === 0 ? '$0' : agent.usage.totalCost < 0.01 ? `$${agent.usage.totalCost.toFixed(4)}` : `$${agent.usage.totalCost.toFixed(2)}`;
+          return `${cwd}  ${currentModel}  ${tokStr} tok  ${cost}`;
+        })()}
       />
     </Box>
   );
