@@ -367,7 +367,8 @@ export async function main(): Promise<void> {
       // Default: TUI mode (OpenTUI React)
       // Falls back to text mode if TUI dependencies are unavailable (e.g. binary build)
       try {
-        const { startApp } = await import('./tui-next/app.js');
+        const tuiPath = './tui-next/app.tsx';
+        const { startApp } = await import(tuiPath);
         await startApp({
           provider: config.provider,
           model: config.model,
