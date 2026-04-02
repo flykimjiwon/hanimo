@@ -185,7 +185,7 @@ export const InputBar = React.memo(function InputBar({
   // Mode descriptions for placeholder hint
   const modeHints: Record<string, string> = {
     Hanimo: '\uC758\uB3C4 \uC790\uB3D9 \uAC10\uC9C0 \u2014 \uCF54\uB529, \uB300\uD654, \uBD84\uC11D, \uC2DC\uC2A4\uD15C \uAD00\uB9AC \uBAA8\uB450 \uAC00\uB2A5',    // 의도 자동 감지 — 코딩, 대화, 분석, 시스템 관리 모두 가능
-    Dev: '\uCF54\uB529 \uC5D0\uC774\uC804\uD2B8 \u2014 \uD30C\uC77C \uC77D\uAE30/\uC4F0\uAE30, \uC170, git',                               // 코딩 에이전트 — 파일 읽기/쓰기, 셸, git
+    Dev: '\uCF54\uB529 \uC5D0\uC774\uC804\uD2B8 \u2014 \uD30C\uC77C \uC77D\uAE30/\uC4F0\uAE30, \uC178, git',                               // 코딩 에이전트 — 파일 읽기/쓰기, 셸, git
     Plan: '\uBD84\uC11D/\uACC4\uD68D \u2014 \uC77D\uAE30 \uC804\uC6A9, \uC218\uC815 \uBD88\uAC00',                                           // 분석/계획 — 읽기 전용, 수정 불가
   };
   const modeHint = roleName ? (modeHints[roleName] ?? '') : '';
