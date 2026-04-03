@@ -29,13 +29,17 @@ export const InputBar = React.memo(function InputBar({
   const [value, setValue] = useState('');
   const [cursorOffset, setCursorOffset] = useState(0);
 
+  // Ref mirrors value — prevents stale closure in handleSubmit
+  const valueRef = useRef(value);
+  valueRef.current = value;
+
   // Input history
   const historyRef = useRef<string[]>([]);
   const historyIndexRef = useRef(-1);
   const draftRef = useRef('');
 
   const handleSubmit = useCallback(() => {
-    const trimmed = value.trim();
+    const trimmed = valueRef.current.trim();
     if (trimmed.length === 0) return;
 
     const history = historyRef.current;
@@ -49,7 +53,7 @@ export const InputBar = React.memo(function InputBar({
     onSubmit(trimmed);
     setValue('');
     setCursorOffset(0);
-  }, [value, onSubmit]);
+  }, [onSubmit]);
 
   useInput(
     (input, key) => {
