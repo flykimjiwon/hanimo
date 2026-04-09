@@ -3,9 +3,9 @@ package llm
 type Mode int
 
 const (
-	ModeSuper Mode = iota // 슈퍼택가이 — GPT-OSS-120b
-	ModeDev               // 개발 — qwen-coder-30b
-	ModePlan              // 플랜 — GPT-OSS-120b
+	ModeSuper Mode = iota // Super
+	ModeDev               // Dev
+	ModePlan              // Plan
 )
 
 const ModeCount = 3
@@ -21,22 +21,22 @@ type ModeInfo struct {
 var Modes = [ModeCount]ModeInfo{
 	ModeSuper: {
 		ID:          "super",
-		Name:        "슈퍼택가이",
-		Description: "만능 — 의도 감지, 코드+대화+분석",
+		Name:        "Super",
+		Description: "All-in-one — intent detection, code + chat + analysis",
 		Model:       "super",
 		Tools:       []string{"grep_search", "glob_search", "file_read", "file_write", "file_edit", "list_files", "shell_exec"},
 	},
 	ModeDev: {
 		ID:          "dev",
-		Name:        "개발",
-		Description: "코딩 특화 — 파일 CRUD, 코드 생성/수정",
+		Name:        "Dev",
+		Description: "Coding focused — file CRUD, code gen/edit",
 		Model:       "dev",
 		Tools:       []string{"grep_search", "glob_search", "file_read", "file_write", "file_edit", "list_files", "shell_exec"},
 	},
 	ModePlan: {
 		ID:          "plan",
-		Name:        "플랜",
-		Description: "분석/계획 — 읽기 전용, 구조 파악",
+		Name:        "Plan",
+		Description: "Analysis/planning — read-only, structure review",
 		Model:       "super",
 		Tools:       []string{"grep_search", "glob_search", "file_read", "list_files", "shell_exec"},
 	},

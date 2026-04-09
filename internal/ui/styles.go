@@ -7,19 +7,17 @@ import (
 )
 
 var (
-	// Colors — 시안/틸 기반 모던 팔레트
-	ColorPrimary   = lipgloss.Color("#60A5FA") // blue-400 — 메인 컬러
-	ColorSecondary = lipgloss.Color("#38BDF8") // sky blue
-	ColorAccent    = lipgloss.Color("#FBBF24") // amber
-	ColorSuccess   = lipgloss.Color("#34D399") // emerald
-	ColorError     = lipgloss.Color("#F87171") // red
-	ColorMuted     = lipgloss.Color("#64748B") // slate gray
-	ColorBg        = lipgloss.Color("#0F172A") // dark navy
-	ColorBgLight   = lipgloss.Color("#1E293B") // slate 800
-	ColorText      = lipgloss.Color("#E2E8F0") // slate 200
-	ColorTextDim   = lipgloss.Color("#94A3B8") // slate 400
-	ColorBlue      = lipgloss.Color("#60A5FA") // blue 400
-	ColorOrange    = lipgloss.Color("#FB923C") // orange 400
+	// Colors — hanimo warm honey palette
+	ColorPrimary   = lipgloss.Color("#F9E2AF") // honey gold
+	ColorSecondary = lipgloss.Color("#FAB387") // warm peach
+	ColorAccent    = lipgloss.Color("#CBA6F7") // lavender accent
+	ColorSuccess   = lipgloss.Color("#A6E3A1") // mint green
+	ColorError     = lipgloss.Color("#F38BA8") // soft red
+	ColorMuted     = lipgloss.Color("#6C7086") // overlay
+	ColorBg        = lipgloss.Color("#1E1E2E") // mocha base
+	ColorBgLight   = lipgloss.Color("#313244") // mocha surface0
+	ColorText      = lipgloss.Color("#CDD6F4") // text
+	ColorTextDim   = lipgloss.Color("#A6ADC8") // subtext
 
 	// Tab styles
 	ActiveTab = lipgloss.NewStyle().
@@ -103,9 +101,9 @@ var (
 			Bold(true)
 
 	// Mode-specific accent colors
-	SuperColor = ColorPrimary // teal — 만능
-	DevColor   = ColorSuccess // emerald — 개발
-	PlanColor  = ColorOrange  // orange — 플랜
+	SuperColor = lipgloss.Color("#F9E2AF") // honey gold
+	DevColor   = lipgloss.Color("#A6E3A1") // mint green
+	PlanColor  = lipgloss.Color("#FAB387") // peach
 )
 
 func ModeColor(mode int) color.Color {

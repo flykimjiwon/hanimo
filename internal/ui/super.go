@@ -7,51 +7,68 @@ import (
 	"charm.land/lipgloss/v2"
 )
 
+var mascotLines = []string{
+	`  ▄▀▀▀▀▄ `,
+	`  █◕ᴥ◕ █ `,
+	`  ▀▄▄▄▄▀ `,
+	`  ≋█  █≋ `,
+	`    ▀▀   `,
+}
+
 var logoLines = []string{
-	" ████████╗███████╗ ██████╗██╗  ██╗ █████╗ ██╗",
-	" ╚══██╔══╝██╔════╝██╔════╝██║  ██║██╔══██╗██║",
-	"    ██║   █████╗  ██║     ███████║███████║██║",
-	"    ██║   ██╔══╝  ██║     ██╔══██║██╔══██║██║",
-	"    ██║   ███████╗╚██████╗██║  ██║██║  ██║██║",
-	"    ╚═╝   ╚══════╝ ╚═════╝╚═╝  ╚═╝╚═╝  ╚═╝╚═╝",
-	" ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
-	"    ██████╗  ██████╗  ██████╗  ███████╗",
-	"   ██╔════╝ ██╔═══██╗ ██╔══██╗ ██╔════╝",
-	"   ██║      ██║   ██║ ██║  ██║ █████╗",
-	"   ██║      ██║   ██║ ██║  ██║ ██╔══╝",
-	"   ╚██████╗ ╚██████╔╝ ██████╔╝ ███████╗",
-	"    ╚═════╝  ╚═════╝  ╚═════╝  ╚══════╝",
+	" ██   ██  █████  ███   ██ ██ ███   ███  ██████ ",
+	" ██   ██ ██   ██ ████  ██ ██ ████ ████ ██    ██",
+	" ███████ ███████ ██ ██ ██ ██ ██ ███ ██ ██    ██",
+	" ██   ██ ██   ██ ██  ████ ██ ██     ██ ██    ██",
+	" ██   ██ ██   ██ ██   ███ ██ ██     ██  ██████ ",
 }
 
 func RenderLogo() string {
-	bright := lipgloss.NewStyle().Foreground(lipgloss.Color("#60A5FA")).Bold(true) // blue-400
-	mid := lipgloss.NewStyle().Foreground(lipgloss.Color("#3B82F6"))              // blue-500
-	dim := lipgloss.NewStyle().Foreground(lipgloss.Color("#1D4ED8"))              // blue-700
-	separator := lipgloss.NewStyle().Foreground(lipgloss.Color("#475569"))        // slate-600
-	codeBright := lipgloss.NewStyle().Foreground(lipgloss.Color("#93C5FD")).Bold(true) // blue-300
-	codeMid := lipgloss.NewStyle().Foreground(lipgloss.Color("#60A5FA"))          // blue-400
-	codeDim := lipgloss.NewStyle().Foreground(lipgloss.Color("#3B82F6"))          // blue-500
+	// Honey gold gradient for logo lines
+	logoColors := []string{"#F9E2AF", "#FAB387", "#F5C890", "#EBA06D", "#CBA6F7"}
+	mascotColor := lipgloss.NewStyle().Foreground(lipgloss.Color("#F9E2AF")).Bold(true)
 
 	var b strings.Builder
 
-	for i, line := range logoLines {
-		switch {
-		case i <= 1:
-			b.WriteString(bright.Render(line))
-		case i <= 3:
-			b.WriteString(mid.Render(line))
-		case i <= 5:
-			b.WriteString(dim.Render(line))
-		case i == 6:
-			b.WriteString(separator.Render(line))
-		case i <= 8:
-			b.WriteString(codeBright.Render(line))
-		case i <= 10:
-			b.WriteString(codeMid.Render(line))
-		default:
-			b.WriteString(codeDim.Render(line))
+	// Render mascot + logo side by side if both fit, else stacked
+	mascotWidth := 0
+	for _, line := range mascotLines {
+		w := lipgloss.Width(line)
+		if w > mascotWidth {
+			mascotWidth = w
 		}
-		if i < len(logoLines)-1 {
+	}
+
+	// Side-by-side layout: mascot on left, logo on right
+	maxLines := len(logoLines)
+	if len(mascotLines) > maxLines {
+		maxLines = len(mascotLines)
+	}
+
+	// Pad mascot to align with logo vertically (center mascot)
+	mascotOffset := 0
+	if len(mascotLines) < len(logoLines) {
+		mascotOffset = (len(logoLines) - len(mascotLines)) / 2
+	}
+
+	for i := 0; i < maxLines; i++ {
+		// Mascot part
+		mascotIdx := i - mascotOffset
+		if mascotIdx >= 0 && mascotIdx < len(mascotLines) {
+			b.WriteString(mascotColor.Render(mascotLines[mascotIdx]))
+		} else {
+			b.WriteString(fmt.Sprintf("%-*s", mascotWidth, ""))
+		}
+		b.WriteString("  ") // gap between mascot and logo
+
+		// Logo part
+		if i < len(logoLines) {
+			clr := logoColors[i%len(logoColors)]
+			style := lipgloss.NewStyle().Foreground(lipgloss.Color(clr)).Bold(true)
+			b.WriteString(style.Render(logoLines[i]))
+		}
+
+		if i < maxLines-1 {
 			b.WriteString("\n")
 		}
 	}
@@ -94,18 +111,18 @@ func modeInfoBoxInner(mode int, modelID string) string {
 	switch mode {
 	case 0:
 		tips = fmt.Sprintf("%s\n%s",
-			modeName.Render(fmt.Sprintf("슈퍼택가이 — %s", shortModel)),
-			desc.Render("만능 모드. 코드 CRUD, 분석, 대화 자동 감지"),
+			modeName.Render(fmt.Sprintf("Super — %s", shortModel)),
+			desc.Render("All-in-one mode. Code CRUD, analysis, chat auto-detect"),
 		)
 	case 1:
 		tips = fmt.Sprintf("%s\n%s",
-			modeName.Render(fmt.Sprintf("개발 — %s", shortModel)),
-			desc.Render("코딩 특화. 파일 생성/읽기/수정/삭제"),
+			modeName.Render(fmt.Sprintf("Dev — %s", shortModel)),
+			desc.Render("Coding focused. File create/read/edit/delete"),
 		)
 	case 2:
 		tips = fmt.Sprintf("%s\n%s",
-			modeName.Render(fmt.Sprintf("플랜 — %s", shortModel)),
-			desc.Render("분석/계획. 읽기 전용, 구조 파악, 리뷰"),
+			modeName.Render(fmt.Sprintf("Plan — %s", shortModel)),
+			desc.Render("Analysis/planning. Read-only, structure review"),
 		)
 	}
 	return tipStyle.Render(tips)

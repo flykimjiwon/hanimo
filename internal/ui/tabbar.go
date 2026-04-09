@@ -11,9 +11,9 @@ type TabItem struct {
 }
 
 var Tabs = []TabItem{
-	{Name: "슈퍼택가이"},
-	{Name: "개발"},
-	{Name: "플랜"},
+	{Name: "Super"},
+	{Name: "Dev"},
+	{Name: "Plan"},
 }
 
 func RenderTabBar(activeIdx int, width int) string {
@@ -24,8 +24,8 @@ func RenderTabBar(activeIdx int, width int) string {
 		if i == activeIdx {
 			style := lipgloss.NewStyle().
 				Bold(true).
-				Foreground(lipgloss.Color("#E2E8F0")).
-				Background(lipgloss.Color("#334155")).
+				Foreground(lipgloss.Color("#CDD6F4")).
+				Background(lipgloss.Color("#313244")).
 				Padding(0, 1)
 			tabs = append(tabs, style.Render(label))
 		} else {
@@ -40,7 +40,7 @@ func RenderTabBar(activeIdx int, width int) string {
 	row := strings.Join(tabs, "") + hint
 
 	return lipgloss.NewStyle().
-		Background(lipgloss.Color("#0F172A")).
+		Background(lipgloss.Color("#1E1E2E")).
 		Width(width).
 		Render(row)
 }

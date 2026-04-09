@@ -78,13 +78,9 @@ func RenderStatusBar(model string, tokens int, elapsed time.Duration, mode int, 
 		Bold(true)
 
 	modeName := Tabs[mode].Name
-	// Strip provider prefix (e.g. "google/gemma-4-31b-it" → "gemma-4-31b-it")
-	shortModel := model
-	if idx := strings.LastIndex(model, "/"); idx >= 0 {
-		shortModel = model[idx+1:]
-	}
+	// Show full provider/model (e.g. "ollama/qwen3:8b")
 	left := modeStyle.Render("  "+modeName) +
-		Subtle.Render("  "+shortModel) +
+		Subtle.Render("  "+model) +
 		Subtle.Render("  ./"+cwd)
 
 	if debug {
@@ -107,7 +103,7 @@ func RenderStatusBar(model string, tokens int, elapsed time.Duration, mode int, 
 		left += Subtle.Render(fmt.Sprintf("  %.1fs", elapsed.Seconds()))
 	}
 
-	right := Subtle.Render("Shift+Enter 줄바꿈  Tab 전환  /clear  Ctrl+C ")
+	right := Subtle.Render("Shift+Enter newline  Tab switch  /clear  Ctrl+C ")
 
 	gap := width - lipgloss.Width(left) - lipgloss.Width(right) - 2
 	if gap < 1 {
@@ -115,7 +111,7 @@ func RenderStatusBar(model string, tokens int, elapsed time.Duration, mode int, 
 	}
 
 	return lipgloss.NewStyle().
-		Background(lipgloss.Color("#0F172A")).
+		Background(lipgloss.Color("#1E1E2E")).
 		Width(width).
 		Render(left + strings.Repeat(" ", gap) + right)
 }
