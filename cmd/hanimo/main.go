@@ -29,9 +29,14 @@ var version = "dev"
 
 func main() {
 	modeFlag := flag.String("mode", "super", "시작 모드: super, dev, plan")
+	providerFlag := flag.String("provider", "", "LLM 프로바이더 (openai, novita, ollama, anthropic, ...)")
+	modelFlag := flag.String("model", "", "모델 이름")
 	versionFlag := flag.Bool("version", false, "버전 출력")
 	setupFlag := flag.Bool("setup", false, "설정 재실행 (API URL/키 재입력)")
 	resetFlag := flag.Bool("reset", false, "설정 초기화 (config 삭제 후 재설정)")
+	// Short aliases
+	flag.StringVar(providerFlag, "p", "", "LLM 프로바이더 (단축)")
+	flag.StringVar(modelFlag, "m", "", "모델 이름 (단축)")
 	flag.Parse()
 
 	if *versionFlag {
@@ -50,6 +55,14 @@ func main() {
 	cfg, err := config.Load()
 	if err != nil {
 		cfg = config.DefaultConfig()
+	}
+
+	// Apply CLI overrides for provider/model into config
+	if *providerFlag != "" {
+		cfg.Default.Provider = *providerFlag
+	}
+	if *modelFlag != "" {
+		cfg.Default.Model = *modelFlag
 	}
 
 	// Initialize debug logging (no-op if DebugMode != "true")

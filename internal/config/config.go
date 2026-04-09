@@ -23,9 +23,21 @@ type ModelsConfig struct {
 	Dev   string `yaml:"dev"`
 }
 
+type ProviderConfig struct {
+	APIKey  string `yaml:"api_key,omitempty"`
+	BaseURL string `yaml:"base_url,omitempty"`
+}
+
+type DefaultConfig_ struct {
+	Provider string `yaml:"provider,omitempty"`
+	Model    string `yaml:"model,omitempty"`
+}
+
 type Config struct {
-	API    APIConfig    `yaml:"api"`
-	Models ModelsConfig `yaml:"models"`
+	API       APIConfig                `yaml:"api"`
+	Models    ModelsConfig             `yaml:"models"`
+	Default   DefaultConfig_           `yaml:"default,omitempty"`
+	Providers map[string]ProviderConfig `yaml:"providers,omitempty"`
 }
 
 // Build-time overridable defaults (set via -ldflags)

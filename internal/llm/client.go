@@ -14,6 +14,7 @@ import (
 	openai "github.com/sashabaranov/go-openai"
 
 	"github.com/flykimjiwon/hanimo/internal/config"
+	"github.com/flykimjiwon/hanimo/internal/llm/providers"
 )
 
 // ToolCallInfo holds a parsed tool call from the API response.
@@ -32,7 +33,8 @@ type StreamChunk struct {
 }
 
 type Client struct {
-	api *openai.Client
+	api      *openai.Client
+	provider providers.Provider // optional: if set, StreamChat delegates here
 }
 
 // NormalizeBaseURL ensures the base URL is in the correct format for go-openai.
@@ -41,6 +43,11 @@ func NormalizeBaseURL(url string) string {
 	url = strings.TrimSuffix(url, "/chat/completions")
 	url = strings.TrimRight(url, "/")
 	return url
+}
+
+// NewClientWithProvider creates a Client backed by a providers.Provider.
+func NewClientWithProvider(p providers.Provider) *Client {
+	return &Client{provider: p}
 }
 
 func NewClient(baseURL, apiKey string) *Client {
@@ -170,7 +177,12 @@ func (d *debugTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 }
 
 // StreamChat streams a chat completion, optionally with tool definitions.
+// If a provider is configured, it delegates to the provider's Chat method.
 func (c *Client) StreamChat(ctx context.Context, model string, messages []openai.ChatCompletionMessage, toolDefs []openai.Tool) <-chan StreamChunk {
+	if c.provider != nil {
+		return c.streamChatViaProvider(ctx, model, messages, toolDefs)
+	}
+
 	ch := make(chan StreamChunk)
 
 	go func() {
@@ -351,4 +363,80 @@ func (c *Client) Chat(ctx context.Context, model string, messages []openai.ChatC
 		return "", errors.New("no response choices")
 	}
 	return resp.Choices[0].Message.Content, nil
+}
+
+// streamChatViaProvider converts openai types to provider types and delegates.
+func (c *Client) streamChatViaProvider(ctx context.Context, model string, messages []openai.ChatCompletionMessage, toolDefs []openai.Tool) <-chan StreamChunk {
+	ch := make(chan StreamChunk)
+
+	// Convert messages
+	provMsgs := make([]providers.Message, 0, len(messages))
+	for _, m := range messages {
+		pm := providers.Message{
+			Role:       m.Role,
+			Content:    m.Content,
+			ToolCallID: m.ToolCallID,
+			Name:       m.Name,
+		}
+		for _, tc := range m.ToolCalls {
+			pm.ToolCalls = append(pm.ToolCalls, providers.ToolCall{
+				ID:        tc.ID,
+				Name:      tc.Function.Name,
+				Arguments: tc.Function.Arguments,
+			})
+		}
+		provMsgs = append(provMsgs, pm)
+	}
+
+	// Convert tools
+	var provTools []providers.ToolDef
+	for _, t := range toolDefs {
+		if t.Function != nil {
+			params, _ := t.Function.Parameters.(map[string]interface{})
+			provTools = append(provTools, providers.ToolDef{
+				Name:        t.Function.Name,
+				Description: t.Function.Description,
+				Parameters:  params,
+			})
+		}
+	}
+
+	req := providers.ChatRequest{
+		Model:    model,
+		Messages: provMsgs,
+		Tools:    provTools,
+	}
+
+	go func() {
+		defer close(ch)
+
+		provCh, err := c.provider.Chat(ctx, req)
+		if err != nil {
+			ch <- StreamChunk{Err: err, Done: true}
+			return
+		}
+
+		for chunk := range provCh {
+			sc := StreamChunk{
+				Content: chunk.Content,
+				Done:    chunk.Done,
+				Err:     chunk.Error,
+			}
+			for _, tc := range chunk.ToolCalls {
+				sc.ToolCalls = append(sc.ToolCalls, ToolCallInfo{
+					ID:        tc.ID,
+					Name:      tc.Name,
+					Arguments: tc.Arguments,
+				})
+			}
+			ch <- sc
+		}
+	}()
+
+	return ch
+}
+
+// GetProvider returns the underlying provider, if any.
+func (c *Client) GetProvider() providers.Provider {
+	return c.provider
 }
