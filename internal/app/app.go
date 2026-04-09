@@ -684,6 +684,7 @@ func (m *Model) sendMessage(input string) tea.Cmd {
 	m.history = append(m.history, openai.ChatCompletionMessage{
 		Role: openai.ChatMessageRoleUser, Content: input,
 	})
+	m.history = llm.Compact(m.history)
 	m.streaming = true
 	m.streamBuf = ""
 	m.tokenCount = 0
