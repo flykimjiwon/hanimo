@@ -59,6 +59,38 @@ func FileEdit(path, oldStr, newStr string) (int, error) {
 	return 1, nil
 }
 
+// defaultSkipDirs is the set of directory names that recursive ListFiles
+// should skip entirely. These are dependency caches, build artifacts, VCS
+// metadata, IDE folders, and hanimo-specific legacy paths that pollute
+// recursive listings and hit the 500-file cap without yielding useful info.
+var defaultSkipDirs = map[string]bool{
+	".git":          true,
+	".svn":          true,
+	".hg":           true,
+	"node_modules":  true,
+	"dist":          true,
+	"build":         true,
+	"__pycache__":   true,
+	".next":         true,
+	".nuxt":         true,
+	".svelte-kit":   true,
+	"vendor":        true,
+	".venv":         true,
+	"venv":          true,
+	"target":        true, // Rust
+	".gradle":       true,
+	".idea":         true,
+	".vscode":       true,
+	".omc":          true,
+	".superpowers":  true,
+	"_legacy_ts":    true, // hanimo-specific
+	".DS_Store":     true,
+	".pytest_cache": true,
+	".mypy_cache":   true,
+	".ruff_cache":   true,
+	"coverage":      true,
+}
+
 // ListFiles lists files in a directory, optionally recursive.
 func ListFiles(dir string, recursive bool) ([]string, error) {
 	absDir, err := filepath.Abs(dir)
@@ -74,15 +106,19 @@ func ListFiles(dir string, recursive bool) ([]string, error) {
 	}
 
 	var files []string
+	truncated := false
 	if recursive {
 		err = filepath.WalkDir(absDir, func(path string, d os.DirEntry, err error) error {
 			if err != nil {
 				return nil // skip errors
 			}
-			// Skip hidden dirs and common noise
 			name := d.Name()
-			if d.IsDir() && (strings.HasPrefix(name, ".") || name == "node_modules" || name == "dist" || name == "__pycache__") {
-				return filepath.SkipDir
+			// Always skip known-noise directories entirely (don't walk into
+			// them). Also skip any other hidden dir not explicitly listed.
+			if d.IsDir() && path != absDir {
+				if defaultSkipDirs[name] || strings.HasPrefix(name, ".") {
+					return filepath.SkipDir
+				}
 			}
 			rel, _ := filepath.Rel(absDir, path)
 			if d.IsDir() {
@@ -91,10 +127,14 @@ func ListFiles(dir string, recursive bool) ([]string, error) {
 				files = append(files, rel)
 			}
 			if len(files) > 500 {
-				return fmt.Errorf("too many files, showing first 500")
+				truncated = true
+				return filepath.SkipAll
 			}
 			return nil
 		})
+		if truncated {
+			files = append(files, "", "[Hint] Too many files. Retry with recursive=false, or specify a subdirectory.")
+		}
 	} else {
 		entries, err2 := os.ReadDir(absDir)
 		if err2 != nil {

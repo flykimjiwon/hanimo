@@ -141,17 +141,17 @@ func modeInfoBoxInner(mode int, modelID string) string {
 	case 0:
 		tips = fmt.Sprintf("%s\n%s",
 			modeName.Render(fmt.Sprintf("Super — %s", shortModel)),
-			desc.Render("All-in-one mode. Code CRUD, analysis, chat auto-detect"),
+			desc.Render("Smart all-in-one. Auto-detects intent (chat/plan/deep)"),
 		)
 	case 1:
 		tips = fmt.Sprintf("%s\n%s",
-			modeName.Render(fmt.Sprintf("Dev — %s", shortModel)),
-			desc.Render("Coding focused. File create/read/edit/delete"),
+			modeName.Render(fmt.Sprintf("Deep Agent — %s", shortModel)),
+			desc.Render("Long-running autonomous coding. Up to 100 iterations"),
 		)
 	case 2:
 		tips = fmt.Sprintf("%s\n%s",
 			modeName.Render(fmt.Sprintf("Plan — %s", shortModel)),
-			desc.Render("Analysis/planning. Read-only, structure review"),
+			desc.Render("Plan-first. Creates step-by-step plan, executes on approval"),
 		)
 	}
 	return tipStyle.Render(tips)

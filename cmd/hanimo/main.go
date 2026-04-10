@@ -30,7 +30,7 @@ func printDebugBanner(cfg config.Config) {
 var version = "dev"
 
 func main() {
-	modeFlag := flag.String("mode", "super", "시작 모드: super, dev, plan")
+	modeFlag := flag.String("mode", "super", "시작 모드: super, deep, plan")
 	providerFlag := flag.String("provider", "", "LLM 프로바이더 (openai, novita, ollama, anthropic, ...)")
 	modelFlag := flag.String("model", "", "모델 이름")
 	versionFlag := flag.Bool("version", false, "버전 출력")
@@ -129,7 +129,7 @@ func parseMode(mode string) int {
 	switch mode {
 	case "super":
 		return int(llm.ModeSuper)
-	case "dev", "개발":
+	case "deep", "dev", "개발", "자율":
 		return int(llm.ModeDev)
 	case "plan", "플랜":
 		return int(llm.ModePlan)

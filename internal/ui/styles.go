@@ -102,7 +102,8 @@ var (
 
 	// Mode-specific accent colors
 	SuperColor = lipgloss.Color("#F9E2AF") // honey gold
-	DevColor   = lipgloss.Color("#A6E3A1") // mint green
+	DeepColor  = lipgloss.Color("#A6E3A1") // mint green (Deep Agent)
+	DevColor   = DeepColor                 // backwards-compat alias
 	PlanColor  = lipgloss.Color("#FAB387") // peach
 )
 
@@ -111,7 +112,7 @@ func ModeColor(mode int) color.Color {
 	case 0:
 		return SuperColor
 	case 1:
-		return DevColor
+		return DeepColor
 	case 2:
 		return PlanColor
 	default:

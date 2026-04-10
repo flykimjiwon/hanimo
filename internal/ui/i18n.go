@@ -23,7 +23,7 @@ type Strings struct {
 	ToolOn         string
 	ToolOff        string
 	ModeSuper      string
-	ModeDev        string
+	ModeDev        string // Deep Agent (name kept for backwards compat)
 	ModePlan       string
 	Language       string
 	ModelSwitch    string
@@ -55,7 +55,7 @@ var KO = Strings{
 	ToolOn:         "도구:ON",
 	ToolOff:        "도구:OFF",
 	ModeSuper:      "Super",
-	ModeDev:        "Dev",
+	ModeDev:        "Deep Agent",
 	ModePlan:       "Plan",
 	Language:       "언어",
 	ModelSwitch:    "모델 변경",
@@ -87,7 +87,7 @@ var EN = Strings{
 	ToolOn:         "Tool:ON",
 	ToolOff:        "Tool:OFF",
 	ModeSuper:      "Super",
-	ModeDev:        "Dev",
+	ModeDev:        "Deep Agent",
 	ModePlan:       "Plan",
 	Language:       "Language",
 	ModelSwitch:    "Switch Model",

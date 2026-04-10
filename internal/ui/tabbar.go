@@ -12,7 +12,7 @@ type TabItem struct {
 
 var Tabs = []TabItem{
 	{Name: "Super"},
-	{Name: "Dev"},
+	{Name: "Deep Agent"},
 	{Name: "Plan"},
 }
 

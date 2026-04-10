@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -64,11 +65,30 @@ type Model struct {
 	lastElapsed  time.Duration
 	tokenCount   int
 	toolIter     int // tool loop iteration counter (max 20)
+	// toolCallHistory counts identical tool invocations ("name:argsJson" →ct)
+	// within a single user turn. Reset at the start of each sendMessage so the
+	// loop detector only fires on repeated calls inside the same task.
+	toolCallHistory map[string]int
 	pendingQueue []string // messages queued while streaming
 	knowledgeInj *knowledge.Injector
 
 	autoMode bool   // autonomous mode active
 	autoTask string // task description for auto mode
+
+	// Intent hint (Super mode)
+	intentHint string
+
+	// ASK_USER interactive prompt state
+	askQuestion *agents.AskQuestion
+	askSelected int
+	askInput    string
+
+	// Dangerous operation confirmation state
+	dangerCmd      string
+	dangerReason   string
+	dangerSelected int
+	dangerPending  []llm.ToolCallInfo // tool calls queued behind confirmation
+	dangerIndex    int                // index in dangerPending that needs approval
 
 	// Plan execution state
 	activePlan           *agents.Plan
@@ -204,6 +224,32 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 	}
 
+	// Interactive ASK_USER overlay intercepts keys before normal processing.
+	if m.askQuestion != nil {
+		if keyMsg, ok := msg.(tea.KeyPressMsg); ok {
+			if keyMsg.String() == "ctrl+c" {
+				return m, tea.Quit
+			}
+			if handled, cmd := m.handleAskUserKey(keyMsg); handled {
+				m.updateViewport()
+				return m, cmd
+			}
+		}
+	}
+
+	// Dangerous-operation confirmation overlay intercepts keys too.
+	if m.dangerCmd != "" {
+		if keyMsg, ok := msg.(tea.KeyPressMsg); ok {
+			if keyMsg.String() == "ctrl+c" {
+				return m, tea.Quit
+			}
+			if handled, cmd := m.handleDangerKey(keyMsg); handled {
+				m.updateViewport()
+				return m, cmd
+			}
+		}
+	}
+
 	switch msg := msg.(type) {
 	case tea.KeyPressMsg:
 		if m.streaming {
@@ -272,27 +318,20 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 
 		case "tab":
-			m.activeTab = (m.activeTab + 1) % llm.ModeCount
-			// Update system prompt for new mode
-			mode := llm.Mode(m.activeTab)
-			m.history[0] = openai.ChatCompletionMessage{
-				Role:    openai.ChatMessageRoleSystem,
-				Content: llm.SystemPrompt(mode) + m.projectCtx,
-			}
-			// Remove previous mode info boxes, keep only the new one
-			filtered := m.msgs[:0]
-			for _, msg := range m.msgs {
-				if msg.Tag != "modebox" {
-					filtered = append(filtered, msg)
+			// If an intent hint is active, accept it by jumping directly
+			// to the recommended tab instead of cycling.
+			if m.intentHint != "" {
+				intent := agents.DetectIntentLocal(strings.TrimSpace(m.textarea.Value()))
+				if target := intent.SuggestedTab(); target >= 0 {
+					m.activeTab = target
+					m.applyModeSwitch()
+					m.intentHint = ""
+					return m, nil
 				}
 			}
-			m.msgs = append(filtered, ui.Message{
-				Role:      ui.RoleSystem,
-				Content:   ui.ModeInfoBox(m.activeTab, m.currentModel()),
-				Timestamp: time.Now(),
-				Tag:       "modebox",
-			})
-			m.updateViewport()
+			m.activeTab = (m.activeTab + 1) % llm.ModeCount
+			m.intentHint = ""
+			m.applyModeSwitch()
 			return m, nil
 
 		case "shift+enter":
@@ -406,11 +445,71 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.streamBuf = ""
 				m.updateViewport()
 
+				// Dangerous-op detection: scan shell_exec calls for soft-dangerous
+				// patterns and raise a confirmation overlay before executing.
+				for _, tc := range msg.toolCalls {
+					if tc.Name != "shell_exec" {
+						continue
+					}
+					var parsed map[string]interface{}
+					if err := json.Unmarshal([]byte(tc.Arguments), &parsed); err != nil {
+						continue
+					}
+					cmdStr, _ := parsed["command"].(string)
+					if cmdStr == "" {
+						continue
+					}
+					if ok, reason := tools.IsDangerous(cmdStr); ok {
+						m.dangerCmd = cmdStr
+						m.dangerReason = reason
+						m.dangerSelected = 1 // default to Deny for safety
+						// Append a tool-result stub for each pending call so
+						// history stays well-formed; execution is deferred
+						// pending the user's decision. For simplicity we just
+						// record the pending command and let the LLM resume
+						// after resolveDanger sends the status message.
+						for _, tc2 := range msg.toolCalls {
+							m.history = append(m.history, openai.ChatCompletionMessage{
+								Role:       openai.ChatMessageRoleTool,
+								Content:    "[DEFERRED — awaiting user confirmation for dangerous operation]",
+								ToolCallID: tc2.ID,
+							})
+						}
+						m.updateViewport()
+						return m, nil
+					}
+				}
+
 				calls := msg.toolCalls
+				// Tool-loop detection: stamp the per-turn history before
+				// dispatching so repeated identical calls can be short-
+				// circuited with a corrective system message instead of
+				// actually executing the tool again.
+				if m.toolCallHistory == nil {
+					m.toolCallHistory = map[string]int{}
+				}
+				type loopDecision struct {
+					blocked bool
+					key     string
+				}
+				decisions := make([]loopDecision, len(calls))
+				for i, tc := range calls {
+					key := tc.Name + ":" + tc.Arguments
+					m.toolCallHistory[key]++
+					if m.toolCallHistory[key] >= 3 {
+						decisions[i] = loopDecision{blocked: true, key: key}
+						config.DebugLog("[TOOL-LOOP] blocked repeat call name=%s count=%d", tc.Name, m.toolCallHistory[key])
+					}
+				}
 				return m, func() tea.Msg {
 					var results []toolResult
-					for _, tc := range calls {
-						output := tools.Execute(tc.Name, tc.Arguments)
+					for i, tc := range calls {
+						var output string
+						if decisions[i].blocked {
+							output = "STOP: You called this exact tool 3 times with the same arguments. The approach is not working. Try a COMPLETELY DIFFERENT approach or ASK_USER for guidance."
+						} else {
+							output = tools.Execute(tc.Name, tc.Arguments)
+						}
 						results = append(results, toolResult{
 							callID: tc.ID,
 							name:   tc.Name,
@@ -419,6 +518,32 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					}
 					return toolResultMsg{results: results}
 				}
+			}
+
+			// Check for ASK_USER interactive prompt before normal completion
+			if q := agents.ParseAskUser(m.streamBuf); q != nil {
+				m.streaming = false
+				m.lastElapsed = time.Since(m.streamStart)
+				// Persist the stripped narrative (if any) as assistant msg
+				narrative := agents.StripAskUser(m.streamBuf)
+				if narrative != "" {
+					m.msgs = append(m.msgs, ui.Message{
+						Role: ui.RoleAssistant, Content: narrative, Timestamp: time.Now(),
+					})
+					m.history = append(m.history, openai.ChatCompletionMessage{
+						Role: openai.ChatMessageRoleAssistant, Content: m.streamBuf,
+					})
+				} else {
+					m.history = append(m.history, openai.ChatCompletionMessage{
+						Role: openai.ChatMessageRoleAssistant, Content: m.streamBuf,
+					})
+				}
+				m.askQuestion = q
+				m.askSelected = 0
+				m.askInput = ""
+				m.streamBuf = ""
+				m.updateViewport()
+				return m, nil
 			}
 
 			// Normal completion (no tool calls)
@@ -498,6 +623,15 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.updateViewport()
 					return m, m.executeNextPlanStep()
 				}
+			}
+
+			// Deep Agent completion marker (TASK_COMPLETE alias)
+			if strings.Contains(m.streamBuf, "[TASK_COMPLETE]") {
+				m.autoMode = false
+				m.autoTask = ""
+				m.msgs = append(m.msgs, ui.Message{
+					Role: ui.RoleSystem, Content: "  [DEEP AGENT] 작업 완료", Timestamp: time.Now(),
+				})
 			}
 
 			// Check auto mode markers
@@ -989,7 +1123,33 @@ func (m Model) View() tea.View {
 		}
 		statusBar := ui.RenderStatusBar(displayModel, m.tokenCount, elapsed, m.activeTab, m.cwd, m.width, config.IsDebug(), len(tools.ToolsForMode(m.activeTab)), m.autoMode, planProgress)
 
-		content = lipgloss.JoinVertical(lipgloss.Left, vpContent, inputBox, statusBar)
+		// Intent hint line (Super mode only) — shown directly above the input box.
+		if m.activeTab == int(llm.ModeSuper) && m.intentHint != "" {
+			hintStyle := lipgloss.NewStyle().
+				Foreground(lipgloss.Color("#F9E2AF")).
+				Italic(true)
+			hintLine := hintStyle.Render("  " + m.intentHint)
+			content = lipgloss.JoinVertical(lipgloss.Left, vpContent, hintLine, inputBox, statusBar)
+		} else {
+			content = lipgloss.JoinVertical(lipgloss.Left, vpContent, inputBox, statusBar)
+		}
+
+		// Interactive ASK_USER overlay — rendered as a centered box on top.
+		if m.askQuestion != nil {
+			var overlay string
+			if m.askQuestion.Type == agents.AskTypeText {
+				overlay = ui.RenderAskText(m.askQuestion.Question, m.askInput, m.width)
+			} else {
+				overlay = ui.RenderAskUser(m.askQuestion.Question, m.askQuestion.Options, m.askSelected, m.width)
+			}
+			content = overlayCenter(content, overlay, m.width)
+		}
+
+		// Dangerous-op confirmation overlay
+		if m.dangerCmd != "" {
+			overlay := ui.RenderDangerConfirm(m.dangerCmd, m.dangerReason, m.dangerSelected, m.width)
+			content = overlayCenter(content, overlay, m.width)
+		}
 
 		// Overlay menu if open
 		if m.showMenu {
@@ -1152,6 +1312,16 @@ func (m *Model) sendMessage(input string) tea.Cmd {
 		Role: ui.RoleUser, Content: input, Timestamp: time.Now(),
 	})
 
+	// Super mode: keyword-based intent hint (fast, local). LLM fallback is
+	// intentionally skipped here to keep sends latency-free; callers can use
+	// agents.DetectIntentLLM for an async upgrade path.
+	if m.activeTab == int(llm.ModeSuper) {
+		intent := agents.DetectIntentLocal(input)
+		m.intentHint = intent.Suggest()
+	} else {
+		m.intentHint = ""
+	}
+
 	// Inject knowledge context into system prompt
 	if m.knowledgeInj != nil {
 		knowledgeCtx := m.knowledgeInj.Inject(m.activeTab, input)
@@ -1174,6 +1344,7 @@ func (m *Model) sendMessage(input string) tea.Cmd {
 	m.streamBuf = ""
 	m.tokenCount = 0
 	m.toolIter = 0
+	m.toolCallHistory = map[string]int{}
 	m.streamStart = time.Now()
 	m.lastChunkAt = time.Time{}
 	m.updateViewport()
@@ -1486,6 +1657,30 @@ func (m Model) updateMenu(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
+// overlayCenter composites an overlay block roughly centered on top of the
+// base content string. It mirrors the pattern used for the menu/palette
+// overlays earlier in View().
+func overlayCenter(base, overlay string, width int) string {
+	overlayLines := strings.Split(overlay, "\n")
+	baseLines := strings.Split(base, "\n")
+	startY := (len(baseLines) - len(overlayLines)) / 3
+	if startY < 1 {
+		startY = 1
+	}
+	for i, oLine := range overlayLines {
+		row := startY + i
+		if row >= len(baseLines) {
+			break
+		}
+		pad := (width - lipgloss.Width(oLine)) / 2
+		if pad < 0 {
+			pad = 0
+		}
+		baseLines[row] = strings.Repeat(" ", pad) + oLine
+	}
+	return strings.Join(baseLines, "\n")
+}
+
 func truncate(s string, n int) string {
 	runes := []rune(s)
 	if len(runes) <= n {
@@ -1500,4 +1695,179 @@ func truncateArgs(s string, max int) string {
 		return s[:max] + "..."
 	}
 	return s
+}
+
+// applyModeSwitch refreshes the system prompt + UI after a tab change,
+// toggling Deep Agent autonomous behavior on/off as needed.
+func (m *Model) applyModeSwitch() {
+	mode := llm.Mode(m.activeTab)
+	sysPrompt := llm.SystemPrompt(mode) + m.projectCtx
+
+	switch mode {
+	case llm.ModeDeep:
+		// Deep Agent implies autonomous behavior with a high iteration cap.
+		m.autoMode = true
+		if agents.MaxAutoIterations < 100 {
+			agents.MaxAutoIterations = 100
+		}
+		sysPrompt += agents.AutoPromptSuffix
+	default:
+		m.autoMode = false
+		m.autoTask = ""
+	}
+
+	m.history[0] = openai.ChatCompletionMessage{
+		Role:    openai.ChatMessageRoleSystem,
+		Content: sysPrompt,
+	}
+
+	// Remove previous mode info boxes, keep only the new one
+	filtered := m.msgs[:0]
+	for _, msg := range m.msgs {
+		if msg.Tag != "modebox" {
+			filtered = append(filtered, msg)
+		}
+	}
+	m.msgs = append(filtered, ui.Message{
+		Role:      ui.RoleSystem,
+		Content:   ui.ModeInfoBox(m.activeTab, m.currentModel()),
+		Timestamp: time.Now(),
+		Tag:       "modebox",
+	})
+	m.updateViewport()
+}
+
+// handleAskUserKey routes key presses while an ASK_USER overlay is active.
+// Returns (handled, cmd). When handled is false the caller should fall back
+// to default key processing.
+func (m *Model) handleAskUserKey(msg tea.KeyPressMsg) (bool, tea.Cmd) {
+	if m.askQuestion == nil {
+		return false, nil
+	}
+	key := msg.String()
+	q := m.askQuestion
+
+	switch q.Type {
+	case agents.AskTypeText:
+		switch key {
+		case "esc":
+			m.askQuestion = nil
+			m.askInput = ""
+			return true, m.submitAskAnswer("[user skipped the question]")
+		case "enter":
+			answer := strings.TrimSpace(m.askInput)
+			if answer == "" {
+				answer = "[empty]"
+			}
+			m.askQuestion = nil
+			m.askInput = ""
+			return true, m.submitAskAnswer(agents.FormatAnswer(q, answer))
+		case "backspace":
+			if len(m.askInput) > 0 {
+				r := []rune(m.askInput)
+				m.askInput = string(r[:len(r)-1])
+			}
+			return true, nil
+		}
+		// Printable chars
+		if len(key) == 1 {
+			m.askInput += key
+			return true, nil
+		}
+		return true, nil
+
+	default: // choice / confirm
+		switch key {
+		case "esc":
+			m.askQuestion = nil
+			return true, m.submitAskAnswer("[user skipped the question]")
+		case "up", "k":
+			if m.askSelected > 0 {
+				m.askSelected--
+			}
+			return true, nil
+		case "down", "j":
+			if m.askSelected < len(q.Options)-1 {
+				m.askSelected++
+			}
+			return true, nil
+		case "enter":
+			if m.askSelected < len(q.Options) {
+				answer := q.Options[m.askSelected]
+				m.askQuestion = nil
+				return true, m.submitAskAnswer(agents.FormatAnswer(q, answer))
+			}
+			return true, nil
+		}
+		// 1-9 quick select
+		if len(key) == 1 && key[0] >= '1' && key[0] <= '9' {
+			idx := int(key[0] - '1')
+			if idx < len(q.Options) {
+				answer := q.Options[idx]
+				m.askQuestion = nil
+				return true, m.submitAskAnswer(agents.FormatAnswer(q, answer))
+			}
+		}
+		return true, nil
+	}
+}
+
+// submitAskAnswer feeds the user's answer back to the LLM and resumes the
+// conversation loop.
+func (m *Model) submitAskAnswer(formatted string) tea.Cmd {
+	m.msgs = append(m.msgs, ui.Message{
+		Role: ui.RoleUser, Content: formatted, Timestamp: time.Now(),
+	})
+	m.updateViewport()
+	return m.sendMessage(formatted)
+}
+
+// handleDangerKey routes key presses while the dangerous-op confirmation
+// overlay is active.
+func (m *Model) handleDangerKey(msg tea.KeyPressMsg) (bool, tea.Cmd) {
+	if m.dangerCmd == "" {
+		return false, nil
+	}
+	key := msg.String()
+	switch key {
+	case "esc":
+		return true, m.resolveDanger(false)
+	case "up", "k":
+		if m.dangerSelected > 0 {
+			m.dangerSelected--
+		}
+		return true, nil
+	case "down", "j":
+		if m.dangerSelected < 1 {
+			m.dangerSelected++
+		}
+		return true, nil
+	case "1":
+		m.dangerSelected = 0
+		return true, m.resolveDanger(true)
+	case "2":
+		m.dangerSelected = 1
+		return true, m.resolveDanger(false)
+	case "enter":
+		return true, m.resolveDanger(m.dangerSelected == 0)
+	}
+	return true, nil
+}
+
+// resolveDanger finalizes a pending dangerous-op prompt.
+func (m *Model) resolveDanger(approved bool) tea.Cmd {
+	cmd := m.dangerCmd
+	m.dangerCmd = ""
+	m.dangerReason = ""
+	m.dangerSelected = 0
+
+	status := "[Dangerous command DENIED by user]"
+	if approved {
+		status = fmt.Sprintf("[User approved dangerous command: %s]", cmd)
+	}
+	m.msgs = append(m.msgs, ui.Message{
+		Role: ui.RoleSystem, Content: "  " + status, Timestamp: time.Now(),
+	})
+	m.updateViewport()
+	return m.submitAskAnswer(status)
 }
