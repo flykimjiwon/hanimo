@@ -72,7 +72,11 @@ func RenderMessages(messages []Message, streaming string, width int) string {
 	return strings.Join(lines, "\n")
 }
 
-func RenderStatusBar(model string, tokens int, elapsed time.Duration, mode int, cwd string, width int, debug bool, toolCount int, autoMode ...bool) string {
+// RenderStatusBar renders the bottom status bar.
+// Variadic extras (all optional, positional):
+//   [0] autoMode (bool) — show [AUTO] badge when true
+//   [1] planProgress (string) — non-empty renders as "Plan X/Y"
+func RenderStatusBar(model string, tokens int, elapsed time.Duration, mode int, cwd string, width int, debug bool, toolCount int, extras ...interface{}) string {
 	modeStyle := lipgloss.NewStyle().
 		Foreground(ModeColor(mode)).
 		Bold(true)
@@ -96,9 +100,17 @@ func RenderStatusBar(model string, tokens int, elapsed time.Duration, mode int, 
 		left += toolOffStyle.Render("  " + T().ToolOff)
 	}
 
-	if len(autoMode) > 0 && autoMode[0] {
-		autoStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#FBBF24")).Bold(true)
-		left += autoStyle.Render("  [AUTO]")
+	if len(extras) > 0 {
+		if auto, ok := extras[0].(bool); ok && auto {
+			autoStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#FBBF24")).Bold(true)
+			left += autoStyle.Render("  [AUTO]")
+		}
+	}
+	if len(extras) > 1 {
+		if planProgress, ok := extras[1].(string); ok && planProgress != "" {
+			planStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#60A5FA")).Bold(true)
+			left += planStyle.Render(fmt.Sprintf("  Plan %s", planProgress))
+		}
 	}
 
 	if tokens > 0 {

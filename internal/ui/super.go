@@ -23,6 +23,17 @@ var logoLines = []string{
 	" ██   ██ ██   ██ ██   ███ ██ ██     ██  ██████ ",
 }
 
+// CODE subtitle block (smaller than HANIMO, rendered below with divider)
+var codeLines = []string{
+	"         ██████  ██████  ██████  ███████       ",
+	"        ██      ██    ██ ██   ██ ██            ",
+	"        ██      ██    ██ ██   ██ █████         ",
+	"        ██      ██    ██ ██   ██ ██            ",
+	"         ██████  ██████  ██████  ███████       ",
+}
+
+const logoDivider = " ───────────────────────────────────────────── "
+
 func RenderLogo() string {
 	// Honey gold gradient for logo lines
 	logoColors := []string{"#F9E2AF", "#FAB387", "#F5C890", "#EBA06D", "#CBA6F7"}
@@ -71,6 +82,24 @@ func RenderLogo() string {
 		if i < maxLines-1 {
 			b.WriteString("\n")
 		}
+	}
+
+	// Divider line beneath HANIMO (aligned with logo, mascot column empty)
+	dividerStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#6C7086"))
+	b.WriteString("\n")
+	b.WriteString(fmt.Sprintf("%-*s", mascotWidth, ""))
+	b.WriteString("  ")
+	b.WriteString(dividerStyle.Render(logoDivider))
+
+	// CODE block beneath divider, aligned with HANIMO (mascot column empty)
+	codeColors := []string{"#CBA6F7", "#B4A5F5", "#A196F2", "#8B87F0", "#7678ED"}
+	for i, line := range codeLines {
+		b.WriteString("\n")
+		b.WriteString(fmt.Sprintf("%-*s", mascotWidth, ""))
+		b.WriteString("  ")
+		clr := codeColors[i%len(codeColors)]
+		style := lipgloss.NewStyle().Foreground(lipgloss.Color(clr)).Bold(true)
+		b.WriteString(style.Render(line))
 	}
 	return b.String()
 }

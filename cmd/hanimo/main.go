@@ -7,6 +7,7 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 
+	"github.com/flykimjiwon/hanimo/internal/agents"
 	"github.com/flykimjiwon/hanimo/internal/app"
 	"github.com/flykimjiwon/hanimo/internal/config"
 	"github.com/flykimjiwon/hanimo/internal/llm"
@@ -37,6 +38,7 @@ func main() {
 	resetFlag := flag.Bool("reset", false, "설정 초기화 (config 삭제 후 재설정)")
 	resumeFlag := flag.String("resume", "", "세션 복원 (ID 또는 이름)")
 	debugFlag := flag.Bool("debug", false, "디버그 모드 활성화")
+	maxIterFlag := flag.Int("max-iter", 0, "Maximum auto-mode iterations (1-200, 0=use config/default)")
 	// Short aliases
 	flag.StringVar(providerFlag, "p", "", "LLM 프로바이더 (단축)")
 	flag.StringVar(modelFlag, "m", "", "모델 이름 (단축)")
@@ -77,6 +79,13 @@ func main() {
 	}
 	if *modelFlag != "" {
 		cfg.Default.Model = *modelFlag
+	}
+
+	// Resolve max auto-mode iterations. Priority: CLI flag > config > default.
+	if *maxIterFlag > 0 && *maxIterFlag <= 200 {
+		agents.MaxAutoIterations = *maxIterFlag
+	} else if cfg.MaxIterations > 0 && cfg.MaxIterations <= 200 {
+		agents.MaxAutoIterations = cfg.MaxIterations
 	}
 
 	// Initialize SQLite database

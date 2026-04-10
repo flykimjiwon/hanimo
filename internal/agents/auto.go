@@ -2,8 +2,14 @@ package agents
 
 import "strings"
 
+var (
+	// MaxAutoIterations is the hard upper bound on auto-mode tool-loop
+	// iterations. It defaults to 20 but may be overridden via CLI flag
+	// (--max-iter) or via config (max_iterations). Valid range: 1-200.
+	MaxAutoIterations = 20
+)
+
 const (
-	MaxAutoIterations  = 20
 	AutoCompleteMarker = "[AUTO_COMPLETE]"
 	AutoPauseMarker    = "[AUTO_PAUSE]"
 )

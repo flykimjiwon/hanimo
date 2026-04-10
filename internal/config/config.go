@@ -34,10 +34,11 @@ type DefaultConfig_ struct {
 }
 
 type Config struct {
-	API       APIConfig                `yaml:"api"`
-	Models    ModelsConfig             `yaml:"models"`
-	Default   DefaultConfig_           `yaml:"default,omitempty"`
-	Providers map[string]ProviderConfig `yaml:"providers,omitempty"`
+	API           APIConfig                 `yaml:"api"`
+	Models        ModelsConfig              `yaml:"models"`
+	Default       DefaultConfig_            `yaml:"default,omitempty"`
+	Providers     map[string]ProviderConfig `yaml:"providers,omitempty"`
+	MaxIterations int                       `yaml:"max_iterations,omitempty"`
 }
 
 // Build-time overridable defaults (set via -ldflags)

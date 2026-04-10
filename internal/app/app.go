@@ -70,6 +70,11 @@ type Model struct {
 	autoMode bool   // autonomous mode active
 	autoTask string // task description for auto mode
 
+	// Plan execution state
+	activePlan           *agents.Plan
+	planAwaitingApproval bool // true while waiting for LLM to return a draft plan
+	planExecuting        bool // true while running approved plan step-by-step
+
 	showPalette     bool
 	paletteQuery    string
 	paletteSelected int
@@ -106,7 +111,7 @@ func NewModel(cfg config.Config, initialMode int, needsSetup bool) Model {
 	ta.Focus()
 
 	setupTa := textarea.New()
-	setupTa.Placeholder = "tg_..."
+	setupTa.Placeholder = "sk_... or nvt_..."
 	setupTa.CharLimit = 512
 	setupTa.SetWidth(60)
 	setupTa.SetHeight(1)
@@ -429,6 +434,72 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				})
 			}
 
+			// Plan mode: awaiting draft approval
+			if m.planAwaitingApproval {
+				m.planAwaitingApproval = false
+				plan, err := agents.ParsePlan(m.streamBuf)
+				if err != nil {
+					m.msgs = append(m.msgs, ui.Message{
+						Role: ui.RoleSystem, Content: fmt.Sprintf("  [PLAN] 계획 파싱 실패: %v", err), Timestamp: time.Now(),
+					})
+				} else {
+					m.activePlan = plan
+					m.msgs = append(m.msgs, ui.Message{
+						Role: ui.RoleSystem, Content: plan.Render(), Timestamp: time.Now(),
+					})
+					m.msgs = append(m.msgs, ui.Message{
+						Role: ui.RoleSystem, Content: "  /approve 로 승인  ·  /reject 로 거부", Timestamp: time.Now(),
+					})
+				}
+				m.streamBuf = ""
+				m.updateViewport()
+				return m, nil
+			}
+
+			// Plan mode: step execution response
+			if m.planExecuting && m.activePlan != nil && m.activePlan.Status == "executing" {
+				stepDone, stepFailed, revise := agents.CheckPlanMarkers(m.streamBuf)
+				if revise {
+					// Attempt to re-parse the plan from the response; keep executing state.
+					if newPlan, err := agents.ParsePlan(m.streamBuf); err == nil {
+						newPlan.Status = "executing"
+						newPlan.Current = 0
+						m.activePlan = newPlan
+						m.msgs = append(m.msgs, ui.Message{
+							Role: ui.RoleSystem, Content: "  [PLAN] 계획 재구성됨", Timestamp: time.Now(),
+						})
+						m.msgs = append(m.msgs, ui.Message{
+							Role: ui.RoleSystem, Content: newPlan.Render(), Timestamp: time.Now(),
+						})
+						m.streamBuf = ""
+						m.updateViewport()
+						return m, m.executeNextPlanStep()
+					}
+				}
+				if stepFailed {
+					if m.activePlan.Current < len(m.activePlan.Steps) {
+						m.activePlan.Steps[m.activePlan.Current].Status = "failed"
+					}
+					m.activePlan.Status = "failed"
+					m.planExecuting = false
+					m.msgs = append(m.msgs, ui.Message{
+						Role: ui.RoleSystem, Content: "  [PLAN] 단계 실패 — 실행 중단", Timestamp: time.Now(),
+					})
+					m.streamBuf = ""
+					m.updateViewport()
+					return m, nil
+				}
+				if stepDone {
+					if m.activePlan.Current < len(m.activePlan.Steps) {
+						m.activePlan.Steps[m.activePlan.Current].Status = "completed"
+					}
+					m.activePlan.Current++
+					m.streamBuf = ""
+					m.updateViewport()
+					return m, m.executeNextPlanStep()
+				}
+			}
+
 			// Check auto mode markers
 			if m.autoMode {
 				complete, pause := agents.CheckAutoMarkers(m.streamBuf)
@@ -474,7 +545,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, m.waitForNextChunk()
 
 	case toolResultMsg:
-		config.DebugLog("[APP-TOOL] received %d tool results | toolIter=%d/20", len(msg.results), m.toolIter+1)
+		config.DebugLog("[APP-TOOL] received %d tool results | toolIter=%d/%d", len(msg.results), m.toolIter+1, agents.MaxAutoIterations)
 		for _, r := range msg.results {
 			config.DebugLog("[APP-TOOL] %s | resultLen=%d", r.name, len(r.output))
 			m.history = append(m.history, openai.ChatCompletionMessage{
@@ -491,12 +562,12 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.toolIter++
 		m.updateViewport()
 
-		if m.toolIter >= 20 {
-			config.DebugLog("[APP-TOOL] loop limit reached (20 iterations)")
+		if m.toolIter >= agents.MaxAutoIterations {
+			config.DebugLog("[APP-TOOL] loop limit reached (%d iterations)", agents.MaxAutoIterations)
 			m.streaming = false
 			m.lastElapsed = time.Since(m.streamStart)
 			m.msgs = append(m.msgs, ui.Message{
-				Role: ui.RoleSystem, Content: "[tool loop limit — 20 iterations]", Timestamp: time.Now(),
+				Role: ui.RoleSystem, Content: fmt.Sprintf("[tool loop limit — %d iterations]", agents.MaxAutoIterations), Timestamp: time.Now(),
 			})
 			m.updateViewport()
 			return m, nil
@@ -555,7 +626,7 @@ func (m *Model) handleSlashCommand(input string) (bool, tea.Cmd) {
 		m.inSetup = true
 		m.setupCfg = m.cfg
 		m.setupInput.Reset()
-		m.setupInput.Placeholder = "tg_..."
+		m.setupInput.Placeholder = "sk_... or nvt_..."
 		m.setupInput.Focus()
 		return true, nil
 
@@ -576,7 +647,8 @@ func (m *Model) handleSlashCommand(input string) (bool, tea.Cmd) {
 		help := "  Enter — 전송    Shift+Enter — 줄바꿈    /clear — 대화삭제    Ctrl+C — 종료\n" +
 			"  /model [name] — 모델 확인/변경    /provider [name] — 프로바이더 확인/변경\n" +
 			"  /config — 현재 설정 표시    /usage — 토큰 사용량\n" +
-			"  /auto <task> — 자율 모드 (최대 20회 반복)\n" +
+			fmt.Sprintf("  /auto <task> — 자율 모드 (최대 %d회 반복, --max-iter 로 조정)\n", agents.MaxAutoIterations) +
+			"  /plan <task> — 단계별 실행 계획 생성    /approve — 계획 승인/실행    /reject — 계획 거부\n" +
 			"  /save [name] — 세션 저장    /load — 세션 목록    /search [keyword] — 세션 검색\n" +
 			"  /remember key=value — 메모리 저장    /memories — 프로젝트 메모리 목록\n" +
 			"  /lang — 언어 전환 (한국어/English)    Esc — 메뉴"
@@ -768,13 +840,114 @@ func (m *Model) handleSlashCommand(input string) (bool, tea.Cmd) {
 			Role: openai.ChatMessageRoleSystem, Content: sysPrompt,
 		}
 		m.msgs = append(m.msgs, ui.Message{
-			Role: ui.RoleSystem, Content: fmt.Sprintf("  [AUTO MODE] 자율 모드 시작: %s", arg), Timestamp: time.Now(),
+			Role: ui.RoleSystem, Content: fmt.Sprintf("  [AUTO MODE] 자율 모드 시작: %s (최대 %d 회 반복)", arg, agents.MaxAutoIterations), Timestamp: time.Now(),
 		})
 		m.updateViewport()
 		return true, m.sendMessage(arg)
+
+	case "/plan":
+		if arg == "" {
+			if m.activePlan != nil {
+				m.msgs = append(m.msgs, ui.Message{
+					Role: ui.RoleSystem, Content: m.activePlan.Render(), Timestamp: time.Now(),
+				})
+			} else {
+				m.msgs = append(m.msgs, ui.Message{
+					Role: ui.RoleSystem, Content: "  활성 계획 없음. /plan <task> 로 새 계획을 만드세요.", Timestamp: time.Now(),
+				})
+			}
+			m.updateViewport()
+			return true, nil
+		}
+		// Kick off plan creation: one-shot user message that asks the LLM to
+		// reply with JSON. Do not append a new system message (history[0] already
+		// contains the active system prompt); instead, prepend the planning
+		// instructions to the user message so the LLM produces JSON only.
+		m.activePlan = nil
+		m.planAwaitingApproval = true
+		m.planExecuting = false
+		prompt := agents.PlanPromptPrefix + arg
+		m.msgs = append(m.msgs, ui.Message{
+			Role: ui.RoleSystem, Content: fmt.Sprintf("  [PLAN] 계획 생성 중: %s", arg), Timestamp: time.Now(),
+		})
+		m.updateViewport()
+		return true, m.sendMessage(prompt)
+
+	case "/approve":
+		if m.activePlan != nil && m.activePlan.Status == "draft" {
+			m.activePlan.Status = "executing"
+			m.activePlan.Current = 0
+			m.planExecuting = true
+			m.msgs = append(m.msgs, ui.Message{
+				Role: ui.RoleSystem, Content: "  [PLAN] 승인됨 — 실행 시작", Timestamp: time.Now(),
+			})
+			m.updateViewport()
+			return true, m.executeNextPlanStep()
+		}
+		m.msgs = append(m.msgs, ui.Message{
+			Role: ui.RoleSystem, Content: "  승인할 초안 계획이 없습니다.", Timestamp: time.Now(),
+		})
+		m.updateViewport()
+		return true, nil
+
+	case "/reject":
+		if m.activePlan != nil && m.activePlan.Status == "draft" {
+			m.activePlan = nil
+			m.planAwaitingApproval = false
+			m.planExecuting = false
+			m.msgs = append(m.msgs, ui.Message{
+				Role: ui.RoleSystem, Content: "  [PLAN] 계획 거부됨", Timestamp: time.Now(),
+			})
+		} else {
+			m.msgs = append(m.msgs, ui.Message{
+				Role: ui.RoleSystem, Content: "  거부할 초안 계획이 없습니다.", Timestamp: time.Now(),
+			})
+		}
+		m.updateViewport()
+		return true, nil
 	}
 
 	return false, nil
+}
+
+// executeNextPlanStep advances the active plan by one step. If all steps are
+// done, it marks the plan complete. Otherwise it sends a step-execution prompt
+// to the LLM via sendMessage, so the existing streaming/tool pipeline handles
+// the actual work.
+func (m *Model) executeNextPlanStep() tea.Cmd {
+	if m.activePlan == nil {
+		return nil
+	}
+	if m.activePlan.Current >= len(m.activePlan.Steps) {
+		m.activePlan.Status = "completed"
+		m.planExecuting = false
+		m.msgs = append(m.msgs, ui.Message{
+			Role: ui.RoleSystem, Content: "  [PLAN] 모든 단계 완료", Timestamp: time.Now(),
+		})
+		m.updateViewport()
+		return nil
+	}
+
+	step := m.activePlan.Steps[m.activePlan.Current]
+	m.activePlan.Steps[m.activePlan.Current].Status = "in_progress"
+
+	prompt := fmt.Sprintf(agents.ExecutePromptPrefix,
+		m.activePlan.Render(),
+		m.activePlan.Current+1,
+		len(m.activePlan.Steps),
+		step.Title,
+		step.Description,
+	)
+
+	m.msgs = append(m.msgs, ui.Message{
+		Role: ui.RoleSystem,
+		Content: fmt.Sprintf("  [PLAN] 단계 %d/%d 실행: %s",
+			m.activePlan.Current+1, len(m.activePlan.Steps), step.Title),
+		Timestamp: time.Now(),
+	})
+	m.updateViewport()
+
+	return m.sendMessage(prompt)
 }
 
 func (m Model) View() tea.View {
@@ -810,7 +983,11 @@ func (m Model) View() tea.View {
 		if m.streaming {
 			elapsed = time.Since(m.streamStart)
 		}
-		statusBar := ui.RenderStatusBar(displayModel, m.tokenCount, elapsed, m.activeTab, m.cwd, m.width, config.IsDebug(), len(tools.ToolsForMode(m.activeTab)), m.autoMode)
+		planProgress := ""
+		if m.activePlan != nil && (m.activePlan.Status == "executing" || m.activePlan.Status == "draft") {
+			planProgress = m.activePlan.Progress()
+		}
+		statusBar := ui.RenderStatusBar(displayModel, m.tokenCount, elapsed, m.activeTab, m.cwd, m.width, config.IsDebug(), len(tools.ToolsForMode(m.activeTab)), m.autoMode, planProgress)
 
 		content = lipgloss.JoinVertical(lipgloss.Left, vpContent, inputBox, statusBar)
 
@@ -878,7 +1055,7 @@ func (m Model) viewSetup() string {
 	b.WriteString("\n\n")
 	b.WriteString(title.Render("  hanimo setup"))
 	b.WriteString("\n")
-	b.WriteString(dim.Render("  OpenAI-compatible API 연결"))
+	b.WriteString(dim.Render("  OpenAI-compatible API (Novita, OpenRouter, OpenAI, ...)"))
 	b.WriteString("\n\n")
 
 	b.WriteString(step.Render("  API Key") + "\n\n")

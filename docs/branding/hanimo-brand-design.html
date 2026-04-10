@@ -1,0 +1,1183 @@
+<!DOCTYPE html>
+<html lang="ko" data-theme="honey">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>HANIMO CODE — Brand Design System</title>
+<style>
+  /* ============================================
+     HANIMO CODE — Brand Design System
+     Single-file, self-contained, zero dependencies
+     ============================================ */
+
+  :root {
+    /* Honey (default) palette */
+    --honey-50:  #FFF7E0;
+    --honey-100: #F9E2AF; /* primary */
+    --honey-200: #F5C890;
+    --honey-300: #FAB387;
+    --honey-400: #EBA06D;
+    --honey-500: #D98A4F;
+    --lavender:  #CBA6F7;
+
+    /* Catppuccin Mocha surfaces */
+    --bg:        #1E1E2E;
+    --bg-alt:    #181825;
+    --bg-soft:   #313244;
+    --bg-hover:  #45475A;
+    --border:    #45475A40;
+    --border-strong: #585B70;
+
+    --text:      #CDD6F4;
+    --subtext:   #A6ADC8;
+    --muted:     #7F849C;
+
+    /* Semantic */
+    --primary:   var(--honey-100);
+    --accent:    var(--lavender);
+    --warning:   var(--honey-300);
+
+    /* Type */
+    --font-mono: "JetBrains Mono", "Fira Code", "SF Mono", "Menlo", "Consolas", "Liberation Mono", ui-monospace, monospace;
+    --font-sans: -apple-system, BlinkMacSystemFont, "Inter", "SF Pro Text", "Segoe UI", sans-serif;
+
+    /* Spacing & radius */
+    --r-sm: 6px;
+    --r-md: 10px;
+    --r-lg: 16px;
+    --r-xl: 24px;
+    --shadow-soft: 0 8px 40px -12px rgba(0,0,0,0.6);
+    --shadow-glow: 0 0 60px -20px var(--honey-100);
+  }
+
+  [data-theme="light"] {
+    --bg:        #FFFBF0;
+    --bg-alt:    #FDF6E3;
+    --bg-soft:   #F5EAC8;
+    --bg-hover:  #EBDFA8;
+    --border:    #E0C98040;
+    --border-strong: #D4AF37;
+    --text:      #3C2A14;
+    --subtext:   #6B4E1E;
+    --muted:     #9B7A3C;
+    --primary:   #D4922B;
+    --accent:    #8B5CF6;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-mono);
+    font-size: 15px;
+    line-height: 1.6;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    background-image:
+      radial-gradient(circle at 20% 0%, rgba(249, 226, 175, 0.08) 0%, transparent 50%),
+      radial-gradient(circle at 80% 100%, rgba(203, 166, 247, 0.06) 0%, transparent 50%);
+    background-attachment: fixed;
+  }
+
+  ::selection { background: var(--honey-100); color: var(--bg); }
+
+  a { color: var(--honey-100); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  /* ============== LAYOUT ============== */
+  .wrap { max-width: 1200px; margin: 0 auto; padding: 0 24px; }
+
+  .topbar {
+    position: sticky; top: 0; z-index: 100;
+    background: rgba(30,30,46,0.75);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border-bottom: 1px solid var(--border);
+  }
+  [data-theme="light"] .topbar { background: rgba(255,251,240,0.8); }
+
+  .topbar-inner {
+    max-width: 1200px; margin: 0 auto;
+    padding: 14px 24px;
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 16px;
+  }
+  .brand-mark { display: flex; align-items: center; gap: 10px; font-weight: 700; }
+  .brand-mark .dot {
+    width: 10px; height: 10px; border-radius: 50%;
+    background: var(--honey-100);
+    box-shadow: 0 0 12px var(--honey-100);
+  }
+  .nav { display: flex; gap: 18px; font-size: 13px; color: var(--subtext); }
+  .nav a { color: var(--subtext); }
+  .nav a:hover { color: var(--honey-100); text-decoration: none; }
+  @media (max-width: 780px) { .nav { display: none; } }
+
+  .theme-toggle {
+    background: transparent;
+    color: var(--text);
+    border: 1px solid var(--border-strong);
+    border-radius: 999px;
+    padding: 6px 14px;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    cursor: pointer;
+    transition: all .2s ease;
+  }
+  .theme-toggle:hover {
+    background: var(--honey-100);
+    color: var(--bg);
+    border-color: var(--honey-100);
+  }
+
+  /* ============== SECTION ============== */
+  section { padding: 96px 0; border-bottom: 1px dashed var(--border); }
+  @media (max-width: 780px) { section { padding: 64px 0; } }
+
+  .eyebrow {
+    display: inline-block;
+    font-size: 11px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--honey-100);
+    padding: 4px 10px;
+    border: 1px solid var(--honey-100);
+    border-radius: 999px;
+    margin-bottom: 20px;
+  }
+  h1, h2, h3, h4 { font-family: var(--font-mono); font-weight: 700; letter-spacing: -0.01em; }
+  h2 { font-size: clamp(28px, 4vw, 42px); margin-bottom: 12px; }
+  h3 { font-size: 20px; color: var(--honey-100); margin-bottom: 10px; }
+  p.lede { color: var(--subtext); font-size: 16px; max-width: 68ch; margin-bottom: 40px; }
+
+  /* ============== HERO ============== */
+  .hero {
+    padding: 120px 0 100px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::before {
+    content: "";
+    position: absolute; inset: 0;
+    background: radial-gradient(ellipse at center, rgba(249,226,175,0.12) 0%, transparent 60%);
+    pointer-events: none;
+  }
+  .hero-inner { position: relative; z-index: 1; animation: fadeUp .8s ease both; }
+
+  .version-badge {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-size: 12px;
+    padding: 6px 14px;
+    background: var(--bg-soft);
+    border: 1px solid var(--border-strong);
+    border-radius: 999px;
+    color: var(--subtext);
+    margin-bottom: 32px;
+  }
+  .version-badge .pulse {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--honey-100);
+    box-shadow: 0 0 0 0 var(--honey-100);
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse {
+    0% { box-shadow: 0 0 0 0 rgba(249,226,175,0.7); }
+    70% { box-shadow: 0 0 0 10px rgba(249,226,175,0); }
+    100% { box-shadow: 0 0 0 0 rgba(249,226,175,0); }
+  }
+
+  .hero-title {
+    font-size: clamp(40px, 8vw, 84px);
+    line-height: 1;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    background: linear-gradient(135deg, #F9E2AF 0%, #FAB387 40%, #EBA06D 70%, #CBA6F7 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    margin-bottom: 18px;
+  }
+  .hero-sub {
+    font-size: clamp(16px, 2vw, 20px);
+    color: var(--subtext);
+    max-width: 60ch;
+    margin: 0 auto 12px;
+  }
+  .hero-sub-kr {
+    font-size: clamp(14px, 1.6vw, 17px);
+    color: var(--muted);
+    max-width: 60ch;
+    margin: 0 auto 40px;
+  }
+
+  .mascot {
+    font-family: var(--font-mono);
+    font-size: clamp(14px, 1.8vw, 20px);
+    line-height: 1.2;
+    white-space: pre;
+    display: inline-block;
+    padding: 24px 36px;
+    background: var(--bg-alt);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--r-lg);
+    box-shadow: var(--shadow-soft);
+    margin-bottom: 48px;
+    animation: float 4s ease-in-out infinite;
+  }
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-6px); }
+  }
+
+  .mascot span.y { color: var(--honey-100); }
+  .mascot span.o { color: var(--honey-300); }
+  .mascot span.a { color: var(--honey-400); }
+  .mascot span.w { color: var(--text); }
+  .mascot span.p { color: var(--lavender); }
+
+  .cta-row {
+    display: flex; gap: 14px; justify-content: center; flex-wrap: wrap;
+  }
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-family: var(--font-mono);
+    font-size: 14px;
+    font-weight: 600;
+    padding: 12px 22px;
+    border-radius: var(--r-md);
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: all .2s ease;
+  }
+  .btn-primary {
+    background: var(--honey-100);
+    color: var(--bg);
+  }
+  .btn-primary:hover {
+    background: var(--honey-200);
+    transform: translateY(-2px);
+    box-shadow: 0 10px 30px -10px var(--honey-100);
+    text-decoration: none;
+  }
+  .btn-ghost {
+    background: transparent;
+    color: var(--text);
+    border-color: var(--border-strong);
+  }
+  .btn-ghost:hover {
+    background: var(--bg-soft);
+    border-color: var(--honey-100);
+    text-decoration: none;
+  }
+
+  /* ============== BRAND STORY ============== */
+  .story-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+    margin-top: 40px;
+  }
+  @media (max-width: 900px) { .story-grid { grid-template-columns: 1fr; } }
+
+  .story-card {
+    padding: 28px;
+    background: var(--bg-alt);
+    border: 1px solid var(--border);
+    border-radius: var(--r-lg);
+    transition: all .25s ease;
+  }
+  .story-card:hover {
+    border-color: var(--honey-100);
+    transform: translateY(-4px);
+  }
+  .story-card .num {
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.2em;
+    margin-bottom: 12px;
+  }
+  .story-card h3 { margin-bottom: 12px; }
+  .story-card p { color: var(--subtext); font-size: 14px; }
+
+  .etymology {
+    margin-top: 48px;
+    padding: 32px;
+    background: linear-gradient(135deg, rgba(249,226,175,0.06), rgba(203,166,247,0.06));
+    border: 1px solid var(--border);
+    border-radius: var(--r-lg);
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 32px;
+  }
+  @media (max-width: 780px) { .etymology { grid-template-columns: 1fr; } }
+  .etymology .word {
+    font-size: 48px;
+    font-weight: 800;
+    background: linear-gradient(135deg, var(--honey-100), var(--honey-300));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    margin-bottom: 4px;
+  }
+  .etymology .meaning { color: var(--subtext); font-size: 14px; }
+  .etymology .meaning strong { color: var(--honey-100); }
+
+  /* ============== LOGO SYSTEM ============== */
+  .logo-variant {
+    margin-top: 32px;
+    padding: 40px;
+    background: var(--bg-alt);
+    border: 1px solid var(--border);
+    border-radius: var(--r-lg);
+    overflow-x: auto;
+  }
+  .logo-variant .label {
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .logo-variant .label::before {
+    content: ""; display: inline-block;
+    width: 18px; height: 1px;
+    background: var(--honey-100);
+  }
+
+  .ascii {
+    font-family: var(--font-mono);
+    white-space: pre;
+    line-height: 1.05;
+    font-weight: 700;
+  }
+  .ascii-hero { font-size: clamp(6px, 1.2vw, 14px); }
+  .ascii-md   { font-size: clamp(7px, 1.4vw, 12px); }
+  .ascii-sm   { font-size: 10px; }
+
+  .ascii .c1 { color: #F9E2AF; }
+  .ascii .c2 { color: #F5C890; }
+  .ascii .c3 { color: #FAB387; }
+  .ascii .c4 { color: #EBA06D; }
+  .ascii .c5 { color: #D98A4F; }
+  .ascii .c6 { color: #CBA6F7; }
+
+  .logo-combo {
+    display: flex;
+    align-items: center;
+    gap: 32px;
+    flex-wrap: wrap;
+  }
+  .logo-combo .mini-mascot {
+    font-size: 11px;
+    line-height: 1.15;
+    white-space: pre;
+    color: var(--honey-100);
+  }
+
+  /* ============== COLOR PALETTE ============== */
+  .swatches {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 16px;
+    margin-top: 32px;
+  }
+  .swatch {
+    border-radius: var(--r-md);
+    overflow: hidden;
+    border: 1px solid var(--border);
+    transition: transform .2s ease;
+  }
+  .swatch:hover { transform: translateY(-4px); }
+  .swatch .chip {
+    height: 110px;
+    display: flex;
+    align-items: flex-end;
+    justify-content: flex-end;
+    padding: 10px;
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    opacity: 0.7;
+  }
+  .swatch .meta {
+    padding: 12px 14px;
+    background: var(--bg-alt);
+    font-size: 12px;
+  }
+  .swatch .meta .name { color: var(--text); font-weight: 600; }
+  .swatch .meta .hex { color: var(--muted); font-size: 11px; margin-top: 2px; }
+
+  .theme-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 20px;
+    margin-top: 40px;
+  }
+  .theme-card {
+    padding: 20px;
+    border-radius: var(--r-lg);
+    border: 1px solid var(--border);
+    transition: all .25s ease;
+    cursor: default;
+  }
+  .theme-card:hover { transform: translateY(-4px); border-color: var(--border-strong); }
+  .theme-card .title {
+    font-size: 13px;
+    font-weight: 700;
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .theme-card .dots { display: flex; gap: 6px; margin-bottom: 14px; }
+  .theme-card .dots span {
+    width: 22px; height: 22px; border-radius: 50%;
+    display: inline-block;
+  }
+  .theme-card .preview {
+    font-size: 10px;
+    padding: 10px;
+    border-radius: var(--r-sm);
+    white-space: pre;
+    line-height: 1.3;
+    overflow: hidden;
+  }
+
+  /* ============== TYPOGRAPHY ============== */
+  .type-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 32px; }
+  @media (max-width: 780px) { .type-grid { grid-template-columns: 1fr; } }
+
+  .type-card {
+    padding: 28px;
+    background: var(--bg-alt);
+    border: 1px solid var(--border);
+    border-radius: var(--r-lg);
+  }
+  .type-card .tag {
+    font-size: 11px;
+    color: var(--honey-100);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    margin-bottom: 16px;
+  }
+  .type-card .big { font-size: 48px; font-weight: 700; line-height: 1.1; margin-bottom: 8px; }
+  .type-card .stack { font-size: 12px; color: var(--muted); margin-top: 12px; word-break: break-all; }
+
+  .type-scale { display: grid; gap: 12px; margin-top: 24px; }
+  .type-scale-row {
+    display: flex; align-items: baseline; gap: 20px;
+    padding: 12px 0; border-bottom: 1px dashed var(--border);
+  }
+  .type-scale-row .size-label {
+    width: 60px; font-size: 11px; color: var(--muted);
+  }
+
+  /* ============== PRODUCT FAMILY ============== */
+  .products {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 20px;
+    margin-top: 32px;
+  }
+  .product {
+    padding: 28px;
+    background: var(--bg-alt);
+    border: 1px solid var(--border);
+    border-radius: var(--r-lg);
+    position: relative;
+    transition: all .25s ease;
+  }
+  .product:hover { border-color: var(--honey-100); transform: translateY(-4px); }
+  .product .status {
+    position: absolute;
+    top: 20px; right: 20px;
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    padding: 3px 10px;
+    border-radius: 999px;
+    text-transform: uppercase;
+  }
+  .status-live { background: rgba(166, 227, 161, 0.15); color: #A6E3A1; border: 1px solid #A6E3A140; }
+  .status-plan { background: rgba(137, 180, 250, 0.1); color: #89B4FA; border: 1px solid #89B4FA40; }
+  .product .name { font-size: 20px; color: var(--honey-100); font-weight: 700; margin-bottom: 4px; }
+  .product .kind { font-size: 11px; color: var(--muted); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 14px; }
+  .product .desc { font-size: 13px; color: var(--subtext); }
+
+  /* ============== TAGLINES ============== */
+  .taglines { display: grid; gap: 16px; margin-top: 32px; }
+  .tagline {
+    padding: 28px 32px;
+    background: var(--bg-alt);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--honey-100);
+    border-radius: var(--r-md);
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 20px;
+    align-items: center;
+  }
+  @media (max-width: 780px) { .tagline { grid-template-columns: 1fr; } }
+  .tagline:hover { background: var(--bg-soft); }
+  .tagline .kr { font-size: 20px; font-weight: 700; color: var(--text); margin-bottom: 4px; }
+  .tagline .en { font-size: 13px; color: var(--subtext); letter-spacing: 0.02em; }
+  .tagline .copy-btn {
+    font-size: 10px;
+    padding: 6px 12px;
+    background: transparent;
+    border: 1px solid var(--border-strong);
+    color: var(--muted);
+    border-radius: var(--r-sm);
+    cursor: pointer;
+    font-family: var(--font-mono);
+    transition: all .2s ease;
+  }
+  .tagline .copy-btn:hover { background: var(--honey-100); color: var(--bg); border-color: var(--honey-100); }
+
+  /* ============== TERMINAL MOCKUP ============== */
+  .terminal {
+    margin-top: 32px;
+    background: #11111B;
+    border-radius: var(--r-lg);
+    border: 1px solid var(--border-strong);
+    overflow: hidden;
+    box-shadow: 0 30px 80px -30px rgba(0,0,0,0.8);
+  }
+  .terminal .titlebar {
+    background: var(--bg-alt);
+    padding: 12px 16px;
+    display: flex; align-items: center; gap: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+  .terminal .titlebar .btns { display: flex; gap: 6px; }
+  .terminal .titlebar .btns span {
+    width: 12px; height: 12px; border-radius: 50%;
+  }
+  .terminal .btns .r { background: #F38BA8; }
+  .terminal .btns .y { background: #F9E2AF; }
+  .terminal .btns .g { background: #A6E3A1; }
+  .terminal .titlebar .title {
+    flex: 1; text-align: center; font-size: 11px; color: var(--muted);
+  }
+  .terminal .body {
+    padding: 24px;
+    font-size: 13px;
+    line-height: 1.65;
+    min-height: 380px;
+    color: var(--text);
+    white-space: pre-wrap;
+  }
+  .terminal .prompt { color: var(--honey-100); }
+  .terminal .cmd { color: var(--text); }
+  .terminal .out { color: var(--subtext); }
+  .terminal .ok { color: #A6E3A1; }
+  .terminal .warn { color: var(--honey-300); }
+  .terminal .info { color: var(--lavender); }
+  .terminal .dim { color: var(--muted); }
+  .cursor { display: inline-block; width: 8px; height: 14px; background: var(--honey-100); vertical-align: middle; animation: blink 1s steps(2) infinite; }
+  @keyframes blink { 50% { opacity: 0; } }
+
+  .panel-border {
+    color: var(--honey-100);
+  }
+
+  /* ============== VOICE & TONE ============== */
+  .voice-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-top: 32px; }
+  .voice-card {
+    padding: 24px;
+    background: var(--bg-alt);
+    border: 1px solid var(--border);
+    border-radius: var(--r-lg);
+    text-align: center;
+  }
+  .voice-card .icon {
+    font-size: 28px;
+    color: var(--honey-100);
+    margin-bottom: 12px;
+    font-weight: 800;
+  }
+  .voice-card h4 { margin-bottom: 8px; font-size: 15px; }
+  .voice-card p { font-size: 12px; color: var(--subtext); }
+
+  /* ============== DO / DON'T ============== */
+  .do-dont { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 32px; }
+  @media (max-width: 780px) { .do-dont { grid-template-columns: 1fr; } }
+  .do, .dont {
+    padding: 28px;
+    background: var(--bg-alt);
+    border: 1px solid var(--border);
+    border-radius: var(--r-lg);
+  }
+  .do   { border-left: 3px solid #A6E3A1; }
+  .dont { border-left: 3px solid #F38BA8; }
+  .do h3   { color: #A6E3A1; }
+  .dont h3 { color: #F38BA8; }
+  .do ul, .dont ul { list-style: none; margin-top: 16px; }
+  .do li, .dont li {
+    padding: 8px 0 8px 24px;
+    font-size: 13px;
+    color: var(--subtext);
+    position: relative;
+    border-bottom: 1px dashed var(--border);
+  }
+  .do li::before, .dont li::before {
+    position: absolute; left: 0; top: 8px;
+    font-weight: 700;
+  }
+  .do li::before   { content: "✓"; color: #A6E3A1; }
+  .dont li::before { content: "✗"; color: #F38BA8; }
+
+  /* ============== FOOTER ============== */
+  footer {
+    padding: 64px 0 80px;
+    text-align: center;
+    color: var(--muted);
+    font-size: 12px;
+    border-top: 1px solid var(--border);
+  }
+  footer .mini-logo {
+    font-family: var(--font-mono);
+    white-space: pre;
+    display: inline-block;
+    font-size: 8px;
+    color: var(--honey-100);
+    opacity: 0.6;
+    margin-bottom: 16px;
+  }
+
+  /* ============== ANIMATIONS ============== */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(24px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .reveal {
+    opacity: 0;
+    transform: translateY(20px);
+    transition: all .7s ease;
+  }
+  .reveal.on { opacity: 1; transform: translateY(0); }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--bg-soft); border-radius: 4px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--honey-100); }
+</style>
+</head>
+<body>
+
+<!-- =============== TOPBAR =============== -->
+<header class="topbar">
+  <div class="topbar-inner">
+    <div class="brand-mark">
+      <span class="dot"></span>
+      <span>HANIMO CODE</span>
+    </div>
+    <nav class="nav">
+      <a href="#story">Story</a>
+      <a href="#logo">Logo</a>
+      <a href="#color">Color</a>
+      <a href="#type">Type</a>
+      <a href="#product">Product</a>
+      <a href="#tagline">Taglines</a>
+      <a href="#ui">UI</a>
+      <a href="#voice">Voice</a>
+    </nav>
+    <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">◐ theme</button>
+  </div>
+</header>
+
+<!-- =============== HERO =============== -->
+<section class="hero">
+  <div class="wrap hero-inner">
+    <div class="version-badge">
+      <span class="pulse"></span>
+      v0.1.0 — Open Source Release
+    </div>
+
+    <div class="mascot" aria-label="hanimo mascot">
+<span class="y">  ▄▀▀▀▀▄ </span>
+<span class="y">  █</span><span class="p">◕ᴥ◕</span><span class="y"> █ </span>
+<span class="a">  ▀▄▄▄▄▀ </span>
+<span class="w">  ≋</span><span class="o">█  █</span><span class="w">≋ </span>
+<span class="o">    ▀▀   </span>
+    </div>
+
+    <h1 class="hero-title">HANIMO CODE</h1>
+    <p class="hero-sub">AI Coding Agent for Open Source</p>
+    <p class="hero-sub-kr">오픈소스를 위한 AI 코딩 에이전트</p>
+
+    <div class="cta-row">
+      <a class="btn btn-primary" href="https://hanimo.dev">› hanimo.dev</a>
+      <a class="btn btn-ghost" href="#story">Read the Story →</a>
+    </div>
+  </div>
+</section>
+
+<!-- =============== BRAND STORY =============== -->
+<section id="story">
+  <div class="wrap">
+    <span class="eyebrow">01 · Brand Story</span>
+    <h2>하니모, 꿀벌과 비숑의 합체</h2>
+    <p class="lede">
+      hanimo(하니모)는 부지런한 꿀벌(honey bee)의 집요함과
+      순수한 비숑 강아지(bichon puppy)의 다정함을 합친 이름입니다.
+      오픈소스 개발자를 위해 일하는, 꿀처럼 달콤하고 강아지처럼 충실한
+      AI 코딩 에이전트를 지향합니다.
+    </p>
+
+    <div class="etymology">
+      <div>
+        <div class="word">하니 · Honey</div>
+        <div class="meaning">
+          꿀을 모으는 <strong>부지런한 꿀벌</strong>처럼, hanimo는 흩어진 코드·문서·컨텍스트를
+          모아 결과물을 만듭니다. Honey Gold는 그 달콤한 결실의 색입니다.
+        </div>
+      </div>
+      <div>
+        <div class="word">모돌 · Modol</div>
+        <div class="meaning">
+          <strong>모돌이 비숑 강아지</strong>처럼 사용자 곁에 머무르며 충실하게 돕습니다.
+          사랑스럽고, 경계심 없고, 언제나 먼저 반기는 동반자.
+        </div>
+      </div>
+    </div>
+
+    <div class="story-grid">
+      <div class="story-card">
+        <div class="num">POSITIONING</div>
+        <h3>Open Source First</h3>
+        <p>Claude Code·Cursor가 만든 시장에, 벤더 중립적이고 로컬 우선인 오픈소스 대안을 제공합니다.</p>
+      </div>
+      <div class="story-card">
+        <div class="num">PHILOSOPHY</div>
+        <h3>Provider Agnostic</h3>
+        <p>OpenAI, Anthropic, Gemini, Ollama 등 14개 프로바이더를 동일한 인터페이스로 다룹니다.</p>
+      </div>
+      <div class="story-card">
+        <div class="num">DELIVERY</div>
+        <h3>Single Binary</h3>
+        <p>Go로 만든 단일 바이너리. 런타임 의존성 없이 설치 즉시 작동합니다.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- =============== LOGO SYSTEM =============== -->
+<section id="logo">
+  <div class="wrap">
+    <span class="eyebrow">02 · Logo System</span>
+    <h2>Logo System</h2>
+    <p class="lede">
+      HANIMO의 로고는 터미널 네이티브 미학을 따릅니다. ASCII 블록 워드마크,
+      미니 마스코트 조합, 단독 아이콘 — 세 가지 변형을 상황에 따라 사용합니다.
+    </p>
+
+    <!-- Primary -->
+    <div class="logo-variant">
+      <div class="label">Primary — Wide Wordmark + Mascot</div>
+      <div class="logo-combo">
+        <div class="ascii ascii-hero">
+<span class="c1"> ██   ██  █████  ███   ██ ██ ███   ███  ██████ </span>
+<span class="c2"> ██   ██ ██   ██ ████  ██ ██ ████ ████ ██    ██</span>
+<span class="c3"> ███████ ███████ ██ ██ ██ ██ ██ ███ ██ ██    ██</span>
+<span class="c4"> ██   ██ ██   ██ ██  ████ ██ ██     ██ ██    ██</span>
+<span class="c5"> ██   ██ ██   ██ ██   ███ ██ ██     ██  ██████ </span>
+        </div>
+        <div class="mini-mascot">  ▄▀▀▀▀▄
+  █◕ᴥ◕ █
+  ▀▄▄▄▄▀
+  ≋█  █≋
+    ▀▀   </div>
+      </div>
+    </div>
+
+    <!-- Compact -->
+    <div class="logo-variant">
+      <div class="label">Compact — Single Line</div>
+      <div class="ascii ascii-md">
+<span class="c1">  ┌─────────────────────┐</span>
+<span class="c2">  │ </span><span class="c1">◉</span><span class="c2"> </span><span class="c3">HANIMO CODE</span><span class="c2">  v0.1 │</span>
+<span class="c3">  └─────────────────────┘</span>
+      </div>
+    </div>
+
+    <!-- Icon only -->
+    <div class="logo-variant">
+      <div class="label">Icon Only — Mascot Standalone</div>
+      <div class="ascii ascii-md" style="font-size:14px;">
+<span class="c1">  ▄▀▀▀▀▄ </span>
+<span class="c1">  █</span><span class="c6">◕ᴥ◕</span><span class="c1"> █ </span>
+<span class="c3">  ▀▄▄▄▄▀ </span>
+<span class="c2">  ≋</span><span class="c4">█  █</span><span class="c2">≋ </span>
+<span class="c4">    ▀▀   </span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- =============== COLOR PALETTE =============== -->
+<section id="color">
+  <div class="wrap">
+    <span class="eyebrow">03 · Color Palette</span>
+    <h2>Honey Gold, warmed by Mocha</h2>
+    <p class="lede">
+      기본 팔레트는 Catppuccin Mocha 베이스 위에 꿀의 따뜻한 금색 스펙트럼을 얹었습니다.
+      어두운 터미널에서 눈에 편하고, 브랜드 기억에 남는 조합입니다.
+    </p>
+
+    <h3 style="margin-top:40px;">Primary — Honey Spectrum</h3>
+    <div class="swatches">
+      <div class="swatch"><div class="chip" style="background:#F9E2AF;color:#1E1E2E;">PRIMARY</div><div class="meta"><div class="name">Honey Gold</div><div class="hex">#F9E2AF</div></div></div>
+      <div class="swatch"><div class="chip" style="background:#F5C890;color:#1E1E2E;">LIGHT</div><div class="meta"><div class="name">Light Honey</div><div class="hex">#F5C890</div></div></div>
+      <div class="swatch"><div class="chip" style="background:#FAB387;color:#1E1E2E;">WARM</div><div class="meta"><div class="name">Warm Peach</div><div class="hex">#FAB387</div></div></div>
+      <div class="swatch"><div class="chip" style="background:#EBA06D;color:#1E1E2E;">DEEP</div><div class="meta"><div class="name">Apricot</div><div class="hex">#EBA06D</div></div></div>
+      <div class="swatch"><div class="chip" style="background:#CBA6F7;color:#1E1E2E;">ACCENT</div><div class="meta"><div class="name">Lavender</div><div class="hex">#CBA6F7</div></div></div>
+    </div>
+
+    <h3 style="margin-top:40px;">Surface — Mocha Base</h3>
+    <div class="swatches">
+      <div class="swatch"><div class="chip" style="background:#1E1E2E;color:#CDD6F4;">BG</div><div class="meta"><div class="name">Base</div><div class="hex">#1E1E2E</div></div></div>
+      <div class="swatch"><div class="chip" style="background:#181825;color:#CDD6F4;">BG ALT</div><div class="meta"><div class="name">Mantle</div><div class="hex">#181825</div></div></div>
+      <div class="swatch"><div class="chip" style="background:#313244;color:#CDD6F4;">SURFACE</div><div class="meta"><div class="name">Surface</div><div class="hex">#313244</div></div></div>
+      <div class="swatch"><div class="chip" style="background:#CDD6F4;color:#1E1E2E;">TEXT</div><div class="meta"><div class="name">Text</div><div class="hex">#CDD6F4</div></div></div>
+      <div class="swatch"><div class="chip" style="background:#A6ADC8;color:#1E1E2E;">MUTED</div><div class="meta"><div class="name">Subtext</div><div class="hex">#A6ADC8</div></div></div>
+    </div>
+
+    <h3 style="margin-top:56px;">Themes — Choose Your Flavor</h3>
+    <div class="theme-grid">
+      <div class="theme-card" style="background:#1E1E2E;">
+        <div class="title" style="color:#F9E2AF;">honey <span style="color:#7F849C;font-weight:400;">default</span></div>
+        <div class="dots">
+          <span style="background:#F9E2AF"></span>
+          <span style="background:#FAB387"></span>
+          <span style="background:#EBA06D"></span>
+          <span style="background:#CBA6F7"></span>
+        </div>
+        <div class="preview" style="background:#181825;color:#CDD6F4;"><span style="color:#F9E2AF">hanimo</span> › build</div>
+      </div>
+      <div class="theme-card" style="background:#0F1419;">
+        <div class="title" style="color:#59C2FF;">ocean</div>
+        <div class="dots">
+          <span style="background:#59C2FF"></span>
+          <span style="background:#95E6CB"></span>
+          <span style="background:#39BAE6"></span>
+          <span style="background:#D2A6FF"></span>
+        </div>
+        <div class="preview" style="background:#0D1117;color:#B3B1AD;"><span style="color:#59C2FF">hanimo</span> › build</div>
+      </div>
+      <div class="theme-card" style="background:#282A36;">
+        <div class="title" style="color:#FF79C6;">dracula</div>
+        <div class="dots">
+          <span style="background:#FF79C6"></span>
+          <span style="background:#BD93F9"></span>
+          <span style="background:#50FA7B"></span>
+          <span style="background:#F1FA8C"></span>
+        </div>
+        <div class="preview" style="background:#21222C;color:#F8F8F2;"><span style="color:#FF79C6">hanimo</span> › build</div>
+      </div>
+      <div class="theme-card" style="background:#2E3440;">
+        <div class="title" style="color:#88C0D0;">nord</div>
+        <div class="dots">
+          <span style="background:#88C0D0"></span>
+          <span style="background:#81A1C1"></span>
+          <span style="background:#A3BE8C"></span>
+          <span style="background:#B48EAD"></span>
+        </div>
+        <div class="preview" style="background:#242933;color:#D8DEE9;"><span style="color:#88C0D0">hanimo</span> › build</div>
+      </div>
+      <div class="theme-card" style="background:#1B2B1A;">
+        <div class="title" style="color:#A3BE8C;">forest</div>
+        <div class="dots">
+          <span style="background:#A3BE8C"></span>
+          <span style="background:#D7A86E"></span>
+          <span style="background:#6A9955"></span>
+          <span style="background:#E6B450"></span>
+        </div>
+        <div class="preview" style="background:#121E12;color:#D4E0C4;"><span style="color:#A3BE8C">hanimo</span> › build</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- =============== TYPOGRAPHY =============== -->
+<section id="type">
+  <div class="wrap">
+    <span class="eyebrow">04 · Typography</span>
+    <h2>Monospace, always.</h2>
+    <p class="lede">
+      hanimo는 터미널의 언어로 말합니다. 브랜드 전체가 모노스페이스 폰트로 작성됩니다.
+      시스템 폰트 스택을 사용해 설치 없이 동작하며, 어디서나 일관된 리듬을 유지합니다.
+    </p>
+
+    <div class="type-grid">
+      <div class="type-card">
+        <div class="tag">PRIMARY — DISPLAY & BODY</div>
+        <div class="big" style="background:linear-gradient(135deg,#F9E2AF,#FAB387);-webkit-background-clip:text;background-clip:text;color:transparent;">Aa Bb 가나</div>
+        <div style="font-size:14px;color:var(--subtext);">The quick brown fox jumps over the lazy dog.<br/>다람쥐 헌 쳇바퀴에 타고파.</div>
+        <div class="stack">"JetBrains Mono", "Fira Code", "SF Mono", "Menlo", "Consolas", ui-monospace, monospace</div>
+      </div>
+      <div class="type-card">
+        <div class="tag">SCALE</div>
+        <div class="type-scale">
+          <div class="type-scale-row"><span class="size-label">72 / 1</span><span style="font-size:32px;font-weight:800;">HANIMO</span></div>
+          <div class="type-scale-row"><span class="size-label">42 / 1.1</span><span style="font-size:24px;font-weight:700;">hanimo code</span></div>
+          <div class="type-scale-row"><span class="size-label">20 / 1.3</span><span style="font-size:16px;font-weight:600;">Section title</span></div>
+          <div class="type-scale-row"><span class="size-label">15 / 1.6</span><span style="font-size:13px;">Body text — 본문 텍스트</span></div>
+          <div class="type-scale-row"><span class="size-label">11 / 1.4</span><span style="font-size:10px;color:var(--muted);letter-spacing:0.15em;text-transform:uppercase;">eyebrow label</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- =============== PRODUCT FAMILY =============== -->
+<section id="product">
+  <div class="wrap">
+    <span class="eyebrow">05 · Product Family</span>
+    <h2>The hanimo Ecosystem</h2>
+    <p class="lede">
+      HANIMO CODE가 중심입니다. 주변에는 같은 이름, 같은 결, 같은 철학을 공유하는
+      오픈소스 도구들이 확장됩니다.
+    </p>
+
+    <div class="products">
+      <div class="product">
+        <span class="status status-live">● live</span>
+        <div class="name">hanimo code</div>
+        <div class="kind">CORE · CLI / TUI</div>
+        <div class="desc">터미널에서 동작하는 AI 코딩 에이전트. 14개 프로바이더, 단일 바이너리.</div>
+      </div>
+      <div class="product">
+        <span class="status status-plan">◌ planned</span>
+        <div class="name">hanimo webui</div>
+        <div class="kind">WEB · BROWSER</div>
+        <div class="desc">브라우저에서 돌리는 hanimo. 팀 공유·세션 히스토리·코드 뷰어 내장.</div>
+      </div>
+      <div class="product">
+        <span class="status status-plan">◌ planned</span>
+        <div class="name">hanimo rag</div>
+        <div class="kind">INDEX · RETRIEVAL</div>
+        <div class="desc">레포지토리 전용 로컬 RAG. 프라이버시 우선, 임베딩은 로컬에서.</div>
+      </div>
+      <div class="product">
+        <span class="status status-plan">◌ planned</span>
+        <div class="name">hanimo.dev</div>
+        <div class="kind">WEB · DOCS</div>
+        <div class="desc">공식 사이트, 문서, 레시피, 커뮤니티 쇼케이스가 모이는 허브.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- =============== TAGLINES =============== -->
+<section id="tagline">
+  <div class="wrap">
+    <span class="eyebrow">06 · Taglines & Slogans</span>
+    <h2>How we say it.</h2>
+    <p class="lede">
+      한국어와 영어를 대등하게 다룹니다. 모든 카피는 짧고, 기술적이고, 정직해야 합니다.
+      약속하지 않은 것은 말하지 않습니다.
+    </p>
+
+    <div class="taglines">
+      <div class="tagline">
+        <div>
+          <div class="kr">오픈소스를 위한 AI 코딩 에이전트</div>
+          <div class="en">AI Coding Agent for Open Source</div>
+        </div>
+        <button class="copy-btn" data-copy="오픈소스를 위한 AI 코딩 에이전트 / AI Coding Agent for Open Source">copy</button>
+      </div>
+      <div class="tagline">
+        <div>
+          <div class="kr">14개 프로바이더. 단일 바이너리. 런타임 의존성 제로.</div>
+          <div class="en">Provider-agnostic. Local-first. Single binary.</div>
+        </div>
+        <button class="copy-btn" data-copy="Provider-agnostic. Local-first. Single binary.">copy</button>
+      </div>
+      <div class="tagline">
+        <div>
+          <div class="kr">꿀벌처럼 부지런하게, 비숑처럼 다정하게.</div>
+          <div class="en">Busy as a bee. Loyal as a puppy.</div>
+        </div>
+        <button class="copy-btn" data-copy="Busy as a bee. Loyal as a puppy.">copy</button>
+      </div>
+      <div class="tagline">
+        <div>
+          <div class="kr">당신의 터미널에서, 당신의 모델로.</div>
+          <div class="en">Your terminal. Your model. Your code.</div>
+        </div>
+        <button class="copy-btn" data-copy="Your terminal. Your model. Your code.">copy</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- =============== UI SHOWCASE =============== -->
+<section id="ui">
+  <div class="wrap">
+    <span class="eyebrow">07 · UI Showcase</span>
+    <h2>The TUI in motion</h2>
+    <p class="lede">
+      hanimo code는 풀스크린 TUI와 CLI 양쪽을 지원합니다. 아래는 기본 Honey 테마에서
+      동작하는 모습입니다.
+    </p>
+
+    <div class="terminal">
+      <div class="titlebar">
+        <div class="btns"><span class="r"></span><span class="y"></span><span class="g"></span></div>
+        <div class="title">hanimo · ~/projects/my-app</div>
+        <div style="width:40px;"></div>
+      </div>
+      <div class="body"><span class="panel-border">╭─ HANIMO CODE ──────────────────────────── v0.1.0 ─╮</span>
+<span class="panel-border">│</span>  <span class="info">◕ᴥ◕</span>  <span class="dim">Hi! I'm hanimo. Let's build something nice.</span>    <span class="panel-border">│</span>
+<span class="panel-border">╰───────────────────────────────────────────────────╯</span>
+
+<span class="dim">provider:</span> <span class="warn">anthropic</span>  <span class="dim">model:</span> <span class="warn">claude-opus-4</span>  <span class="dim">session:</span> <span class="info">#42</span>
+
+<span class="prompt">hanimo ›</span> <span class="cmd">refactor src/auth to use the new session API</span>
+
+<span class="out">⟳ scanning repo…</span>         <span class="ok">✓</span> <span class="dim">12 files matched</span>
+<span class="out">⟳ reading src/auth/*…</span>     <span class="ok">✓</span> <span class="dim">2.1k tokens</span>
+<span class="out">⟳ planning…</span>               <span class="ok">✓</span> <span class="dim">4 steps</span>
+
+<span class="warn">PLAN</span>
+  <span class="ok">1.</span> Extract <span class="info">SessionManager</span> from <span class="dim">auth/legacy.go</span>
+  <span class="ok">2.</span> Replace cookie store with <span class="info">session.Store</span>
+  <span class="ok">3.</span> Update tests in <span class="dim">auth/*_test.go</span>
+  <span class="ok">4.</span> Run <span class="info">go test ./auth/...</span>
+
+<span class="prompt">apply?</span> <span class="cmd">[y/N]</span> <span class="cursor"></span></div>
+    </div>
+  </div>
+</section>
+
+<!-- =============== VOICE & TONE =============== -->
+<section id="voice">
+  <div class="wrap">
+    <span class="eyebrow">08 · Voice & Tone</span>
+    <h2>친근하지만, 정확하게.</h2>
+    <p class="lede">
+      hanimo는 동료 개발자처럼 말합니다. 과장하지 않고, 모르면 모른다고 말하며,
+      한국어와 영어를 자연스럽게 오갑니다.
+    </p>
+
+    <div class="voice-grid">
+      <div class="voice-card">
+        <div class="icon">◕ᴥ◕</div>
+        <h4>Friendly</h4>
+        <p>마스코트처럼 다정하되, 아부하지 않습니다.</p>
+      </div>
+      <div class="voice-card">
+        <div class="icon">→</div>
+        <h4>Concise</h4>
+        <p>한 문장으로 끝낼 수 있으면 한 문장으로.</p>
+      </div>
+      <div class="voice-card">
+        <div class="icon">가A</div>
+        <h4>Bilingual</h4>
+        <p>한국어 우선, 기술 용어는 영어 원문 그대로.</p>
+      </div>
+      <div class="voice-card">
+        <div class="icon">✓</div>
+        <h4>Honest</h4>
+        <p>모르는 건 모른다고, 추측은 추측이라고.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- =============== DO / DON'T =============== -->
+<section id="dodont">
+  <div class="wrap">
+    <span class="eyebrow">09 · Guidelines</span>
+    <h2>Do / Don't</h2>
+    <p class="lede">
+      hanimo 브랜드를 사용할 때 따라야 할 최소한의 약속입니다.
+    </p>
+
+    <div class="do-dont">
+      <div class="do">
+        <h3>✓ Do</h3>
+        <ul>
+          <li>항상 모노스페이스 폰트 위에서 로고를 보여주세요.</li>
+          <li>어두운 배경(#1E1E2E)을 기본으로 합니다.</li>
+          <li>"HANIMO CODE"는 대문자 브랜딩, "hanimo"는 소문자 CLI 명령어로 구분합니다.</li>
+          <li>마스코트는 독립 아이콘으로도 충분히 사용할 수 있습니다.</li>
+          <li>한국어와 영어를 병기할 때는 한국어를 먼저 씁니다.</li>
+          <li>Honey Gold(#F9E2AF)를 primary 포인트 컬러로만 사용합니다.</li>
+        </ul>
+      </div>
+      <div class="dont">
+        <h3>✗ Don't</h3>
+        <ul>
+          <li>로고를 회전시키거나 기울이지 마세요. 블록 정렬이 깨집니다.</li>
+          <li>마스코트 얼굴(◕ᴥ◕)을 다른 이모지로 교체하지 마세요.</li>
+          <li>"Hanimo Code" 같은 Title Case로 표기하지 마세요.</li>
+          <li>순수한 흰색 배경 위에 Honey 팔레트만 쓰지 마세요. 대비가 부족합니다.</li>
+          <li>"최고", "세계 최초" 같은 과장 표현을 쓰지 마세요.</li>
+          <li>벤더 로고(OpenAI, Anthropic 등)와 hanimo를 나란히 같은 크기로 두지 마세요.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- =============== FOOTER =============== -->
+<footer>
+  <div class="wrap">
+    <div class="mini-logo">  ▄▀▀▀▀▄
+  █◕ᴥ◕ █
+  ▀▄▄▄▄▀
+  ≋█  █≋
+    ▀▀   </div>
+    <div>HANIMO CODE · Brand Design System · v0.1</div>
+    <div style="margin-top:6px;">Made with honey and open source · <a href="https://hanimo.dev">hanimo.dev</a></div>
+  </div>
+</footer>
+
+<script>
+  // Theme toggle
+  const toggle = document.getElementById('themeToggle');
+  const root = document.documentElement;
+  const saved = localStorage.getItem('hanimo-theme');
+  if (saved) root.setAttribute('data-theme', saved);
+  toggle.addEventListener('click', () => {
+    const cur = root.getAttribute('data-theme');
+    const next = cur === 'light' ? 'honey' : 'light';
+    root.setAttribute('data-theme', next);
+    localStorage.setItem('hanimo-theme', next);
+  });
+
+  // Copy buttons
+  document.querySelectorAll('.copy-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const text = btn.getAttribute('data-copy');
+      try {
+        await navigator.clipboard.writeText(text);
+        const orig = btn.textContent;
+        btn.textContent = 'copied ✓';
+        setTimeout(() => (btn.textContent = orig), 1400);
+      } catch (e) {
+        btn.textContent = 'failed';
+      }
+    });
+  });
+
+  // Reveal on scroll
+  const io = new IntersectionObserver(entries => {
+    entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('on'); });
+  }, { threshold: 0.12 });
+  document.querySelectorAll('section > .wrap > *').forEach(el => {
+    el.classList.add('reveal');
+    io.observe(el);
+  });
+</script>
+</body>
+</html>

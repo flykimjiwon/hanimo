@@ -44,6 +44,11 @@ var knownModels = map[string]ModelCapability{
 	"codellama:13b":     {16384, CodingModerate, RoleAssistant, true},
 	"mistral-large":     {128000, CodingModerate, RoleAgent, true},
 	"gpt-oss-120b":      {128000, CodingStrong, RoleAgent, true},
+	// Gemma models (via Novita)
+	"gemma-4-26b-a4b-it": {262144, CodingStrong, RoleAgent, true},
+	"gemma-4-31b-it":     {262144, CodingStrong, RoleAgent, true},
+	"gemma-3-12b-it":     {128000, CodingModerate, RoleAgent, true},
+	"gemma-3-27b-it":     {128000, CodingStrong, RoleAgent, true},
 }
 
 // GetCapability returns the capability for a model, with a sensible default.
