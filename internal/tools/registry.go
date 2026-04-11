@@ -30,7 +30,7 @@ func AllTools() []openai.Tool {
 			Type: openai.ToolTypeFunction,
 			Function: &openai.FunctionDefinition{
 				Name:        "file_read",
-				Description: "Read the contents of a file. Use this to understand existing code before making changes.",
+				Description: "Read the contents of a file. Use this to understand existing code before making changes. DO NOT use to check if a file exists — call list_files on the parent directory instead (cheaper and won't error).",
 				Parameters: paramSchema{
 					Type: "object",
 					Properties: map[string]propertySchema{
@@ -44,7 +44,7 @@ func AllTools() []openai.Tool {
 			Type: openai.ToolTypeFunction,
 			Function: &openai.FunctionDefinition{
 				Name:        "file_write",
-				Description: "Create a new file or completely overwrite an existing file. Use for new files only. For modifying existing files, prefer file_edit.",
+				Description: "Create a new file or completely overwrite an existing file. Use for NEW files only. DO NOT use to modify an existing file — use file_edit (one change) or chain several file_edit calls. DO NOT use to append — read first, then write the full new content.",
 				Parameters: paramSchema{
 					Type: "object",
 					Properties: map[string]propertySchema{
@@ -59,7 +59,7 @@ func AllTools() []openai.Tool {
 			Type: openai.ToolTypeFunction,
 			Function: &openai.FunctionDefinition{
 				Name:        "file_edit",
-				Description: "Edit an existing file by replacing a specific string. The old_string must match exactly (including whitespace/indentation). Only the first occurrence is replaced.",
+				Description: "Edit an existing file by replacing a specific string. The old_string must match EXACTLY (including whitespace/indentation). Only the first occurrence is replaced. DO NOT use for new files — use file_write. DO NOT guess old_string from memory — always file_read first so whitespace matches. If old_string is not unique, include surrounding context lines until it is.",
 				Parameters: paramSchema{
 					Type: "object",
 					Properties: map[string]propertySchema{
@@ -75,7 +75,7 @@ func AllTools() []openai.Tool {
 			Type: openai.ToolTypeFunction,
 			Function: &openai.FunctionDefinition{
 				Name:        "list_files",
-				Description: "List files in a directory. Use recursive=true to see the full project tree (skips node_modules, .git, dist). For a quick structural overview prefer list_tree.",
+				Description: "List files in a directory. Use recursive=true to see the full project tree (skips node_modules, .git, dist). DO NOT call this on an unknown repo without trying list_tree first — large monorepos will hit the 500-file cap and waste context. DO NOT use instead of grep_search/glob_search when looking for specific files by content or pattern.",
 				Parameters: paramSchema{
 					Type: "object",
 					Properties: map[string]propertySchema{
@@ -105,7 +105,7 @@ func AllTools() []openai.Tool {
 			Type: openai.ToolTypeFunction,
 			Function: &openai.FunctionDefinition{
 				Name:        "shell_exec",
-				Description: "Execute a shell command. Use for: git, npm, build, test, lint, etc. Dangerous commands (rm -rf /, sudo) are blocked. Prefer grep_search/glob_search over shell grep/find.",
+				Description: "Execute a shell command. Use for: git, npm, build, test, lint. Dangerous commands (rm -rf /, sudo, credential exfiltration) are blocked. DO NOT use for searching file contents — use grep_search. DO NOT use for listing files — use list_files/list_tree/glob_search. DO NOT use for reading files — use file_read. DO NOT chain with && to bypass the loop detector. Prefer one command per call so the user can approve/deny individually.",
 				Parameters: paramSchema{
 					Type: "object",
 					Properties: map[string]propertySchema{

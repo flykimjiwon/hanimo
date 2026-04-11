@@ -136,22 +136,35 @@ func modeInfoBoxInner(mode int, modelID string) string {
 		Padding(0, 1).
 		Width(55)
 
+	ko := CurrentLang == LangKorean
 	var tips string
 	switch mode {
 	case 0:
+		line := "Smart all-in-one. Auto-detects intent (chat/plan/deep)"
+		if ko {
+			line = "만능 모드 — 의도(대화/플랜/딥)를 자동 감지"
+		}
 		tips = fmt.Sprintf("%s\n%s",
 			modeName.Render(fmt.Sprintf("Super — %s", shortModel)),
-			desc.Render("Smart all-in-one. Auto-detects intent (chat/plan/deep)"),
+			desc.Render(line),
 		)
 	case 1:
+		line := "Long-running autonomous coding. Up to 100 iterations"
+		if ko {
+			line = "장시간 자율 코딩 모드 — 최대 100 iteration"
+		}
 		tips = fmt.Sprintf("%s\n%s",
 			modeName.Render(fmt.Sprintf("Deep Agent — %s", shortModel)),
-			desc.Render("Long-running autonomous coding. Up to 100 iterations"),
+			desc.Render(line),
 		)
 	case 2:
+		line := "Plan-first. Creates step-by-step plan, executes on approval"
+		if ko {
+			line = "플랜 우선 — 단계별 계획 작성 후 승인 시 실행"
+		}
 		tips = fmt.Sprintf("%s\n%s",
 			modeName.Render(fmt.Sprintf("Plan — %s", shortModel)),
-			desc.Render("Plan-first. Creates step-by-step plan, executes on approval"),
+			desc.Render(line),
 		)
 	}
 	return tipStyle.Render(tips)
