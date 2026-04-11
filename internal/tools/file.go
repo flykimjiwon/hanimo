@@ -5,7 +5,38 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 )
+
+// readSet is the per-turn set of absolute paths the agent has file_read'd
+// in the current conversation turn. Edits and overwrites require a prior
+// read so the LLM can't hallucinate an old_string or blow away an unread
+// file. Reset by ResetReadSet() at the start of every sendMessage.
+var (
+	readSetMu sync.RWMutex
+	readSet   = map[string]bool{}
+)
+
+// ResetReadSet clears the read-before-write tracking set. Call at the
+// start of each user turn (sendMessage) so stale reads from previous
+// turns don't unlock unrelated edits.
+func ResetReadSet() {
+	readSetMu.Lock()
+	readSet = map[string]bool{}
+	readSetMu.Unlock()
+}
+
+func markRead(absPath string) {
+	readSetMu.Lock()
+	readSet[absPath] = true
+	readSetMu.Unlock()
+}
+
+func wasRead(absPath string) bool {
+	readSetMu.RLock()
+	defer readSetMu.RUnlock()
+	return readSet[absPath]
+}
 
 func FileRead(path string) (string, error) {
 	absPath, err := filepath.Abs(path)
@@ -16,27 +47,49 @@ func FileRead(path string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("read failed: %w", err)
 	}
+	markRead(absPath)
 	return string(data), nil
 }
 
+// FileWrite creates a new file or overwrites an existing one. Overwriting
+// an existing file requires that it was file_read'd first in the current
+// turn — this prevents the LLM from blowing away content it never saw.
+// Creating a genuinely new file is always allowed.
 func FileWrite(path, content string) error {
 	absPath, err := filepath.Abs(path)
 	if err != nil {
 		return fmt.Errorf("invalid path: %w", err)
 	}
+	if _, statErr := os.Stat(absPath); statErr == nil {
+		// File exists — this is an overwrite.
+		if !wasRead(absPath) {
+			return fmt.Errorf("refusing to overwrite %s without reading it first. Call file_read on this path before file_write", path)
+		}
+	}
 	dir := filepath.Dir(absPath)
 	if err := os.MkdirAll(dir, 0755); err != nil {
 		return fmt.Errorf("mkdir failed: %w", err)
 	}
-	return os.WriteFile(absPath, []byte(content), 0644)
+	if err := os.WriteFile(absPath, []byte(content), 0644); err != nil {
+		return err
+	}
+	// A fresh write counts as a read for subsequent edits in the same turn.
+	markRead(absPath)
+	return nil
 }
 
-// FileEdit performs a search-and-replace edit on a file.
+// FileEdit performs a search-and-replace edit on a file. The file must
+// have been file_read'd earlier in the turn — enforcing read-before-write
+// eliminates the most common LLM failure mode where old_string is recalled
+// from an outdated memory and silently corrupts the file.
 // Returns the number of replacements made.
 func FileEdit(path, oldStr, newStr string) (int, error) {
 	absPath, err := filepath.Abs(path)
 	if err != nil {
 		return 0, fmt.Errorf("invalid path: %w", err)
+	}
+	if !wasRead(absPath) {
+		return 0, fmt.Errorf("refusing to edit %s without reading it first. Call file_read on this path before file_edit so old_string can be verified", path)
 	}
 	data, err := os.ReadFile(absPath)
 	if err != nil {
