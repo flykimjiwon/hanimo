@@ -3,11 +3,82 @@ package providers
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"strings"
+	"time"
 
 	openai "github.com/sashabaranov/go-openai"
 )
+
+// retryableStatus reports whether an HTTP status should trigger a retry.
+func retryableStatus(code int) bool {
+	return code == 429 || code == 408 || (code >= 500 && code <= 599)
+}
+
+// friendlyError converts upstream API errors into Korean user-facing messages.
+// Returns the original error wrapped with a localized prefix when recognizable.
+func friendlyError(err error) error {
+	if err == nil {
+		return nil
+	}
+	var apiErr *openai.APIError
+	if errors.As(err, &apiErr) {
+		switch apiErr.HTTPStatusCode {
+		case 401:
+			return fmt.Errorf("인증 실패 (401): API 키를 확인하세요 — %w", err)
+		case 403:
+			return fmt.Errorf("권한 거부 (403): 이 모델/엔드포인트 접근이 허용되지 않았습니다 — %w", err)
+		case 404:
+			return fmt.Errorf("모델을 찾을 수 없음 (404): 모델 ID를 확인하세요 — %w", err)
+		case 408:
+			return fmt.Errorf("요청 타임아웃 (408): 네트워크 상태를 확인하세요 — %w", err)
+		case 429:
+			return fmt.Errorf("요청 한도 초과 (429): 재시도해도 실패했습니다. 잠시 후 다시 시도하거나 다른 프로바이더로 전환하세요 — %w", err)
+		case 500, 502, 503, 504:
+			return fmt.Errorf("프로바이더 서버 오류 (%d): 재시도해도 실패했습니다 — %w", apiErr.HTTPStatusCode, err)
+		}
+	}
+	msg := err.Error()
+	switch {
+	case strings.Contains(msg, "context deadline exceeded"), strings.Contains(msg, "i/o timeout"):
+		return fmt.Errorf("연결 타임아웃: 프로바이더 응답이 없습니다 — %w", err)
+	case strings.Contains(msg, "connection refused"):
+		return fmt.Errorf("연결 거부: 엔드포인트가 실행 중인지 확인하세요 (Ollama/vLLM 등) — %w", err)
+	case strings.Contains(msg, "no such host"):
+		return fmt.Errorf("호스트를 찾을 수 없음: base_url을 확인하세요 — %w", err)
+	}
+	return err
+}
+
+// createStreamWithRetry wraps CreateChatCompletionStream with exponential
+// backoff retry on 429 / 5xx / transient network errors. Max 4 attempts
+// (1s → 2s → 4s → 8s). Non-retryable errors return immediately.
+func createStreamWithRetry(ctx context.Context, api *openai.Client, req openai.ChatCompletionRequest) (*openai.ChatCompletionStream, error) {
+	const maxAttempts = 4
+	var lastErr error
+	for attempt := 0; attempt < maxAttempts; attempt++ {
+		stream, err := api.CreateChatCompletionStream(ctx, req)
+		if err == nil {
+			return stream, nil
+		}
+		lastErr = err
+		var apiErr *openai.APIError
+		if errors.As(err, &apiErr) && !retryableStatus(apiErr.HTTPStatusCode) {
+			return nil, friendlyError(err)
+		}
+		if attempt == maxAttempts-1 {
+			break
+		}
+		backoff := time.Duration(1<<attempt) * time.Second
+		select {
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		case <-time.After(backoff):
+		}
+	}
+	return nil, friendlyError(lastErr)
+}
 
 // defaultBaseURLs maps provider names to their default API base URLs.
 var defaultBaseURLs = map[string]string{
@@ -114,7 +185,7 @@ func (p *OpenAICompatProvider) Chat(ctx context.Context, req ChatRequest) (<-cha
 		apiReq.Tools = toolDefs
 	}
 
-	stream, err := p.api.CreateChatCompletionStream(ctx, apiReq)
+	stream, err := createStreamWithRetry(ctx, p.api, apiReq)
 	if err != nil {
 		return nil, err
 	}
@@ -144,7 +215,7 @@ func (p *OpenAICompatProvider) Chat(ctx context.Context, req ChatRequest) (<-cha
 				return
 			}
 			if err != nil {
-				ch <- ChatChunk{Error: err, Done: true}
+				ch <- ChatChunk{Error: friendlyError(err), Done: true}
 				return
 			}
 
