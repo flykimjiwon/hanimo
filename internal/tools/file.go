@@ -155,3 +155,62 @@ func FileExists(path string) bool {
 	_, err := os.Stat(path)
 	return err == nil
 }
+
+// ListTree renders a directory-only tree (no files) up to maxDepth. Skips the
+// same noise directories as ListFiles. Gives the LLM a fast, token-cheap view
+// of project structure without enumerating every file.
+func ListTree(dir string, maxDepth int) (string, error) {
+	if maxDepth <= 0 {
+		maxDepth = 3
+	}
+	absDir, err := filepath.Abs(dir)
+	if err != nil {
+		return "", fmt.Errorf("invalid path: %w", err)
+	}
+	info, err := os.Stat(absDir)
+	if err != nil {
+		return "", fmt.Errorf("stat failed: %w", err)
+	}
+	if !info.IsDir() {
+		return "", fmt.Errorf("%s is not a directory", dir)
+	}
+
+	var sb strings.Builder
+	sb.WriteString(filepath.Base(absDir) + "/\n")
+
+	var walk func(path string, prefix string, depth int) error
+	walk = func(path string, prefix string, depth int) error {
+		if depth > maxDepth {
+			return nil
+		}
+		entries, err := os.ReadDir(path)
+		if err != nil {
+			return nil
+		}
+		dirs := make([]os.DirEntry, 0, len(entries))
+		for _, e := range entries {
+			if !e.IsDir() {
+				continue
+			}
+			name := e.Name()
+			if defaultSkipDirs[name] || strings.HasPrefix(name, ".") {
+				continue
+			}
+			dirs = append(dirs, e)
+		}
+		for i, e := range dirs {
+			last := i == len(dirs)-1
+			branch := "├── "
+			nextPrefix := prefix + "│   "
+			if last {
+				branch = "└── "
+				nextPrefix = prefix + "    "
+			}
+			sb.WriteString(prefix + branch + e.Name() + "/\n")
+			_ = walk(filepath.Join(path, e.Name()), nextPrefix, depth+1)
+		}
+		return nil
+	}
+	_ = walk(absDir, "", 1)
+	return sb.String(), nil
+}

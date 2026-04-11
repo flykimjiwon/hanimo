@@ -75,12 +75,27 @@ func AllTools() []openai.Tool {
 			Type: openai.ToolTypeFunction,
 			Function: &openai.FunctionDefinition{
 				Name:        "list_files",
-				Description: "List files in a directory. Use recursive=true to see the full project tree (skips node_modules, .git, dist).",
+				Description: "List files in a directory. Use recursive=true to see the full project tree (skips node_modules, .git, dist). For a quick structural overview prefer list_tree.",
 				Parameters: paramSchema{
 					Type: "object",
 					Properties: map[string]propertySchema{
 						"path":      {Type: "string", Description: "Directory path (default: current directory)"},
 						"recursive": {Type: "string", Description: "Set to 'true' for recursive listing"},
+					},
+					Required: []string{"path"},
+				},
+			},
+		},
+		{
+			Type: openai.ToolTypeFunction,
+			Function: &openai.FunctionDefinition{
+				Name:        "list_tree",
+				Description: "Render a directory-only tree (no files) up to max_depth. Token-cheap way to grasp project structure. Use this BEFORE list_files for unknown repos.",
+				Parameters: paramSchema{
+					Type: "object",
+					Properties: map[string]propertySchema{
+						"path":      {Type: "string", Description: "Directory path (default: current directory)"},
+						"max_depth": {Type: "string", Description: "Max depth to descend (default: 3)"},
 					},
 					Required: []string{"path"},
 				},
@@ -268,6 +283,21 @@ func ReadOnlyTools() []openai.Tool {
 					Properties: map[string]propertySchema{
 						"path":      {Type: "string", Description: "Directory path"},
 						"recursive": {Type: "string", Description: "Set to 'true' for recursive listing"},
+					},
+					Required: []string{"path"},
+				},
+			},
+		},
+		{
+			Type: openai.ToolTypeFunction,
+			Function: &openai.FunctionDefinition{
+				Name:        "list_tree",
+				Description: "Render a directory-only tree (no files) up to max_depth. Prefer this over recursive list_files for structural overview.",
+				Parameters: paramSchema{
+					Type: "object",
+					Properties: map[string]propertySchema{
+						"path":      {Type: "string", Description: "Directory path (default: current directory)"},
+						"max_depth": {Type: "string", Description: "Max depth to descend (default: 3)"},
 					},
 					Required: []string{"path"},
 				},
@@ -480,6 +510,27 @@ func executeInner(name string, argsJSON string) string {
 			return fmt.Sprintf("Error: %v", err)
 		}
 		return strings.Join(files, "\n")
+
+	case "list_tree":
+		path, _ := args["path"].(string)
+		if path == "" {
+			path = "."
+		}
+		maxDepth := 3
+		if s, ok := args["max_depth"].(string); ok && s != "" {
+			var n int
+			if _, err := fmt.Sscanf(s, "%d", &n); err == nil && n > 0 {
+				maxDepth = n
+			}
+		}
+		if f, ok := args["max_depth"].(float64); ok && f > 0 {
+			maxDepth = int(f)
+		}
+		tree, err := ListTree(path, maxDepth)
+		if err != nil {
+			return fmt.Sprintf("Error: %v", err)
+		}
+		return tree
 
 	case "shell_exec":
 		command, _ := args["command"].(string)
