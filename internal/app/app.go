@@ -328,6 +328,24 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			case "ctrl+c", "esc":
 				m.cancelStream()
 				return m, nil
+			// Scroll keys must work during streaming too so the user can
+			// read back earlier context while tokens are still arriving.
+			case "pgup", "pgdown":
+				var vpCmd tea.Cmd
+				m.viewport, vpCmd = m.viewport.Update(msg)
+				return m, vpCmd
+			case "alt+up":
+				m.viewport.ScrollUp(3)
+				return m, nil
+			case "alt+down":
+				m.viewport.ScrollDown(3)
+				return m, nil
+			case "home":
+				m.viewport.GotoTop()
+				return m, nil
+			case "end":
+				m.viewport.GotoBottom()
+				return m, nil
 			case "enter":
 				// Queue message while streaming
 				raw := strings.TrimSpace(m.textarea.Value())
@@ -1495,6 +1513,10 @@ func (m *Model) updateViewport() {
 	// (intent hint, ASK_USER) don't push the input box off-screen.
 	// Cheap — just arithmetic on cached dimensions.
 	m.recalcLayout()
+	// Preserve user scroll position during streaming: if they had
+	// scrolled up to re-read earlier context, don't yank them back
+	// to the bottom on every new chunk.
+	stickToBottom := m.viewport.AtBottom()
 	var stream string
 	msgs := m.msgs
 	if m.streaming {
@@ -1514,7 +1536,9 @@ func (m *Model) updateViewport() {
 	}
 	content := ui.RenderMessages(msgs, stream, m.viewport.Width())
 	m.viewport.SetContent(content)
-	m.viewport.GotoBottom()
+	if stickToBottom {
+		m.viewport.GotoBottom()
+	}
 }
 
 func (m Model) currentModel() string {
