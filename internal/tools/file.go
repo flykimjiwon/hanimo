@@ -63,7 +63,7 @@ func FileWrite(path, content string) error {
 	if _, statErr := os.Stat(absPath); statErr == nil {
 		// File exists — this is an overwrite.
 		if !wasRead(absPath) {
-			return fmt.Errorf("refusing to overwrite %s without reading it first. Call file_read on this path before file_write", path)
+			return fmt.Errorf("%s 를 먼저 읽지 않고 덮어쓸 수 없습니다. file_read 로 해당 파일을 읽은 후 file_write 하세요", path)
 		}
 	}
 	dir := filepath.Dir(absPath)
@@ -89,7 +89,7 @@ func FileEdit(path, oldStr, newStr string) (int, error) {
 		return 0, fmt.Errorf("invalid path: %w", err)
 	}
 	if !wasRead(absPath) {
-		return 0, fmt.Errorf("refusing to edit %s without reading it first. Call file_read on this path before file_edit so old_string can be verified", path)
+		return 0, fmt.Errorf("%s 를 먼저 읽지 않고 수정할 수 없습니다. file_read 로 해당 파일을 읽어 old_string 을 확인한 후 file_edit 하세요", path)
 	}
 	data, err := os.ReadFile(absPath)
 	if err != nil {

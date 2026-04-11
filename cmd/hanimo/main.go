@@ -30,6 +30,10 @@ func printDebugBanner(cfg config.Config) {
 var version = "dev"
 
 func main() {
+	// Fail loudly on misconfigured distro/sealed ldflags rather than
+	// silently behaving like vanilla. No-op for a standard build.
+	config.ValidateBakedMode()
+
 	modeFlag := flag.String("mode", "super", "시작 모드: super, deep, plan")
 	providerFlag := flag.String("provider", "", "LLM 프로바이더 (openai, novita, ollama, anthropic, ...)")
 	modelFlag := flag.String("model", "", "모델 이름")

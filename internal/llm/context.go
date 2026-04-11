@@ -16,7 +16,13 @@ import (
 // hanimo's own source repo. Walks up from cwd looking for a go.mod whose
 // module path is github.com/flykimjiwon/hanimo. Used to gate write-side
 // tools with an extra confirmation so a stray `/auto` doesn't self-modify.
+//
+// Bypass: set HANIMO_DEV_MODE=1 to suppress the warning when you are
+// legitimately editing hanimo itself.
 func IsHanimoOwnRepo() bool {
+	if os.Getenv("HANIMO_DEV_MODE") == "1" {
+		return false
+	}
 	cwd, err := os.Getwd()
 	if err != nil {
 		return false
