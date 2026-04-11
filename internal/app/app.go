@@ -25,6 +25,19 @@ import (
 	"github.com/flykimjiwon/hanimo/internal/ui"
 )
 
+// streamTickMsg fires on a 150ms ticker while a stream is active so the
+// spinner + elapsed-time display keeps animating even when no tokens
+// have arrived for a long stretch. Without this the UI silently freezes
+// at the last chunk and looks dead, even though waitForNextChunk is
+// still blocked on the provider channel.
+type streamTickMsg struct{}
+
+func streamTickCmd() tea.Cmd {
+	return tea.Tick(150*time.Millisecond, func(time.Time) tea.Msg {
+		return streamTickMsg{}
+	})
+}
+
 type streamChunkMsg struct {
 	content   string
 	done      bool
@@ -487,6 +500,15 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.ready = true
 		m.recalcLayout()
 		m.updateViewport()
+		return m, nil
+
+	case streamTickMsg:
+		// Refresh spinner / elapsed / tok/s display while waiting for
+		// the next chunk. Re-arm only while the stream is still live.
+		if m.streaming {
+			m.updateViewport()
+			return m, streamTickCmd()
+		}
 		return m, nil
 
 	case streamChunkMsg:
@@ -1568,7 +1590,9 @@ func (m *Model) startStream() tea.Cmd {
 	config.DebugLog("[APP-STREAM] start | mode=%s | historyMsgs=%d | tools=%d | toolIter=%d/20", modeName, len(history), len(toolDefs), m.toolIter)
 
 	m.streamCh = m.client.StreamChat(ctx, model, history, toolDefs)
-	return m.waitForNextChunk()
+	// Fire the chunk waiter AND a spinner ticker in parallel so the
+	// UI keeps animating even when the provider stalls for 30+s.
+	return tea.Batch(m.waitForNextChunk(), streamTickCmd())
 }
 
 func (m *Model) sendMessage(input string) tea.Cmd {
