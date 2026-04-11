@@ -78,19 +78,55 @@ func IsDangerous(command string) (bool, string) {
 }
 
 // Dangerous command patterns — block before execution.
+//
+// Expanded 2026-04 to cover credential exfiltration and more disk/kernel
+// footguns. Grouped by intent:
+//
+//   1. Filesystem wipes / kernel-level destruction
+//   2. Privilege escalation / system state
+//   3. Network-sourced code execution
+//   4. Credential exposure / exfiltration
+//   5. Classic pranks (fork bomb, etc.)
 var dangerousPatterns = []*regexp.Regexp{
-	regexp.MustCompile(`\brm\s+(-[^\s]*\s+)*-[^\s]*r[^\s]*\s+/`),   // rm -rf /
-	regexp.MustCompile(`\brm\s+(-[^\s]*\s+)*-[^\s]*r[^\s]*\s+~`),   // rm -rf ~
-	regexp.MustCompile(`\bsudo\b`),                                   // sudo
-	regexp.MustCompile(`\bmkfs\b`),                                   // mkfs
-	regexp.MustCompile(`\bdd\s+.*of=/dev/`),                          // dd to device
-	regexp.MustCompile(`>\s*/dev/sd`),                                // write to device
-	regexp.MustCompile(`\bcurl\b.*\|\s*(sh|bash)`),                   // curl | bash
-	regexp.MustCompile(`\bwget\b.*\|\s*(sh|bash)`),                   // wget | bash
-	regexp.MustCompile(`:(){ :\|:& };:`),                             // fork bomb
-	regexp.MustCompile(`\bshutdown\b`),                               // shutdown
-	regexp.MustCompile(`\breboot\b`),                                 // reboot
-	regexp.MustCompile(`\bchmod\s+777\s+/`),                          // chmod 777 /
+	// 1. Filesystem / kernel
+	regexp.MustCompile(`\brm\s+(-[^\s]*\s+)*-[^\s]*r[^\s]*\s+/`),      // rm -rf /
+	regexp.MustCompile(`\brm\s+(-[^\s]*\s+)*-[^\s]*r[^\s]*\s+~`),      // rm -rf ~
+	regexp.MustCompile(`\bmkfs\b`),                                     // mkfs.*
+	regexp.MustCompile(`\bdd\s+.*\bof=/dev/`),                          // dd of=/dev/sdX
+	regexp.MustCompile(`>\s*/dev/sd`),                                  // redirect to raw disk
+	regexp.MustCompile(`\bchmod\s+777\s+/`),                            // chmod 777 /
+	regexp.MustCompile(`\bchmod\s+-R\s+777\s+/`),                       // chmod -R 777 /
+	regexp.MustCompile(`\bchown\s+-R\s+.*\s+/`),                        // chown -R ... /
+
+	// 2. Privilege / system state
+	regexp.MustCompile(`\bsudo\b`),                                     // sudo
+	regexp.MustCompile(`\bsu\s+-\b`),                                   // su -
+	regexp.MustCompile(`\bshutdown\b`),                                 // shutdown
+	regexp.MustCompile(`\breboot\b`),                                   // reboot
+	regexp.MustCompile(`\bhalt\b`),                                     // halt
+	regexp.MustCompile(`\bpoweroff\b`),                                 // poweroff
+
+	// 3. Network-sourced code execution
+	regexp.MustCompile(`\bcurl\b.*\|\s*(sh|bash|zsh)`),                 // curl | sh
+	regexp.MustCompile(`\bwget\b.*\|\s*(sh|bash|zsh)`),                 // wget | sh
+	regexp.MustCompile(`\bcurl\b.*\|\s*python`),                        // curl | python
+	regexp.MustCompile(`\bwget\b.*-o-\s*\|\s*(sh|bash)`),               // wget -O- | sh
+
+	// 4. Credential exposure / exfiltration
+	// NOTE: CheckSafety lowercases the command before matching, so all
+	// credential patterns below must be written in lowercase.
+	regexp.MustCompile(`\bexport\s+(aws|openai|anthropic|github|google|gemini|groq|deepseek|novita|openrouter|mistral|huggingface|hf|azure)_[a-z_]*(key|token|secret)`),
+	regexp.MustCompile(`\bcurl\b.*\s+-h\s+['"]?authorization`),         // curl -H "Authorization: Bearer …"
+	regexp.MustCompile(`\bcurl\b.*\s+-u\s+[^:\s]+:[^\s]+`),             // curl -u user:pass
+	regexp.MustCompile(`\benv\s*\|\s*(curl|wget|nc)\b`),                // env | curl — leak env
+	regexp.MustCompile(`\bcat\s+.*\.(pem|key|crt|p12|pfx)\b`),          // dump private keys
+	regexp.MustCompile(`\bcat\s+.*/\.ssh/id_`),                         // dump SSH keys
+	regexp.MustCompile(`\bcat\s+.*/\.aws/credentials`),                 // dump AWS creds
+	regexp.MustCompile(`\bcat\s+.*/\.(npm|pypi|docker)rc`),             // dump config creds
+
+	// 5. Classic pranks / DoS
+	regexp.MustCompile(`:\(\)\s*\{\s*:\s*\|\s*:\s*&\s*\}\s*;\s*:`),     // fork bomb
+	regexp.MustCompile(`\byes\b.*>\s*/dev/`),                           // yes > /dev/sda
 }
 
 // CheckSafety returns an error if the command matches a dangerous pattern.
