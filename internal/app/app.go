@@ -69,7 +69,12 @@ type Model struct {
 	// within a single user turn. Reset at the start of each sendMessage so the
 	// loop detector only fires on repeated calls inside the same task.
 	toolCallHistory map[string]int
-	pendingQueue []string // messages queued while streaming
+	// recentToolNames is a rolling window of the last few tool names in a
+	// single turn. When the same name appears ≥5 times consecutively we
+	// treat it as a doom loop even if args drift (args-drift bypass of the
+	// exact-match detector above).
+	recentToolNames []string
+	pendingQueue    []string // messages queued while streaming
 	knowledgeInj *knowledge.Injector
 
 	// Multi-line paste buffer. When the user pastes content with >=2 lines,
@@ -547,9 +552,29 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				for i, tc := range calls {
 					key := tc.Name + ":" + tc.Arguments
 					m.toolCallHistory[key]++
+					// Exact-match axis: same name+args seen 3 times in a turn.
 					if m.toolCallHistory[key] >= 3 {
 						decisions[i] = loopDecision{blocked: true, key: key}
 						config.DebugLog("[TOOL-LOOP] blocked repeat call name=%s count=%d", tc.Name, m.toolCallHistory[key])
+						continue
+					}
+					// Args-drift axis: same tool name called 5+ times in a row
+					// (args may differ slightly each time — e.g. list_files
+					// with shifting paths). Blocks doom loops that bypass the
+					// exact-match detector.
+					m.recentToolNames = append(m.recentToolNames, tc.Name)
+					if len(m.recentToolNames) > 8 {
+						m.recentToolNames = m.recentToolNames[len(m.recentToolNames)-8:]
+					}
+					if len(m.recentToolNames) >= 5 {
+						run := 1
+						for j := len(m.recentToolNames) - 2; j >= 0 && m.recentToolNames[j] == tc.Name; j-- {
+							run++
+						}
+						if run >= 5 {
+							decisions[i] = loopDecision{blocked: true, key: key}
+							config.DebugLog("[TOOL-LOOP] blocked consecutive name=%s run=%d", tc.Name, run)
+						}
 					}
 				}
 				return m, func() tea.Msg {
@@ -557,7 +582,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					for i, tc := range calls {
 						var output string
 						if decisions[i].blocked {
-							output = "STOP: You called this exact tool 3 times with the same arguments. The approach is not working. Try a COMPLETELY DIFFERENT approach or ASK_USER for guidance."
+							output = "STOP: 같은 도구를 같은(또는 비슷한) 인자로 연속 호출했습니다. 지금 접근 방식이 동작하지 않습니다. 완전히 다른 접근을 시도하거나 ASK_USER로 사용자에게 방향을 물어보세요."
 						} else {
 							output = tools.Execute(tc.Name, tc.Arguments)
 						}
