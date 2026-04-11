@@ -1428,6 +1428,9 @@ func (m *Model) recalcLayout() {
 	}
 	inputH := m.textarea.Height() + 2
 	fixed := inputH + 1 // input box + status bar
+	// Reserve space for any inline overlays (intent hint, ASK_USER) so
+	// they don't push the input box off-screen at the bottom.
+	fixed += m.overlayHeight()
 	vpHeight := m.height - fixed
 	if vpHeight < 3 {
 		vpHeight = 3
@@ -1435,6 +1438,28 @@ func (m *Model) recalcLayout() {
 	m.viewport.SetWidth(m.width)
 	m.viewport.SetHeight(vpHeight)
 	m.textarea.SetWidth(m.width - 6)
+}
+
+// overlayHeight returns the total vertical rows reserved above the input
+// box for currently active overlays (intent hint, ASK_USER question,
+// soft-danger confirm). Used by recalcLayout so the chat viewport
+// shrinks exactly enough to keep every anchor visible.
+func (m *Model) overlayHeight() int {
+	h := 0
+	if m.activeTab == int(llm.ModeSuper) && m.intentHint != "" {
+		h++
+	}
+	if m.askQuestion != nil {
+		// Rough estimate: question line + blank line + 1 line per option
+		// + footer hint. RenderAskUser returns this many rows in
+		// practice; over-reserving by 1 is safer than clipping.
+		base := 3
+		if m.askQuestion.Type != agents.AskTypeText {
+			base += len(m.askQuestion.Options)
+		}
+		h += base + 1
+	}
+	return h
 }
 
 var spinnerFrames = []string{"⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"}
@@ -1464,6 +1489,10 @@ func (m *Model) streamStatus() string {
 }
 
 func (m *Model) updateViewport() {
+	// Reflow viewport height every render so inline overlays
+	// (intent hint, ASK_USER) don't push the input box off-screen.
+	// Cheap — just arithmetic on cached dimensions.
+	m.recalcLayout()
 	var stream string
 	msgs := m.msgs
 	if m.streaming {
