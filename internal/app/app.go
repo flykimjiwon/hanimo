@@ -286,6 +286,12 @@ func NewModel(cfg config.Config, initialMode int, needsSetup bool) Model {
 		m.client = llm.NewClient(cfg.API.BaseURL, cfg.API.APIKey)
 	}
 
+	// Record the prompt cache breakpoint: everything before projectCtx
+	// is invariant across turns (the "stable prefix" that providers can
+	// cache). projectCtx changes on /knowledge reload or mode switch.
+	stablePrompt := llm.SystemPrompt(llm.Mode(initialMode))
+	llm.GlobalBreakpoint.SetBreakpoint(stablePrompt, projectCtx)
+
 	// Single conversation with initial mode's system prompt
 	mode := llm.Mode(initialMode)
 	sysPrompt := llm.SystemPrompt(mode) + projectCtx
@@ -1189,7 +1195,7 @@ func (m *Model) handleSlashCommand(input string) (bool, tea.Cmd) {
 
 	case "/usage":
 		elapsed := m.lastElapsed
-		info := fmt.Sprintf("  토큰 수신: %d tokens\n  마지막 응답 시간: %v", m.tokenCount, elapsed)
+		info := fmt.Sprintf("  토큰 수신: %d tokens\n  마지막 응답 시간: %v\n  %s", m.tokenCount, elapsed, config.CacheSummary())
 		m.msgs = append(m.msgs, ui.Message{
 			Role: ui.RoleSystem, Content: info, Timestamp: time.Now(),
 		})

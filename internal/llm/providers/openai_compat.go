@@ -9,6 +9,8 @@ import (
 	"time"
 
 	openai "github.com/sashabaranov/go-openai"
+
+	"github.com/flykimjiwon/hanimo/internal/config"
 )
 
 // retryableStatus reports whether an HTTP status should trigger a retry.
@@ -188,6 +190,10 @@ func (p *OpenAICompatProvider) Chat(ctx context.Context, req ChatRequest) (<-cha
 		Model:    req.Model,
 		Messages: msgs,
 		Stream:   true,
+		// Request usage stats in the final SSE chunk so we can track
+		// prompt cache hit rates. OpenAI returns cached_tokens in the
+		// usage.prompt_tokens_details when automatic caching kicks in.
+		StreamOptions: &openai.StreamOptions{IncludeUsage: true},
 	}
 	if len(toolDefs) > 0 {
 		apiReq.Tools = toolDefs
@@ -225,6 +231,18 @@ func (p *OpenAICompatProvider) Chat(ctx context.Context, req ChatRequest) (<-cha
 			if err != nil {
 				ch <- ChatChunk{Error: friendlyError(err), Done: true}
 				return
+			}
+
+			// Track prompt cache stats from the usage chunk that arrives
+			// when StreamOptions.IncludeUsage is true. OpenAI returns
+			// cached_tokens in PromptTokensDetails; other providers
+			// may omit it entirely (safe — zero values).
+			if resp.Usage != nil && resp.Usage.PromptTokens > 0 {
+				cached := 0
+				if resp.Usage.PromptTokensDetails != nil {
+					cached = resp.Usage.PromptTokensDetails.CachedTokens
+				}
+				config.GlobalCacheStats.RecordCacheHit(cached, resp.Usage.PromptTokens)
 			}
 
 			if len(resp.Choices) == 0 {
