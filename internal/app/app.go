@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"sort"
 	"path/filepath"
 	"strings"
 	"time"
@@ -1843,6 +1844,23 @@ func (m Model) updateMenu(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 			return m, nil
 		}
 
+		if m.menuAction == "theme" {
+			// Theme selected from submenu — apply and confirm.
+			selected := m.menuItems[m.menuSelected]
+			m.showMenu = false
+			if ui.ApplyTheme(selected) {
+				m.msgs = append(m.msgs, ui.Message{
+					Role: ui.RoleSystem, Content: fmt.Sprintf("  테마 변경: %s", selected), Timestamp: time.Now(),
+				})
+			} else {
+				m.msgs = append(m.msgs, ui.Message{
+					Role: ui.RoleSystem, Content: fmt.Sprintf("  알 수 없는 테마: %s", selected), Timestamp: time.Now(),
+				})
+			}
+			m.updateViewport()
+			return m, nil
+		}
+
 		// Main menu actions
 		t := ui.T()
 		item := m.menuItems[m.menuSelected]
@@ -1903,9 +1921,31 @@ func (m Model) updateMenu(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 			return m, nil
 
 		case item == t.Theme:
-			m.showMenu = false
-			if handled, cmd := m.handleSlashCommand("/theme"); handled {
-				return m, cmd
+			// Open a theme submenu so the user can actually pick one.
+			// Stable-sort the keys so the list order is deterministic.
+			var names []string
+			for k := range ui.Themes {
+				names = append(names, k)
+			}
+			sort.Strings(names)
+			if len(names) == 0 {
+				m.showMenu = false
+				m.msgs = append(m.msgs, ui.Message{
+					Role: ui.RoleSystem, Content: "  등록된 테마가 없습니다.", Timestamp: time.Now(),
+				})
+				m.updateViewport()
+				return m, nil
+			}
+			m.menuAction = "theme"
+			m.menuItems = names
+			m.menuSelected = 0
+			// Start cursor on the currently active theme so Enter
+			// on accident doesn't flip the user to something else.
+			for i, n := range names {
+				if n == ui.CurrentTheme {
+					m.menuSelected = i
+					break
+				}
 			}
 			return m, nil
 
@@ -1934,9 +1974,15 @@ func (m Model) updateMenu(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 			return m, nil
 
 		case item == t.AutoMode:
+			// Prefill the textarea with "/auto " so the user can just
+			// type their task and press Enter — previously this menu
+			// entry only printed a hint which felt broken.
 			m.showMenu = false
+			m.textarea.Reset()
+			m.textarea.InsertString("/auto ")
+			m.textarea.Focus()
 			m.msgs = append(m.msgs, ui.Message{
-				Role: ui.RoleSystem, Content: "  /auto <task> 로 자율 모드를 시작하세요.", Timestamp: time.Now(),
+				Role: ui.RoleSystem, Content: "  자율 모드 — 입력창에 태스크를 이어서 입력하고 Enter 를 누르세요.", Timestamp: time.Now(),
 			})
 			m.updateViewport()
 			return m, nil
