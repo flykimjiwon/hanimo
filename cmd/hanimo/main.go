@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"strings"
 
 	tea "charm.land/bubbletea/v2"
 
@@ -53,12 +54,6 @@ func main() {
 		os.Exit(0)
 	}
 
-	// Handle --resume: stub for session resume
-	if *resumeFlag != "" {
-		fmt.Printf("  session resume not yet wired (requested: %s)\n", *resumeFlag)
-		os.Exit(0)
-	}
-
 	// Handle --debug: enable debug mode at runtime
 	if *debugFlag {
 		config.DebugMode = "true"
@@ -69,6 +64,14 @@ func main() {
 		_ = os.Remove(config.ConfigPath())
 		fmt.Println("  설정이 초기화되었습니다.")
 		*setupFlag = true
+	}
+
+	// Initialize session database (SQLite) before anything that
+	// might need it (--resume, auto-save, /save, /load, /search).
+	if err := session.InitDB(config.ConfigDir()); err != nil {
+		config.DebugLog("[SESSION-DB] init failed: %v", err)
+	} else {
+		defer session.CloseDB()
 	}
 
 	// Load config
@@ -115,8 +118,28 @@ func main() {
 	// Parse initial mode
 	initialMode := parseMode(*modeFlag)
 
+	// Handle --resume: load a saved session into the initial model.
+	// The session ID prefix match (first 8+ chars) is accepted.
+	resumeID := ""
+	if *resumeFlag != "" {
+		sessions, _ := session.ListSessions(100)
+		for _, s := range sessions {
+			if strings.HasPrefix(s.ID, *resumeFlag) || s.Name == *resumeFlag {
+				resumeID = s.ID
+				break
+			}
+		}
+		if resumeID == "" {
+			fmt.Fprintf(os.Stderr, "  세션을 찾을 수 없습니다: %s\n", *resumeFlag)
+			os.Exit(1)
+		}
+	}
+
 	// Create and run the app (AltScreen and Mouse are set in View)
 	m := app.NewModel(cfg, initialMode, needsSetup)
+	if resumeID != "" {
+		m = app.ResumeSession(m, resumeID)
+	}
 	p := tea.NewProgram(m)
 
 	if _, err := p.Run(); err != nil {

@@ -23,6 +23,7 @@ import (
 	"github.com/flykimjiwon/hanimo/internal/config"
 	"github.com/flykimjiwon/hanimo/internal/knowledge"
 	"github.com/flykimjiwon/hanimo/internal/llm"
+	"github.com/flykimjiwon/hanimo/internal/session"
 	"github.com/flykimjiwon/hanimo/internal/llm/providers"
 	"github.com/flykimjiwon/hanimo/internal/tools"
 	"github.com/flykimjiwon/hanimo/internal/ui"
@@ -93,6 +94,7 @@ type Model struct {
 	// exact-match detector above).
 	recentToolNames []string
 	pendingQueue    []string // messages queued while streaming
+	sessionID       string   // active SQLite session ID for save/load
 	knowledgeInj *knowledge.Injector
 
 	// Multi-line paste buffer. When the user pastes content with >=2 lines,
@@ -142,6 +144,47 @@ type Model struct {
 	width  int
 	height int
 	ready  bool
+}
+
+// ResumeSession loads a saved session's messages into an already-
+// constructed Model so the conversation continues where it left off.
+// Called from main.go when --resume is specified.
+func ResumeSession(m Model, sessionID string) Model {
+	_, savedMsgs, err := session.LoadSession(sessionID)
+	if err != nil {
+		m.msgs = append(m.msgs, ui.Message{
+			Role: ui.RoleSystem, Content: fmt.Sprintf("  세션 복원 실패: %v", err), Timestamp: time.Now(),
+		})
+		return m
+	}
+	m.sessionID = sessionID
+	for _, sm := range savedMsgs {
+		m.history = append(m.history, openai.ChatCompletionMessage{
+			Role: sm.Role, Content: sm.Content,
+		})
+	}
+	m.msgs = append(m.msgs, ui.Message{
+		Role: ui.RoleSystem, Content: fmt.Sprintf("  세션 복원됨: %s (%d 메시지)", sessionID[:8], len(savedMsgs)), Timestamp: time.Now(),
+	})
+	return m
+}
+
+// ensureSession creates a SQLite session row if one doesn't exist yet
+// for this conversation. Called lazily on first /save so idle sessions
+// that never get saved don't pollute the database.
+func (m *Model) ensureSession() error {
+	if m.sessionID != "" {
+		return nil
+	}
+	cwd, _ := os.Getwd()
+	modeNames := []string{"super", "dev", "plan"}
+	mode := modeNames[m.activeTab]
+	id, err := session.CreateSession(cwd, m.cfg.API.BaseURL, m.currentModel(), mode)
+	if err != nil {
+		return err
+	}
+	m.sessionID = id
+	return nil
 }
 
 // expandPastes substitutes stored multi-line paste content back into the
@@ -1146,22 +1189,113 @@ func (m *Model) handleSlashCommand(input string) (bool, tea.Cmd) {
 		return true, nil
 
 	case "/save":
+		// Ensure a session exists, then bulk-save current history.
+		if err := m.ensureSession(); err != nil {
+			m.msgs = append(m.msgs, ui.Message{
+				Role: ui.RoleSystem, Content: fmt.Sprintf("  세션 저장 실패: %v", err), Timestamp: time.Now(),
+			})
+			m.updateViewport()
+			return true, nil
+		}
+		// Save every message in history to SQLite.
+		for _, h := range m.history[1:] { // skip system prompt at [0]
+			_ = session.SaveMessage(m.sessionID, h.Role, h.Content, "", "", 0, 0)
+		}
+		// Optionally name the session.
+		if arg != "" {
+			_ = session.NameSession(m.sessionID, arg)
+		}
+		label := m.sessionID[:8]
+		if arg != "" {
+			label = arg
+		}
 		m.msgs = append(m.msgs, ui.Message{
-			Role: ui.RoleSystem, Content: "  [세션 저장 기능은 아직 구현 중입니다]", Timestamp: time.Now(),
+			Role: ui.RoleSystem, Content: fmt.Sprintf("  세션 저장됨: %s", label), Timestamp: time.Now(),
 		})
 		m.updateViewport()
 		return true, nil
 
 	case "/load":
+		sessions, err := session.ListSessions(20)
+		if err != nil || len(sessions) == 0 {
+			m.msgs = append(m.msgs, ui.Message{
+				Role: ui.RoleSystem, Content: "  저장된 세션이 없습니다.", Timestamp: time.Now(),
+			})
+			m.updateViewport()
+			return true, nil
+		}
+		var sb strings.Builder
+		sb.WriteString("  📋 최근 세션 목록\n\n")
+		for i, s := range sessions {
+			name := s.Name
+			if name == "" {
+				name = "(이름 없음)"
+			}
+			sb.WriteString(fmt.Sprintf("  %2d. %s — %s  [%s] %s\n",
+				i+1, s.ID[:8], name, s.Mode, s.UpdatedAt.Format("01-02 15:04")))
+		}
+		sb.WriteString("\n  복원: /load <세션 ID 앞 8자리>")
+		if arg != "" {
+			// User passed an ID prefix — try to load it.
+			for _, s := range sessions {
+				if strings.HasPrefix(s.ID, arg) {
+					_, savedMsgs, loadErr := session.LoadSession(s.ID)
+					if loadErr != nil {
+						m.msgs = append(m.msgs, ui.Message{
+							Role: ui.RoleSystem, Content: fmt.Sprintf("  로드 실패: %v", loadErr), Timestamp: time.Now(),
+						})
+						break
+					}
+					m.sessionID = s.ID
+					m.history = m.history[:1] // keep system prompt
+					for _, sm := range savedMsgs {
+						m.history = append(m.history, openai.ChatCompletionMessage{
+							Role: sm.Role, Content: sm.Content,
+						})
+					}
+					m.msgs = append(m.msgs, ui.Message{
+						Role: ui.RoleSystem, Content: fmt.Sprintf("  세션 복원됨: %s (%d 메시지)", s.ID[:8], len(savedMsgs)), Timestamp: time.Now(),
+					})
+					m.updateViewport()
+					return true, nil
+				}
+			}
+		}
 		m.msgs = append(m.msgs, ui.Message{
-			Role: ui.RoleSystem, Content: "  [세션 로드 기능은 아직 구현 중입니다]", Timestamp: time.Now(),
+			Role: ui.RoleSystem, Content: sb.String(), Timestamp: time.Now(),
 		})
 		m.updateViewport()
 		return true, nil
 
 	case "/search":
+		if arg == "" {
+			m.msgs = append(m.msgs, ui.Message{
+				Role: ui.RoleSystem, Content: "  사용법: /search <키워드>", Timestamp: time.Now(),
+			})
+			m.updateViewport()
+			return true, nil
+		}
+		sessions, err := session.SearchSessions(arg)
+		if err != nil || len(sessions) == 0 {
+			m.msgs = append(m.msgs, ui.Message{
+				Role: ui.RoleSystem, Content: fmt.Sprintf("  '%s' 관련 세션을 찾을 수 없습니다.", arg), Timestamp: time.Now(),
+			})
+			m.updateViewport()
+			return true, nil
+		}
+		var sb strings.Builder
+		sb.WriteString(fmt.Sprintf("  🔍 '%s' 검색 결과 (%d건)\n\n", arg, len(sessions)))
+		for i, s := range sessions {
+			name := s.Name
+			if name == "" {
+				name = "(이름 없음)"
+			}
+			sb.WriteString(fmt.Sprintf("  %2d. %s — %s  [%s] %s\n",
+				i+1, s.ID[:8], name, s.Mode, s.UpdatedAt.Format("01-02 15:04")))
+		}
+		sb.WriteString("\n  복원: /load <세션 ID 앞 8자리>")
 		m.msgs = append(m.msgs, ui.Message{
-			Role: ui.RoleSystem, Content: "  [세션 검색 기능은 아직 구현 중입니다]", Timestamp: time.Now(),
+			Role: ui.RoleSystem, Content: sb.String(), Timestamp: time.Now(),
 		})
 		m.updateViewport()
 		return true, nil
