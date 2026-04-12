@@ -18,13 +18,15 @@ MODEL     ?=
 DEV_MODEL ?=
 API_KEY   ?=
 BRAND     ?=
+NO_STREAM ?=
 
 BAKE_COMMON = \
 	-X '$(PKG_CONFIG).BakedBaseURL=$(ENDPOINT)' \
 	-X '$(PKG_CONFIG).BakedProvider=$(PROVIDER)' \
 	-X '$(PKG_CONFIG).BakedModel=$(MODEL)' \
 	-X '$(PKG_CONFIG).BakedDevModel=$(DEV_MODEL)' \
-	-X '$(PKG_CONFIG).BakedBrand=$(BRAND)'
+	-X '$(PKG_CONFIG).BakedBrand=$(BRAND)' \
+	-X '$(PKG_CONFIG).BakedNoStream=$(NO_STREAM)'
 
 LDFLAGS_DISTRO = -ldflags "-s -w -X main.version=$(VERSION) \
 	-X '$(PKG_CONFIG).BakedMode=distro' \

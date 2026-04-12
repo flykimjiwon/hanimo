@@ -39,6 +39,7 @@ type Config struct {
 	Default       DefaultConfig_            `yaml:"default,omitempty"`
 	Providers     map[string]ProviderConfig `yaml:"providers,omitempty"`
 	MaxIterations int                       `yaml:"max_iterations,omitempty"`
+	NoStream      bool                      `yaml:"no_stream,omitempty"`
 }
 
 // Build-time overridable defaults (set via -ldflags)
@@ -177,6 +178,9 @@ func Load() (Config, error) {
 	}
 	if v := os.Getenv("HANIMO_MODEL_DEV"); v != "" {
 		cfg.Models.Dev = v
+	}
+	if v := os.Getenv("HANIMO_NO_STREAM"); v == "true" || v == "1" {
+		cfg.NoStream = true
 	}
 
 	// Distro bake fills in any remaining empty/default fields.

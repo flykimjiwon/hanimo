@@ -76,6 +76,12 @@ var (
 	// BakedBrand overrides the displayed product name (for white-label
 	// enterprise distributions). Empty keeps the default "hanimo".
 	BakedBrand = ""
+
+	// BakedNoStream disables SSE streaming when set to "true". Some
+	// endpoints (e.g. Ollama behind certain proxies) do not support
+	// server-sent events. In that case we fall back to a single
+	// non-streaming POST and emit the full response at once.
+	BakedNoStream = ""
 )
 
 // ValidateBakedMode panics at process start if the baked mode fields
@@ -192,6 +198,10 @@ func applyBaked(cfg Config) Config {
 				cfg.Models.Dev = devBake
 			}
 		}
+	}
+	// Apply NoStream regardless of bake mode (also settable via config.yaml)
+	if BakedNoStream == "true" {
+		cfg.NoStream = true
 	}
 	return cfg
 }

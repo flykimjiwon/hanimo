@@ -35,6 +35,7 @@ type StreamChunk struct {
 type Client struct {
 	api      *openai.Client
 	provider providers.Provider // optional: if set, StreamChat delegates here
+	noStream bool               // disable SSE streaming, use single POST instead
 }
 
 // NormalizeBaseURL ensures the base URL is in the correct format for go-openai.
@@ -51,6 +52,10 @@ func NewClientWithProvider(p providers.Provider) *Client {
 }
 
 func NewClient(baseURL, apiKey string) *Client {
+	return NewClientWithOptions(baseURL, apiKey, false)
+}
+
+func NewClientWithOptions(baseURL, apiKey string, noStream bool) *Client {
 	cfg := openai.DefaultConfig(apiKey)
 	cfg.BaseURL = NormalizeBaseURL(baseURL)
 
@@ -79,7 +84,8 @@ func NewClient(baseURL, apiKey string) *Client {
 	}
 
 	return &Client{
-		api: openai.NewClientWithConfig(cfg),
+		api:      openai.NewClientWithConfig(cfg),
+		noStream: noStream,
 	}
 }
 
@@ -181,6 +187,11 @@ func (d *debugTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 func (c *Client) StreamChat(ctx context.Context, model string, messages []openai.ChatCompletionMessage, toolDefs []openai.Tool) <-chan StreamChunk {
 	if c.provider != nil {
 		return c.streamChatViaProvider(ctx, model, messages, toolDefs)
+	}
+
+	// Non-streaming fallback for endpoints that don't support SSE
+	if c.noStream {
+		return c.nonStreamChat(ctx, model, messages, toolDefs)
 	}
 
 	ch := make(chan StreamChunk)
@@ -430,6 +441,64 @@ func (c *Client) streamChatViaProvider(ctx context.Context, model string, messag
 				})
 			}
 			ch <- sc
+		}
+	}()
+
+	return ch
+}
+
+// nonStreamChat performs a single non-streaming POST and emits the full
+// response as one StreamChunk. Used for endpoints that don't support SSE.
+func (c *Client) nonStreamChat(ctx context.Context, model string, messages []openai.ChatCompletionMessage, toolDefs []openai.Tool) <-chan StreamChunk {
+	ch := make(chan StreamChunk)
+
+	go func() {
+		defer close(ch)
+
+		req := openai.ChatCompletionRequest{
+			Model:    model,
+			Messages: messages,
+			Stream:   false,
+		}
+		if len(toolDefs) > 0 {
+			req.Tools = toolDefs
+		}
+
+		config.DebugLog("[API-REQ] POST /chat/completions (no-stream) | model=%s | msgs=%d | tools=%d", model, len(messages), len(toolDefs))
+
+		resp, err := c.api.CreateChatCompletion(ctx, req)
+		if err != nil {
+			config.DebugLog("[API-ERR] non-stream request failed: %v", err)
+			ch <- StreamChunk{Err: err, Done: true}
+			return
+		}
+
+		if len(resp.Choices) == 0 {
+			ch <- StreamChunk{Err: errors.New("no response choices"), Done: true}
+			return
+		}
+
+		choice := resp.Choices[0]
+
+		// Emit content and tool calls in a single Done chunk to avoid
+		// consumers missing text when both are present.
+		var calls []ToolCallInfo
+		for _, tc := range choice.Message.ToolCalls {
+			calls = append(calls, ToolCallInfo{
+				ID:        tc.ID,
+				Name:      tc.Function.Name,
+				Arguments: tc.Function.Arguments,
+			})
+		}
+
+		if choice.Message.Content != "" && len(calls) == 0 {
+			// Text-only: emit content first, then Done separately
+			// so the UI can render progressively.
+			ch <- StreamChunk{Content: choice.Message.Content}
+			ch <- StreamChunk{Done: true}
+		} else {
+			// Tool calls (with or without content): single chunk
+			ch <- StreamChunk{Content: choice.Message.Content, Done: true, ToolCalls: calls}
 		}
 	}()
 
