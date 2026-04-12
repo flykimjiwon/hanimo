@@ -283,12 +283,15 @@ func NewModel(cfg config.Config, initialMode int, needsSetup bool) Model {
 	if needsSetup {
 		m.setupInput.Focus()
 	} else {
-		m.client = llm.NewClient(cfg.API.BaseURL, cfg.API.APIKey)
+		m.client = llm.NewClientWithOptions(cfg.API.BaseURL, cfg.API.APIKey, cfg.NoStream)
 	}
 
-	// Record the prompt cache breakpoint: everything before projectCtx
-	// is invariant across turns (the "stable prefix" that providers can
-	// cache). projectCtx changes on /knowledge reload or mode switch.
+	// Probe runtime environment and inject into system prompt.
+	envResults := llm.ProbeEnvironment()
+	projectCtx += llm.FormatEnvironmentContext(envResults)
+	config.DebugLog("[ENV-PROBE] detected %d tools", len(envResults))
+
+	// Record the prompt cache breakpoint.
 	stablePrompt := llm.SystemPrompt(llm.Mode(initialMode))
 	llm.GlobalBreakpoint.SetBreakpoint(stablePrompt, projectCtx)
 
@@ -504,13 +507,13 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.activeTab = target
 					m.applyModeSwitch()
 					m.intentHint = ""
-					return m, nil
+					return m, tea.ClearScreen
 				}
 			}
 			m.activeTab = (m.activeTab + 1) % llm.ModeCount
 			m.intentHint = ""
 			m.applyModeSwitch()
-			return m, nil
+			return m, tea.ClearScreen
 
 		case "shift+enter":
 			// Shift+Enter = newline
@@ -963,7 +966,7 @@ func (m Model) updateSetup(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			_ = config.Save(m.setupCfg)
 			m.cfg = m.setupCfg
-			m.client = llm.NewClient(m.cfg.API.BaseURL, m.cfg.API.APIKey)
+			m.client = llm.NewClientWithOptions(m.cfg.API.BaseURL, m.cfg.API.APIKey, m.cfg.NoStream)
 			m.inSetup = false
 			m.ready = true
 			m.recalcLayout()
@@ -1154,7 +1157,7 @@ func (m *Model) handleSlashCommand(input string) (bool, tea.Cmd) {
 			// point the client at it. API key is unchanged so the
 			// user can prime their HANIMO_API_KEY before switching.
 			m.cfg.API.BaseURL = arg
-			m.client = llm.NewClient(m.cfg.API.BaseURL, m.cfg.API.APIKey)
+			m.client = llm.NewClientWithOptions(m.cfg.API.BaseURL, m.cfg.API.APIKey, m.cfg.NoStream)
 			m.msgs = append(m.msgs, ui.Message{
 				Role: ui.RoleSystem, Content: fmt.Sprintf("  프로바이더 변경: 커스텀 URL (%s)", arg), Timestamp: time.Now(),
 			})
@@ -1163,13 +1166,13 @@ func (m *Model) handleSlashCommand(input string) (bool, tea.Cmd) {
 			if p.APIKey != "" {
 				m.cfg.API.APIKey = p.APIKey
 			}
-			m.client = llm.NewClient(m.cfg.API.BaseURL, m.cfg.API.APIKey)
+			m.client = llm.NewClientWithOptions(m.cfg.API.BaseURL, m.cfg.API.APIKey, m.cfg.NoStream)
 			m.msgs = append(m.msgs, ui.Message{
 				Role: ui.RoleSystem, Content: fmt.Sprintf("  프로바이더 변경: %s (%s)", arg, p.BaseURL), Timestamp: time.Now(),
 			})
 		} else if url, ok := providers.DefaultBaseURLs[arg]; ok {
 			m.cfg.API.BaseURL = url
-			m.client = llm.NewClient(m.cfg.API.BaseURL, m.cfg.API.APIKey)
+			m.client = llm.NewClientWithOptions(m.cfg.API.BaseURL, m.cfg.API.APIKey, m.cfg.NoStream)
 			m.msgs = append(m.msgs, ui.Message{
 				Role: ui.RoleSystem, Content: fmt.Sprintf("  프로바이더 변경: %s (%s)", arg, url), Timestamp: time.Now(),
 			})
@@ -2131,7 +2134,7 @@ func (m Model) updateMenu(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 				applied = true
 			}
 			if applied {
-				m.client = llm.NewClient(m.cfg.API.BaseURL, m.cfg.API.APIKey)
+				m.client = llm.NewClientWithOptions(m.cfg.API.BaseURL, m.cfg.API.APIKey, m.cfg.NoStream)
 				m.msgs = append(m.msgs, ui.Message{
 					Role: ui.RoleSystem, Content: fmt.Sprintf("  프로바이더 변경: %s (%s)", selected, m.cfg.API.BaseURL), Timestamp: time.Now(),
 				})
@@ -2691,9 +2694,7 @@ func (m *Model) handleAskUserKey(msg tea.KeyPressMsg) (bool, tea.Cmd) {
 // submitAskAnswer feeds the user's answer back to the LLM and resumes the
 // conversation loop.
 func (m *Model) submitAskAnswer(formatted string) tea.Cmd {
-	m.msgs = append(m.msgs, ui.Message{
-		Role: ui.RoleUser, Content: formatted, Timestamp: time.Now(),
-	})
+	// NOTE: sendMessage already appends to m.msgs — do not duplicate here.
 	m.updateViewport()
 	return m.sendMessage(formatted)
 }
