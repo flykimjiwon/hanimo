@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"regexp"
 	"sort"
 	"path/filepath"
 	"strings"
@@ -1840,15 +1841,23 @@ func (m Model) updateMenu(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 
 		if m.menuAction == "provider" {
 			raw := m.menuItems[m.menuSelected]
-			// Strip the "* " / "  " cursor marker we added when
-			// building the list.
-			selected := strings.TrimSpace(strings.TrimPrefix(strings.TrimPrefix(raw, "* "), "+"))
+			// Strip lipgloss ANSI codes so prefix/suffix tests below
+			// see only the underlying label text.
+			plain := ansiRE.ReplaceAllString(raw, "")
+			plain = strings.TrimSpace(strings.TrimPrefix(plain, "●"))
+			plain = strings.TrimSpace(plain)
+			selected := plain
+			// Drop the "  (현재)" / "  (현재: …)" tail we appended
+			// for display purposes.
+			if idx := strings.Index(selected, "  (현재"); idx >= 0 {
+				selected = strings.TrimSpace(selected[:idx])
+			}
 			m.showMenu = false
 
 			// Custom URL entry: prefill the textarea with "/provider "
 			// so the user can type a full URL (https://...) and hit
 			// Enter. /provider now accepts bare URLs directly.
-			if strings.HasPrefix(raw, "  + Custom URL") {
+			if strings.Contains(plain, "Custom URL") {
 				m.textarea.Reset()
 				m.textarea.InsertString("/provider https://")
 				m.textarea.Focus()
@@ -1954,11 +1963,14 @@ func (m Model) updateMenu(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 			return m, nil
 
 		case item == t.ProviderSwitch:
-			// Union of: user config providers, dedicated-provider
-			// names (ollama/anthropic/google), and every OpenAI-compat
-			// default in providers.DefaultBaseURLs. De-duplicate, sort,
-			// mark the current one with "*", append "+ Custom URL..."
-			// at the end for ad-hoc endpoints.
+			// Union of: dedicated providers (ollama/anthropic/google),
+			// every OpenAI-compat default, and user cfg.Providers.
+			// Deduplicated, sorted. The currently-active provider gets
+			// a honey-gold "● " prefix via lipgloss styling so it pops
+			// visually; RenderMenu's non-selected label style doesn't
+			// strip ANSI so the color survives. If the user is on a
+			// custom URL that matches none of the known names, the
+			// Custom URL row gets the highlight instead.
 			seen := map[string]bool{}
 			var provNames []string
 			add := func(n string) {
@@ -1978,20 +1990,31 @@ func (m Model) updateMenu(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 				add(name)
 			}
 			sort.Strings(provNames)
-			// Mark current provider with "* " prefix so the user can
-			// spot it without guessing from the URL.
+
+			activeStyle := lipgloss.NewStyle().Foreground(ui.ColorPrimary).Bold(true)
+			dimStyle := lipgloss.NewStyle().Foreground(ui.ColorText)
 			currentURL := m.cfg.API.BaseURL
-			display := make([]string, len(provNames))
+			display := make([]string, 0, len(provNames)+1)
 			cursor := 0
-			for i, n := range provNames {
-				marker := "  "
-				if matchesProvider(n, currentURL) {
-					marker = "* "
-					cursor = i
+			matched := false
+			for _, n := range provNames {
+				if matchesProvider(n, currentURL) && !matched {
+					display = append(display, activeStyle.Render("● "+n+"  (현재)"))
+					cursor = len(display) - 1
+					matched = true
+				} else {
+					display = append(display, dimStyle.Render("  "+n))
 				}
-				display[i] = marker + n
 			}
-			display = append(display, "  + Custom URL 입력...")
+			customLabel := "  + Custom URL 입력..."
+			if !matched && currentURL != "" {
+				customLabel = activeStyle.Render("● + Custom URL  (현재: " + currentURL + ")")
+				cursor = len(display)
+			} else {
+				customLabel = dimStyle.Render(customLabel)
+			}
+			display = append(display, customLabel)
+
 			m.menuAction = "provider"
 			m.menuItems = display
 			m.menuSelected = cursor
@@ -2211,24 +2234,44 @@ func inGitRepo() bool {
 	return strings.TrimSpace(string(out)) == "true"
 }
 
+// ansiRE matches ANSI SGR escape sequences so we can strip lipgloss
+// styling out of menu item labels at dispatch time. The provider
+// submenu embeds color codes in each row; the Enter handler needs the
+// raw text to decide which provider was actually picked.
+var ansiRE = regexp.MustCompile(`\x1b\[[0-9;]*m`)
+
+// providerHosts maps a provider name to the canonical hostname we look
+// for in the configured base URL. Using host-only comparison lets us
+// match across path variants (/v1 vs /v3/openai vs /v1beta) that the
+// user may have customized in config.yaml.
+var providerHosts = map[string]string{
+	"ollama":      "localhost:11434",
+	"anthropic":   "api.anthropic.com",
+	"google":      "generativelanguage.googleapis.com",
+	"openai":      "api.openai.com",
+	"novita":      "api.novita.ai",
+	"openrouter":  "openrouter.ai",
+	"deepseek":    "api.deepseek.com",
+	"groq":        "api.groq.com",
+	"together":    "api.together.xyz",
+	"fireworks":   "api.fireworks.ai",
+	"mistral":     "api.mistral.ai",
+	"xai":         "api.x.ai",
+	"cerebras":    "api.cerebras.ai",
+	"siliconflow": "api.siliconflow.cn",
+	"deepinfra":   "api.deepinfra.com",
+	"perplexity":  "api.perplexity.ai",
+}
+
 // matchesProvider reports whether a named provider matches the currently
-// configured API base URL. Used by the provider submenu to decide where
-// to put the "* " cursor marker so the user can see which row is active.
+// configured API base URL by hostname. Used by the provider submenu to
+// decide which row is "active" for colour highlighting.
 func matchesProvider(name, currentURL string) bool {
 	if currentURL == "" {
 		return false
 	}
-	// Dedicated providers — match by substring of the canonical host.
-	dedicated := map[string]string{
-		"ollama":    "localhost:11434",
-		"anthropic": "api.anthropic.com",
-		"google":    "generativelanguage.googleapis.com",
-	}
-	if host, ok := dedicated[name]; ok {
+	if host, ok := providerHosts[name]; ok {
 		return strings.Contains(currentURL, host)
-	}
-	if defURL, ok := providers.DefaultBaseURLs[name]; ok {
-		return strings.HasPrefix(currentURL, defURL) || strings.HasPrefix(defURL, currentURL)
 	}
 	return false
 }
