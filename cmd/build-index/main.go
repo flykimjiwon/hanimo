@@ -69,8 +69,6 @@ func main() {
 				doc.Keywords = append(doc.Keywords, subcategory)
 
 				switch subcategory {
-				case "bxm":
-					doc.Tier = 0
 				case "go", "javascript", "typescript", "react", "css", "charts":
 					doc.Tier = 1
 				case "vue", "java":

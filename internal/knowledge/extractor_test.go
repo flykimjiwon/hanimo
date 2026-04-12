@@ -17,9 +17,9 @@ func TestExtractKeywords(t *testing.T) {
 			expected: []string{"tailwind", "responsive"},
 		},
 		{
-			name:     "BXM Bean multi-select",
-			query:    "BXM Bean에서 다건 조회 패턴 알려줘",
-			expected: []string{"bxm", "bean", "다건", "조회"},
+			name:     "React useState",
+			query:    "React useState 사용법",
+			expected: []string{"react"},
 		},
 		{
 			name:     "recharts bar chart",
@@ -141,7 +141,7 @@ func TestTokenize(t *testing.T) {
 	}{
 		{"hello world", []string{"hello", "world"}},
 		{"next.js is cool", []string{"next.js", "is", "cool"}},
-		{"@bxmbean test", []string{"@bxmbean", "test"}},
+		{"@component test", []string{"@component", "test"}},
 		{"shadcn/ui setup", []string{"shadcn/ui", "setup"}},
 		{"foo---bar", []string{"foo---bar"}},
 		{"", nil},

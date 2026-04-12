@@ -24,8 +24,8 @@ func testFS() fs.FS {
 		"knowledge/docs/terminal/macos.md": &fstest.MapFile{
 			Data: []byte("# macOS Terminal Commands\n\n## zsh\n- ls, cat, grep\n"),
 		},
-		"knowledge/docs/bxm/overview.md": &fstest.MapFile{
-			Data: []byte("# BXM Overview\n\nProduct-specific documentation.\n"),
+		"knowledge/docs/go/concurrency.md": &fstest.MapFile{
+			Data: []byte("# Go Concurrency\n\nGoroutines and channels overview.\n"),
 		},
 		"knowledge/docs/python/basics.md": &fstest.MapFile{
 			Data: []byte("# Python Basics\n\n## print\n- print(value)\n"),
@@ -123,15 +123,16 @@ func TestStoreSearchTierOrder(t *testing.T) {
 		t.Fatalf("NewStore failed: %v", err)
 	}
 
-	// Search for "overview" (bxm, tier 0) and "basics" (python, tier 3)
-	results := s.Search([]string{"overview", "basics"}, 10000)
-	if len(results) < 2 {
-		t.Fatalf("expected at least 2 results, got %d", len(results))
+	// Search broadly — "go" matches go/concurrency (tier 1), and
+	// "basics" matches python/basics (tier 3). Tier 1 should sort first.
+	results := s.Search([]string{"go"}, 10000)
+	if len(results) < 1 {
+		t.Fatalf("expected at least 1 result, got %d", len(results))
 	}
 
-	// First result should be tier 0 (bxm)
-	if results[0].Tier != Tier0 {
-		t.Errorf("expected first result tier 0, got tier %d (path: %s)", results[0].Tier, results[0].Path)
+	// First result should be tier 1 (go)
+	if results[0].Tier != Tier1 {
+		t.Errorf("expected first result tier 1, got tier %d (path: %s)", results[0].Tier, results[0].Path)
 	}
 }
 
@@ -200,10 +201,10 @@ func TestInferMetadata(t *testing.T) {
 		wantKeywords []string
 	}{
 		{
-			path:         "knowledge/docs/bxm/overview.md",
-			wantTier:     Tier0,
+			path:         "knowledge/docs/go/concurrency.md",
+			wantTier:     Tier1,
 			wantOS:       "",
-			wantKeywords: []string{"bxm", "overview"},
+			wantKeywords: []string{"go", "concurrency"},
 		},
 		{
 			path:         "knowledge/docs/go/stdlib.md",

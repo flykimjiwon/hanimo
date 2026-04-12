@@ -7,11 +7,11 @@ import (
 
 // Persona controls the "flavour text" of the TUI — thinking verbs,
 // cold-start messages, stall warnings. It is intentionally isolated so
-// downstream forks (e.g. TECHAI_CODE) can swap a single file to re-skin
+// downstream forks (e.g. a downstream fork) can swap a single file to re-skin
 // the whole product with a different metaphor:
 //
 //   hanimo        → 🐝 bee / honey / hive
-//   TECHAI_CODE   → 🤖 robot / circuit / bot farm
+//   a downstream fork   → 🤖 robot / circuit / bot farm
 //   a samurai fork → ⚔️  samurai / katana / dojo
 //
 // Nothing about this file depends on hanimo-specific state, so porting
@@ -44,7 +44,7 @@ type Persona struct {
 
 // HanimoDefaultPersona is hanimo's default flavour text — neutral,
 // Korean-first, no mascot. Forks can drop a different Persona for a
-// themed re-skin (e.g. a robot variant for TECHAI_CODE) by assigning
+// themed re-skin (e.g. a robot variant for a downstream fork) by assigning
 // ActivePersona in main.go without touching any caller.
 var HanimoDefaultPersona = Persona{
 	Name:  "hanimo-default",

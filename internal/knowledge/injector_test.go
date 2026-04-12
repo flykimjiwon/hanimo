@@ -17,11 +17,11 @@ func injectorTestFS() fstest.MapFS {
 		"knowledge/skills/debugging.md": &fstest.MapFile{
 			Data: []byte("# Debugging Skill\n\n## 절차\n1. 에러 메시지 읽기\n2. 스택 트레이스 확인\n"),
 		},
-		"knowledge/docs/bxm/overview.md": &fstest.MapFile{
-			Data: []byte("# BXM Overview\n\nBXM은 뱅크웨어 글로벌의 핵심 프레임워크입니다.\n## Bean\n## DBIO\n## Service\n"),
+		"knowledge/docs/react/hooks.md": &fstest.MapFile{
+			Data: []byte("# React Hooks Guide\n\nReact의 핵심 Hook 사용법입니다.\n## useState\n## useEffect\n## useCallback\n"),
 		},
-		"knowledge/docs/bxm/bean.md": &fstest.MapFile{
-			Data: []byte("# BXM Bean Guide\n\n@BxmBean 어노테이션을 사용하여 빈을 등록합니다.\n"),
+		"knowledge/docs/react/components.md": &fstest.MapFile{
+			Data: []byte("# React Components\n\n함수형 컴포넌트와 props 패턴을 설명합니다.\n"),
 		},
 		"knowledge/docs/python/basics.md": &fstest.MapFile{
 			Data: []byte("# Python Basics\n\n## print\n- print(value)\n"),
@@ -53,7 +53,7 @@ func TestInjectorInject(t *testing.T) {
 	}
 }
 
-func TestInjectorInjectBXM(t *testing.T) {
+func TestInjectorInjectReact(t *testing.T) {
 	store, err := NewStore(injectorTestFS())
 	if err != nil {
 		t.Fatalf("NewStore failed: %v", err)
@@ -61,13 +61,12 @@ func TestInjectorInjectBXM(t *testing.T) {
 
 	inj := NewInjector(store, 8192)
 
-	// Query with BXM keywords should include BXM docs
-	result := inj.Inject(0, "BXM bean 등록 방법")
+	result := inj.Inject(0, "React hooks useState 사용법")
 	if result == "" {
-		t.Fatal("expected non-empty result for BXM query, got empty")
+		t.Fatal("expected non-empty result for React query, got empty")
 	}
-	if !strings.Contains(result, "BXM") {
-		t.Error("result should contain BXM content")
+	if !strings.Contains(result, "React") {
+		t.Error("result should contain React content")
 	}
 }
 

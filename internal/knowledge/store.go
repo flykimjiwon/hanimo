@@ -227,8 +227,6 @@ func inferMetadata(path string) (tier int, osName string, keywords []string) {
 	switch category {
 	case "docs":
 		switch subcategory {
-		case "bxm":
-			tier = Tier0
 		case "go", "javascript", "typescript", "react", "css", "charts":
 			tier = Tier1
 		case "vue", "java":
