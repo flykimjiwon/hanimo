@@ -25,12 +25,14 @@ type Message struct {
 	Tag       string // optional tag for filtering (e.g. "modebox")
 }
 
-// Q/A block background tints — subtle enough not to hurt readability,
-// strong enough to make user vs assistant visually distinct without the
-// `>` prefix carrying the whole load. Honey gold identity preserved.
+// Q/A accent styling. User messages get a very subtle tinted block;
+// assistant replies get only a left accent bar (no background) so long
+// answers don't look like a giant colored wall. Forks can swap either
+// constant to re-theme without touching renderers.
 var (
-	userBlockBg = lipgloss.Color("#2A1F0A") // deep amber tint for user
-	asstBlockBg = lipgloss.Color("#1A1608") // darker honey tint for assistant
+	// userBlockBg is intentionally close to the terminal default so
+	// the tint reads as a whisper rather than a UI block.
+	userBlockBg = lipgloss.Color("#1A1409")
 )
 
 // renderUserBlock wraps a user message in a subtly tinted, left-bar
@@ -64,26 +66,14 @@ func renderUserBlock(content string, width int) string {
 	return strings.Join(out, "\n")
 }
 
-// renderAssistantBlock wraps markdown-rendered assistant content in a
-// darker honey-tinted block with a left accent bar.
+// renderAssistantBlock prefixes markdown-rendered assistant content
+// with a muted left accent bar — no background fill, so long answers
+// stay readable and the viewport doesn't turn into a solid color wall.
 func renderAssistantBlock(rendered string, width int) string {
-	barStyle := lipgloss.NewStyle().
-		Foreground(ColorAccent).
-		Background(asstBlockBg)
-	bgStyle := lipgloss.NewStyle().
-		Background(asstBlockBg)
-	blockWidth := width - 2
-	if blockWidth < 20 {
-		blockWidth = 20
-	}
+	barStyle := lipgloss.NewStyle().Foreground(ColorAccent)
 	var out []string
 	for _, line := range strings.Split(rendered, "\n") {
-		displayW := lipgloss.Width(line)
-		padded := line
-		if displayW < blockWidth-4 {
-			padded = line + strings.Repeat(" ", blockWidth-4-displayW)
-		}
-		out = append(out, barStyle.Render("  ▎ ")+bgStyle.Render(padded))
+		out = append(out, barStyle.Render("  ▎ ")+line)
 	}
 	return strings.Join(out, "\n")
 }

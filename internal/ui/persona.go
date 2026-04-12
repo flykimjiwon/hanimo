@@ -42,28 +42,29 @@ type Persona struct {
 	Stall15s string
 }
 
-// HanimoBeePersona is hanimo's default flavour — cute, honeycomb-themed,
-// Korean-first. Swap this out in a fork to re-skin everything.
-var HanimoBeePersona = Persona{
-	Name:  "hanimo-bee",
-	Emoji: "🐝",
+// HanimoDefaultPersona is hanimo's default flavour text — neutral,
+// Korean-first, no mascot. Forks can drop a different Persona for a
+// themed re-skin (e.g. a robot variant for TECHAI_CODE) by assigning
+// ActivePersona in main.go without touching any caller.
+var HanimoDefaultPersona = Persona{
+	Name:  "hanimo-default",
+	Emoji: "",
 	ThinkingVerbs: []string{
-		"🐝 궁리중",
-		"🐝 꿀 모으는 중",
-		"🐝 꽃가루 털어내는 중",
-		"🐝 비행 중",
-		"🐝 벌집 짓는 중",
-		"🍯 꿀 졸이는 중",
+		"생각하는 중",
+		"분석 중",
+		"작업 중",
+		"정리 중",
+		"검토 중",
 	},
-	ColdStart: "🐝 둥지에서 깨어나는 중",
-	Stall5s:   "🍯 꿀이 천천히 흐르는 중... 조금 오래 걸리네요",
-	Stall15s:  "🐝 응답 없음 — 멀리 비행 중인가 봐요",
+	ColdStart: "연결 중",
+	Stall5s:   "응답 준비 중... 조금 오래 걸리네요",
+	Stall15s:  "응답 지연 — 네트워크 또는 모델 부하일 수 있습니다",
 }
 
 // ActivePersona is the persona currently mounted on this binary. Code
 // reads flavour strings through this variable; swap the pointer in an
 // init() or main.go of a fork to re-skin without touching callers.
-var ActivePersona = HanimoBeePersona
+var ActivePersona = HanimoDefaultPersona
 
 // ThinkingVerbFor returns the rotating thinking verb at the given
 // elapsed-seconds offset. Empty verb list falls back to ColdStart.
