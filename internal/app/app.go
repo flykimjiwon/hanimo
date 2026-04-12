@@ -24,6 +24,7 @@ import (
 	"github.com/flykimjiwon/hanimo/internal/knowledge"
 	"github.com/flykimjiwon/hanimo/internal/llm"
 	"github.com/flykimjiwon/hanimo/internal/session"
+	"github.com/flykimjiwon/hanimo/internal/skills"
 	"github.com/flykimjiwon/hanimo/internal/llm/providers"
 	"github.com/flykimjiwon/hanimo/internal/tools"
 	"github.com/flykimjiwon/hanimo/internal/ui"
@@ -257,6 +258,13 @@ func NewModel(cfg config.Config, initialMode int, needsSetup bool) Model {
 	if knowledge.GlobalIndex.Count() > 0 {
 		projectCtx += knowledge.GlobalIndex.TableOfContents()
 		config.DebugLog("[USER-KNOWLEDGE] indexed %d docs from %s", knowledge.GlobalIndex.Count(), knowledge.GlobalIndex.Root())
+	}
+
+	// Scan user skills (.hanimo/skills/*/SKILL.md).
+	skills.GlobalRegistry = skills.ScanSkills()
+	if skills.GlobalRegistry.Count() > 0 {
+		projectCtx += skills.GlobalRegistry.TableOfContents()
+		config.DebugLog("[SKILLS] loaded %d skills", skills.GlobalRegistry.Count())
 	}
 
 	m := Model{
@@ -1356,6 +1364,54 @@ func (m *Model) handleSlashCommand(input string) (bool, tea.Cmd) {
 		})
 		m.updateViewport()
 		return true, nil
+
+	case "/skill":
+		if arg == "" || arg == "list" {
+			reg := skills.GlobalRegistry
+			if reg.Count() == 0 {
+				m.msgs = append(m.msgs, ui.Message{
+					Role: ui.RoleSystem, Content: "  등록된 스킬이 없습니다. .hanimo/skills/<name>/SKILL.md 를 만들어 주세요.", Timestamp: time.Now(),
+				})
+			} else {
+				m.msgs = append(m.msgs, ui.Message{
+					Role: ui.RoleSystem, Content: reg.TableOfContents(), Timestamp: time.Now(),
+				})
+			}
+			m.updateViewport()
+			return true, nil
+		}
+		if arg == "reload" {
+			skills.GlobalRegistry = skills.ScanSkills()
+			m.msgs = append(m.msgs, ui.Message{
+				Role: ui.RoleSystem, Content: fmt.Sprintf("  스킬 재로드: %d개", skills.GlobalRegistry.Count()), Timestamp: time.Now(),
+			})
+			m.updateViewport()
+			return true, nil
+		}
+		// /skill <name> [args...] — invoke a skill by injecting its
+		// body into the conversation as a user message so the LLM
+		// executes the skill workflow.
+		parts := strings.SplitN(arg, " ", 2)
+		skillName := parts[0]
+		skillArgs := ""
+		if len(parts) > 1 {
+			skillArgs = parts[1]
+		}
+		s := skills.GlobalRegistry.Get(skillName)
+		if s == nil {
+			m.msgs = append(m.msgs, ui.Message{
+				Role: ui.RoleSystem, Content: fmt.Sprintf("  스킬 '%s' 을 찾을 수 없습니다. /skill list 로 확인하세요.", skillName), Timestamp: time.Now(),
+			})
+			m.updateViewport()
+			return true, nil
+		}
+		// Inject the skill body as a user message and send.
+		prompt := skills.FormatSkillBody(s, skillArgs)
+		m.msgs = append(m.msgs, ui.Message{
+			Role: ui.RoleSystem, Content: fmt.Sprintf("  ▶ 스킬 실행: %s", s.Name), Timestamp: time.Now(),
+		})
+		m.updateViewport()
+		return true, m.sendMessage(prompt)
 
 	case "/knowledge":
 		switch arg {
