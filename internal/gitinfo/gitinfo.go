@@ -81,7 +81,7 @@ func (i Info) Label() string {
 // /git slash command.
 func (i Info) Summary() string {
 	if i.Branch == "" {
-		return "  git: 현재 디렉토리는 git 저장소가 아닙니다."
+		return "  git: current directory is not a git repository."
 	}
 	var sb strings.Builder
 	fmt.Fprintf(&sb, "  git: %s\n", i.Branch)

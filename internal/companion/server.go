@@ -30,7 +30,14 @@ func NewServer(hub *Hub, webFS fs.FS, port int) *Server {
 	}
 
 	mux.HandleFunc("/events", s.handleSSE)
-	mux.Handle("/", http.FileServer(http.FS(webFS)))
+	if webFS != nil {
+		mux.Handle("/", http.FileServer(http.FS(webFS)))
+	} else {
+		mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "text/html; charset=utf-8")
+			fmt.Fprint(w, "<html><body><h1>hanimo companion</h1><p>Web assets not embedded. SSE endpoint available at /events</p></body></html>")
+		})
+	}
 
 	return s
 }

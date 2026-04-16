@@ -77,6 +77,7 @@ func (h *Hub) Subscribe() (<-chan Event, func()) {
 	cancel := func() {
 		h.mu.Lock()
 		delete(h.subscribers, id)
+		close(ch)
 		h.mu.Unlock()
 	}
 	return ch, cancel

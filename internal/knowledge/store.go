@@ -13,7 +13,7 @@ import (
 
 // Tier represents document priority. Lower is higher priority.
 const (
-	Tier0 = 0 // BXM (product-specific, always injected)
+	Tier0 = 0 // Product-specific (always injected)
 	Tier1 = 1 // Daily use: Go, JS, TS, React, CSS, Charts, Skills
 	Tier2 = 2 // Frequent: Vue, Java
 	Tier3 = 3 // Reference: Python

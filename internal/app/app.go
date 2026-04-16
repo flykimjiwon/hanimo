@@ -514,7 +514,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 
 		case "ctrl+p":
-			// Input history: cycle backwards
+			// Input history: cycle backwards (skip during overlays)
+			if m.askQuestion != nil || m.dangerCmd != "" {
+				return m, nil
+			}
 			if len(m.inputHistory) > 0 {
 				if m.inputHistoryIdx > 0 {
 					m.inputHistoryIdx--
@@ -525,7 +528,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 
 		case "ctrl+n":
-			// Input history: cycle forwards
+			// Input history: cycle forwards (skip during overlays)
+			if m.askQuestion != nil || m.dangerCmd != "" {
+				return m, nil
+			}
 			if len(m.inputHistory) > 0 {
 				if m.inputHistoryIdx < len(m.inputHistory)-1 {
 					m.inputHistoryIdx++
@@ -1689,7 +1695,11 @@ func (m Model) View() tea.View {
 		if m.activePlan != nil && (m.activePlan.Status == "executing" || m.activePlan.Status == "draft") {
 			planProgress = m.activePlan.Progress()
 		}
-		statusBar := ui.RenderStatusBar(displayModel, m.tokenCount, elapsed, m.activeTab, m.cwd, m.width, config.IsDebug(), len(tools.ToolsForMode(m.activeTab)), m.autoMode, planProgress, m.gitInfo.Label(), ui.ContextPercent(m.tokenCount, 262144))
+		ctxWindow := 262144 // default fallback
+		if cap := llm.GetCapability(displayModel); cap.ContextWindow > 0 {
+			ctxWindow = cap.ContextWindow
+		}
+		statusBar := ui.RenderStatusBar(displayModel, m.tokenCount, elapsed, m.activeTab, m.cwd, m.width, config.IsDebug(), len(tools.ToolsForMode(m.activeTab)), m.autoMode, planProgress, m.gitInfo.Label(), ui.ContextPercent(m.tokenCount, ctxWindow))
 
 		// Build the stack of anchor blocks rendered directly above the input.
 		// Order (top → bottom):
