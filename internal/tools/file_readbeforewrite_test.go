@@ -19,8 +19,8 @@ func TestReadBeforeWrite_EditUnread(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected refusal when editing unread file")
 	}
-	if !strings.Contains(err.Error(), "먼저 읽지 않고") {
-		t.Errorf("expected KR refusal message, got %v", err)
+	if !strings.Contains(err.Error(), "without reading it first") {
+		t.Errorf("expected refusal message, got %v", err)
 	}
 }
 

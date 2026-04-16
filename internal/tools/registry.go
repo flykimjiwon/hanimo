@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -269,6 +271,34 @@ func AllTools() []openai.Tool {
 				},
 			},
 		},
+		{
+			Type: openai.ToolTypeFunction,
+			Function: &openai.FunctionDefinition{
+				Name:        "project_detect",
+				Description: "Detect the project type, framework, and key files in a directory. Returns structured info (type, name, framework, key files). Use at the start of a session to understand the codebase.",
+				Parameters: paramSchema{
+					Type: "object",
+					Properties: map[string]propertySchema{
+						"dir": {Type: "string", Description: "Directory to scan (default: current directory)"},
+					},
+					Required: []string{"dir"},
+				},
+			},
+		},
+		{
+			Type: openai.ToolTypeFunction,
+			Function: &openai.FunctionDefinition{
+				Name:        "init_project",
+				Description: "Generate a comprehensive .hanimo.md project profile. Scans directory structure, detects type/framework, lists dependencies, entry points, scripts, and git info. The generated file is loaded into AI context on every session.",
+				Parameters: paramSchema{
+					Type: "object",
+					Properties: map[string]propertySchema{
+						"dir": {Type: "string", Description: "Directory to profile (default: current directory)"},
+					},
+					Required: []string{"dir"},
+				},
+			},
+		},
 	}
 }
 
@@ -434,6 +464,20 @@ func ReadOnlyTools() []openai.Tool {
 					Properties: map[string]propertySchema{
 						"dir":  {Type: "string", Description: "Project directory to run diagnostics in"},
 						"file": {Type: "string", Description: "Optional specific file to check"},
+					},
+					Required: []string{"dir"},
+				},
+			},
+		},
+		{
+			Type: openai.ToolTypeFunction,
+			Function: &openai.FunctionDefinition{
+				Name:        "project_detect",
+				Description: "Detect the project type, framework, and key files in a directory. Returns structured info. Use at the start of a session to understand the codebase.",
+				Parameters: paramSchema{
+					Type: "object",
+					Properties: map[string]propertySchema{
+						"dir": {Type: "string", Description: "Directory to scan (default: current directory)"},
 					},
 					Required: []string{"dir"},
 				},
@@ -726,7 +770,7 @@ func executeInner(name string, argsJSON string) string {
 		}
 		idx := knowledge.GlobalIndex
 		if idx == nil || idx.Count() == 0 {
-			return "knowledge 폴더가 비어있거나 없습니다. .hanimo/knowledge/ 에 md/txt 파일을 넣어주세요."
+			return "Knowledge folder is empty or missing. Add md/txt files to .hanimo/knowledge/"
 		}
 		results := idx.Search(query, maxR)
 		return knowledge.FormatSearchResults(results, query)
@@ -742,6 +786,32 @@ func executeInner(name string, argsJSON string) string {
 			return fmt.Sprintf("Error: %v", err)
 		}
 		return result
+
+	case "project_detect":
+		dir, _ := args["dir"].(string)
+		if dir == "" {
+			dir = "."
+		}
+		info := DetectProject(dir)
+		ctx := FormatProjectContext(info)
+		if ctx == "" {
+			return "Unknown project type — no recognizable markers found."
+		}
+		return ctx
+
+	case "init_project":
+		dir, _ := args["dir"].(string)
+		if dir == "" {
+			dir = "."
+		}
+		profile := GenerateProjectProfile(dir)
+		outPath := filepath.Join(dir, ".hanimo.md")
+		absOut, _ := filepath.Abs(outPath)
+		CreateSnapshot(absOut)
+		if err := os.WriteFile(absOut, []byte(profile), 0644); err != nil {
+			return fmt.Sprintf("Error writing .hanimo.md: %v", err)
+		}
+		return fmt.Sprintf("OK: generated .hanimo.md (%d bytes)\n\n%s", len(profile), profile)
 
 	default:
 		config.DebugLog("[TOOL-ERR] unknown tool '%s'", name)

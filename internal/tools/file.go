@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
+
+	"github.com/flykimjiwon/hanimo/internal/config"
 )
 
 // readSet is the per-turn set of absolute paths the agent has file_read'd
@@ -60,16 +62,23 @@ func FileWrite(path, content string) error {
 	if err != nil {
 		return fmt.Errorf("invalid path: %w", err)
 	}
+	if warn := CheckSensitiveFile(absPath); warn != "" {
+		return fmt.Errorf("%s — writing blocked", warn)
+	}
+	if warn := CheckSecrets(content); warn != "" {
+		config.DebugLog("[FILE-WRITE] %s", warn)
+	}
 	if _, statErr := os.Stat(absPath); statErr == nil {
 		// File exists — this is an overwrite.
 		if !wasRead(absPath) {
-			return fmt.Errorf("%s 를 먼저 읽지 않고 덮어쓸 수 없습니다. file_read 로 해당 파일을 읽은 후 file_write 하세요", path)
+			return fmt.Errorf("cannot overwrite %s without reading it first. Use file_read before file_write", path)
 		}
 	}
 	dir := filepath.Dir(absPath)
 	if err := os.MkdirAll(dir, 0755); err != nil {
 		return fmt.Errorf("mkdir failed: %w", err)
 	}
+	CreateSnapshot(absPath)
 	if err := os.WriteFile(absPath, []byte(content), 0644); err != nil {
 		return err
 	}
@@ -89,13 +98,14 @@ func FileEdit(path, oldStr, newStr string) (int, error) {
 		return 0, fmt.Errorf("invalid path: %w", err)
 	}
 	if !wasRead(absPath) {
-		return 0, fmt.Errorf("%s 를 먼저 읽지 않고 수정할 수 없습니다. file_read 로 해당 파일을 읽어 old_string 을 확인한 후 file_edit 하세요", path)
+		return 0, fmt.Errorf("cannot edit %s without reading it first. Use file_read to verify old_string before file_edit", path)
 	}
 	data, err := os.ReadFile(absPath)
 	if err != nil {
 		return 0, fmt.Errorf("read failed: %w", err)
 	}
 	content := string(data)
+	CreateSnapshot(absPath)
 	count := strings.Count(content, oldStr)
 	if count == 0 {
 		// Show a snippet of the file for context. Slice by rune so

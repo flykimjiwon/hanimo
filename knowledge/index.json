@@ -1,6 +1,16 @@
 {
   "documents": [
     {
+      "path": "knowledge/docs/auth/nextauth.md",
+      "title": "Auth.js v5 (NextAuth) Reference",
+      "tier": 2,
+      "keywords": [
+        "auth",
+        "nextauth"
+      ],
+      "tokens": 1694
+    },
+    {
       "path": "knowledge/docs/charts/chartjs.md",
       "title": "Chart.js + react-chartjs-2 Reference",
       "tier": 1,
@@ -41,6 +51,30 @@
       "tokens": 720
     },
     {
+      "path": "knowledge/docs/css/framer-motion.md",
+      "title": "Framer Motion Reference",
+      "tier": 1,
+      "keywords": [
+        "css",
+        "framer-motion",
+        "framer",
+        "motion"
+      ],
+      "tokens": 1435
+    },
+    {
+      "path": "knowledge/docs/css/radix-ui.md",
+      "title": "Radix UI Primitives Reference",
+      "tier": 1,
+      "keywords": [
+        "css",
+        "radix-ui",
+        "radix",
+        "ui"
+      ],
+      "tokens": 1676
+    },
+    {
       "path": "knowledge/docs/css/shadcn-ui.md",
       "title": "shadcn/ui Components Reference",
       "tier": 1,
@@ -51,6 +85,19 @@
         "ui"
       ],
       "tokens": 828
+    },
+    {
+      "path": "knowledge/docs/css/tailwind-v4-advanced.md",
+      "title": "Tailwind CSS v4 Advanced Features",
+      "tier": 1,
+      "keywords": [
+        "css",
+        "tailwind-v4-advanced",
+        "tailwind",
+        "v4",
+        "advanced"
+      ],
+      "tokens": 1110
     },
     {
       "path": "knowledge/docs/css/tailwind-v4.md",
@@ -65,6 +112,101 @@
       "tokens": 492
     },
     {
+      "path": "knowledge/docs/database/drizzle.md",
+      "title": "Drizzle ORM Reference",
+      "tier": 2,
+      "keywords": [
+        "database",
+        "drizzle"
+      ],
+      "tokens": 1474
+    },
+    {
+      "path": "knowledge/docs/database/mysql.md",
+      "title": "MySQL Reference",
+      "tier": 2,
+      "keywords": [
+        "database",
+        "mysql"
+      ],
+      "tokens": 3304
+    },
+    {
+      "path": "knowledge/docs/database/oracle.md",
+      "title": "Oracle Database Reference",
+      "tier": 2,
+      "keywords": [
+        "database",
+        "oracle"
+      ],
+      "tokens": 3073
+    },
+    {
+      "path": "knowledge/docs/database/postgresql.md",
+      "title": "PostgreSQL Reference",
+      "tier": 2,
+      "keywords": [
+        "database",
+        "postgresql"
+      ],
+      "tokens": 3057
+    },
+    {
+      "path": "knowledge/docs/database/prisma.md",
+      "title": "Prisma ORM Reference",
+      "tier": 2,
+      "keywords": [
+        "database",
+        "prisma"
+      ],
+      "tokens": 1379
+    },
+    {
+      "path": "knowledge/docs/database/sql-core.md",
+      "title": "SQL Core Reference",
+      "tier": 2,
+      "keywords": [
+        "database",
+        "sql-core",
+        "sql",
+        "core"
+      ],
+      "tokens": 3278
+    },
+    {
+      "path": "knowledge/docs/database/sql-ddl-design.md",
+      "title": "SQL DDL & Schema Design Reference",
+      "tier": 2,
+      "keywords": [
+        "database",
+        "sql-ddl-design",
+        "sql",
+        "ddl",
+        "design"
+      ],
+      "tokens": 3316
+    },
+    {
+      "path": "knowledge/docs/database/supabase.md",
+      "title": "Supabase JS Client Reference",
+      "tier": 2,
+      "keywords": [
+        "database",
+        "supabase"
+      ],
+      "tokens": 1546
+    },
+    {
+      "path": "knowledge/docs/database/tibero.md",
+      "title": "Tibero Reference",
+      "tier": 2,
+      "keywords": [
+        "database",
+        "tibero"
+      ],
+      "tokens": 2200
+    },
+    {
       "path": "knowledge/docs/go/stdlib.md",
       "title": "Go Standard Library Quick Reference",
       "tier": 1,
@@ -75,14 +217,88 @@
       "tokens": 155
     },
     {
-      "path": "knowledge/docs/java/spring.md",
-      "title": "Spring Boot",
+      "path": "knowledge/docs/java/jeus.md",
+      "title": "JEUS WAS (Web Application Server)",
       "tier": 2,
       "keywords": [
         "java",
-        "spring"
+        "jeus"
       ],
-      "tokens": 497
+      "tokens": 2115
+    },
+    {
+      "path": "knowledge/docs/java/spring-boot-ops.md",
+      "title": "Spring Boot Ops — 설정, Actuator, 로깅, 빌드, 배포",
+      "tier": 2,
+      "keywords": [
+        "java",
+        "spring-boot-ops",
+        "spring",
+        "boot",
+        "ops"
+      ],
+      "tokens": 2814
+    },
+    {
+      "path": "knowledge/docs/java/spring-core.md",
+      "title": "Spring Core — DI, Configuration, Bean Lifecycle",
+      "tier": 2,
+      "keywords": [
+        "java",
+        "spring-core",
+        "spring",
+        "core"
+      ],
+      "tokens": 2210
+    },
+    {
+      "path": "knowledge/docs/java/spring-data-jpa.md",
+      "title": "Spring Data JPA — Entity, Repository, Query, N+1, Transaction",
+      "tier": 2,
+      "keywords": [
+        "java",
+        "spring-data-jpa",
+        "spring",
+        "data",
+        "jpa"
+      ],
+      "tokens": 3142
+    },
+    {
+      "path": "knowledge/docs/java/spring-mvc.md",
+      "title": "Spring MVC — Controllers, Requests, Responses, Exception Handling",
+      "tier": 2,
+      "keywords": [
+        "java",
+        "spring-mvc",
+        "spring",
+        "mvc"
+      ],
+      "tokens": 2994
+    },
+    {
+      "path": "knowledge/docs/java/spring-security.md",
+      "title": "Spring Security — 인증/인가, JWT, OAuth2",
+      "tier": 2,
+      "keywords": [
+        "java",
+        "spring-security",
+        "spring",
+        "security"
+      ],
+      "tokens": 3364
+    },
+    {
+      "path": "knowledge/docs/java/spring-test.md",
+      "title": "Spring Test — 통합/슬라이스 테스트, MockMvc, Testcontainers",
+      "tier": 2,
+      "keywords": [
+        "java",
+        "spring-test",
+        "spring",
+        "test"
+      ],
+      "tokens": 3326
     },
     {
       "path": "knowledge/docs/javascript/es2024.md",
@@ -115,6 +331,30 @@
       "tokens": 621
     },
     {
+      "path": "knowledge/docs/react/nextjs-advanced.md",
+      "title": "Next.js 15 Advanced Reference",
+      "tier": 1,
+      "keywords": [
+        "react",
+        "nextjs-advanced",
+        "nextjs",
+        "advanced"
+      ],
+      "tokens": 1916
+    },
+    {
+      "path": "knowledge/docs/react/nextjs-pages.md",
+      "title": "Next.js Pages Router (Legacy Reference)",
+      "tier": 1,
+      "keywords": [
+        "react",
+        "nextjs-pages",
+        "nextjs",
+        "pages"
+      ],
+      "tokens": 3227
+    },
+    {
       "path": "knowledge/docs/react/nextjs.md",
       "title": "Next.js 15 App Router Reference",
       "tier": 1,
@@ -125,6 +365,107 @@
       "tokens": 904
     },
     {
+      "path": "knowledge/docs/react/react-class.md",
+      "title": "React Class Components (Legacy Reference)",
+      "tier": 1,
+      "keywords": [
+        "react",
+        "react-class",
+        "class"
+      ],
+      "tokens": 2817
+    },
+    {
+      "path": "knowledge/docs/react/react-hook-form.md",
+      "title": "React Hook Form Reference",
+      "tier": 1,
+      "keywords": [
+        "react",
+        "react-hook-form",
+        "hook",
+        "form"
+      ],
+      "tokens": 1416
+    },
+    {
+      "path": "knowledge/docs/react/react-patterns.md",
+      "title": "React Patterns",
+      "tier": 1,
+      "keywords": [
+        "react",
+        "react-patterns",
+        "patterns"
+      ],
+      "tokens": 3557
+    },
+    {
+      "path": "knowledge/docs/react/react-performance.md",
+      "title": "React Performance",
+      "tier": 1,
+      "keywords": [
+        "react",
+        "react-performance",
+        "performance"
+      ],
+      "tokens": 3241
+    },
+    {
+      "path": "knowledge/docs/react/react19.md",
+      "title": "React 19 New Features Reference",
+      "tier": 1,
+      "keywords": [
+        "react",
+        "react19"
+      ],
+      "tokens": 1486
+    },
+    {
+      "path": "knowledge/docs/react/tanstack-query.md",
+      "title": "TanStack Query v5 Reference",
+      "tier": 1,
+      "keywords": [
+        "react",
+        "tanstack-query",
+        "tanstack",
+        "query"
+      ],
+      "tokens": 1302
+    },
+    {
+      "path": "knowledge/docs/react/zustand.md",
+      "title": "Zustand State Management Reference",
+      "tier": 1,
+      "keywords": [
+        "react",
+        "zustand"
+      ],
+      "tokens": 1198
+    },
+    {
+      "path": "knowledge/docs/terminal/bash-scripting.md",
+      "title": "Bash Scripting Reference",
+      "tier": 1,
+      "keywords": [
+        "terminal",
+        "bash-scripting",
+        "bash",
+        "scripting"
+      ],
+      "tokens": 2375
+    },
+    {
+      "path": "knowledge/docs/terminal/cross-platform.md",
+      "title": "크로스 플랫폼 명령어 매핑",
+      "tier": 1,
+      "keywords": [
+        "terminal",
+        "cross-platform",
+        "cross",
+        "platform"
+      ],
+      "tokens": 2461
+    },
+    {
       "path": "knowledge/docs/terminal/git.md",
       "title": "Git Commands Reference",
       "tier": 1,
@@ -133,6 +474,18 @@
         "git"
       ],
       "tokens": 1357
+    },
+    {
+      "path": "knowledge/docs/terminal/linux-dev.md",
+      "title": "Linux 개발 환경 Reference",
+      "tier": 1,
+      "keywords": [
+        "terminal",
+        "linux-dev",
+        "linux",
+        "dev"
+      ],
+      "tokens": 3041
     },
     {
       "path": "knowledge/docs/terminal/linux.md",
@@ -146,6 +499,18 @@
       "tokens": 820
     },
     {
+      "path": "knowledge/docs/terminal/macos-dev.md",
+      "title": "macOS 개발 환경 Reference",
+      "tier": 1,
+      "keywords": [
+        "terminal",
+        "macos-dev",
+        "macos",
+        "dev"
+      ],
+      "tokens": 3118
+    },
+    {
       "path": "knowledge/docs/terminal/macos.md",
       "title": "macOS Terminal Reference",
       "tier": 1,
@@ -157,8 +522,44 @@
       "tokens": 681
     },
     {
+      "path": "knowledge/docs/terminal/shell-ops.md",
+      "title": "Shell Ops Reference",
+      "tier": 1,
+      "keywords": [
+        "terminal",
+        "shell-ops",
+        "shell",
+        "ops"
+      ],
+      "tokens": 2698
+    },
+    {
+      "path": "knowledge/docs/terminal/shell-tools.md",
+      "title": "Shell Tools Reference",
+      "tier": 1,
+      "keywords": [
+        "terminal",
+        "shell-tools",
+        "shell",
+        "tools"
+      ],
+      "tokens": 2819
+    },
+    {
+      "path": "knowledge/docs/terminal/windows-dev.md",
+      "title": "Windows 개발 환경 Reference",
+      "tier": 1,
+      "keywords": [
+        "terminal",
+        "windows-dev",
+        "windows",
+        "dev"
+      ],
+      "tokens": 2343
+    },
+    {
       "path": "knowledge/docs/terminal/windows.md",
-      "title": "Windows PowerShell \u0026 CMD Reference",
+      "title": "Windows PowerShell & CMD Reference",
       "tier": 1,
       "os": "windows",
       "keywords": [
@@ -166,6 +567,69 @@
         "windows"
       ],
       "tokens": 584
+    },
+    {
+      "path": "knowledge/docs/testing/playwright.md",
+      "title": "Playwright E2E Testing Reference",
+      "tier": 2,
+      "keywords": [
+        "testing",
+        "playwright"
+      ],
+      "tokens": 1740
+    },
+    {
+      "path": "knowledge/docs/testing/testing-library.md",
+      "title": "Testing Library (React) Reference",
+      "tier": 2,
+      "keywords": [
+        "testing",
+        "testing-library",
+        "library"
+      ],
+      "tokens": 1416
+    },
+    {
+      "path": "knowledge/docs/testing/vitest.md",
+      "title": "Vitest Reference",
+      "tier": 2,
+      "keywords": [
+        "testing",
+        "vitest"
+      ],
+      "tokens": 1358
+    },
+    {
+      "path": "knowledge/docs/tooling/eslint-flat.md",
+      "title": "ESLint Flat Config Reference",
+      "tier": 2,
+      "keywords": [
+        "tooling",
+        "eslint-flat",
+        "eslint",
+        "flat"
+      ],
+      "tokens": 1720
+    },
+    {
+      "path": "knowledge/docs/tooling/turborepo.md",
+      "title": "Turborepo Reference",
+      "tier": 2,
+      "keywords": [
+        "tooling",
+        "turborepo"
+      ],
+      "tokens": 1493
+    },
+    {
+      "path": "knowledge/docs/tooling/vite.md",
+      "title": "Vite Config Reference",
+      "tier": 2,
+      "keywords": [
+        "tooling",
+        "vite"
+      ],
+      "tokens": 1496
     },
     {
       "path": "knowledge/docs/typescript/types.md",
@@ -176,6 +640,28 @@
         "types"
       ],
       "tokens": 791
+    },
+    {
+      "path": "knowledge/docs/utils/date-fns.md",
+      "title": "date-fns v4 Reference",
+      "tier": 2,
+      "keywords": [
+        "utils",
+        "date-fns",
+        "date",
+        "fns"
+      ],
+      "tokens": 1812
+    },
+    {
+      "path": "knowledge/docs/validation/zod.md",
+      "title": "Zod Validation Reference",
+      "tier": 2,
+      "keywords": [
+        "validation",
+        "zod"
+      ],
+      "tokens": 1919
     },
     {
       "path": "knowledge/docs/vue/composition.md",

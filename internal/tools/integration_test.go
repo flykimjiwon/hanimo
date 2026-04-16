@@ -88,8 +88,8 @@ func TestIntegration_FileWrite_OverwriteBlocked(t *testing.T) {
 	if err == nil {
 		t.Fatal("overwrite without read should be blocked")
 	}
-	if !strings.Contains(err.Error(), "먼저 읽지 않고") {
-		t.Errorf("expected Korean error, got: %v", err)
+	if !strings.Contains(err.Error(), "without reading it first") {
+		t.Errorf("expected refusal error, got: %v", err)
 	}
 }
 
