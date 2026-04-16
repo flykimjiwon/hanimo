@@ -152,8 +152,9 @@ type Model struct {
 	gitInfo    gitinfo.Info
 
 	// Input history
-	inputHistory    []string
-	inputHistoryIdx int
+	inputHistory      []string
+	inputHistoryIdx   int
+	inputHistoryDraft string
 
 	// Companion dashboard
 	companionHub    *companion.Hub
@@ -581,6 +582,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.inputHistory = m.inputHistory[1:]
 				}
 				m.inputHistoryIdx = len(m.inputHistory)
+				m.inputHistoryDraft = ""
 
 				m.textarea.Reset()
 				m.textarea.SetHeight(1)
@@ -592,6 +594,35 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, m.sendMessage(expanded)
 			}
 			return m, nil
+
+		case "up":
+			// Arrow up: browse input history (only when not in overlays)
+			if m.askQuestion == nil && m.dangerCmd == "" && len(m.inputHistory) > 0 {
+				if m.inputHistoryIdx == len(m.inputHistory) {
+					// Entering history — save draft
+					m.inputHistoryDraft = m.textarea.Value()
+				}
+				if m.inputHistoryIdx > 0 {
+					m.inputHistoryIdx--
+					m.textarea.Reset()
+					m.textarea.InsertString(m.inputHistory[m.inputHistoryIdx])
+				}
+				return m, nil
+			}
+
+		case "down":
+			// Arrow down: browse history forward
+			if m.askQuestion == nil && m.dangerCmd == "" && m.inputHistoryIdx < len(m.inputHistory) {
+				m.inputHistoryIdx++
+				m.textarea.Reset()
+				if m.inputHistoryIdx == len(m.inputHistory) {
+					// Back to draft
+					m.textarea.InsertString(m.inputHistoryDraft)
+				} else {
+					m.textarea.InsertString(m.inputHistory[m.inputHistoryIdx])
+				}
+				return m, nil
+			}
 
 		case "pgup", "pgdown":
 			var vpCmd tea.Cmd
@@ -1611,6 +1642,180 @@ func (m *Model) handleSlashCommand(input string) (bool, tea.Cmd) {
 				Role: ui.RoleSystem, Content: "  Companion dashboard already running", Timestamp: time.Now(),
 			})
 		}
+		m.updateViewport()
+		return true, nil
+
+	case "/new":
+		m.history = m.history[:1]
+		m.msgs = m.msgs[:0]
+		m.msgs = append(m.msgs,
+			ui.Message{Role: ui.RoleSystem, Content: ui.RenderLogo(), Timestamp: time.Now()},
+			ui.Message{Role: ui.RoleSystem, Content: ui.ModeInfoBox(m.activeTab, m.currentModel()), Timestamp: time.Now(), Tag: "modebox"},
+		)
+		m.tokenCount = 0
+		m.lastElapsed = 0
+		m.updateViewport()
+		return true, nil
+
+	case "/git":
+		m.gitInfo = gitinfo.Fetch(".")
+		m.msgs = append(m.msgs, ui.Message{
+			Role: ui.RoleSystem, Content: m.gitInfo.Summary(), Timestamp: time.Now(),
+		})
+		m.updateViewport()
+		return true, nil
+
+	case "/version":
+		m.msgs = append(m.msgs, ui.Message{
+			Role: ui.RoleSystem, Content: fmt.Sprintf("hanimo %s", "v0.1.0"), Timestamp: time.Now(),
+		})
+		m.updateViewport()
+		return true, nil
+
+	case "/copy":
+		target := ""
+		for i := len(m.msgs) - 1; i >= 0; i-- {
+			if m.msgs[i].Role == ui.RoleAssistant {
+				target = m.msgs[i].Content
+				break
+			}
+		}
+		if target == "" {
+			m.msgs = append(m.msgs, ui.Message{Role: ui.RoleSystem, Content: "No AI response to copy.", Timestamp: time.Now()})
+		} else {
+			cpCmd := exec.Command("pbcopy")
+			cpCmd.Stdin = strings.NewReader(target)
+			if err := cpCmd.Run(); err != nil {
+				m.msgs = append(m.msgs, ui.Message{Role: ui.RoleSystem, Content: fmt.Sprintf("Copy failed: %v", err), Timestamp: time.Now()})
+			} else {
+				runes := []rune(target)
+				preview := string(runes)
+				if len(runes) > 60 {
+					preview = string(runes[:60]) + "..."
+				}
+				m.msgs = append(m.msgs, ui.Message{Role: ui.RoleSystem, Content: fmt.Sprintf("Copied to clipboard (%d chars): %s", len(runes), preview), Timestamp: time.Now()})
+			}
+		}
+		m.updateViewport()
+		return true, nil
+
+	case "/export":
+		filename := fmt.Sprintf("hanimo-session-%s.md", time.Now().Format("20060102-150405"))
+		var sb strings.Builder
+		sb.WriteString(fmt.Sprintf("# hanimo session (%s)\n\n", time.Now().Format("2006-01-02 15:04")))
+		for _, msg := range m.msgs {
+			switch msg.Role {
+			case ui.RoleUser:
+				sb.WriteString(fmt.Sprintf("## User\n\n%s\n\n", msg.Content))
+			case ui.RoleAssistant:
+				sb.WriteString(fmt.Sprintf("## AI\n\n%s\n\n", msg.Content))
+			}
+		}
+		if err := os.WriteFile(filename, []byte(sb.String()), 0644); err != nil {
+			m.msgs = append(m.msgs, ui.Message{Role: ui.RoleSystem, Content: fmt.Sprintf("Export failed: %v", err), Timestamp: time.Now()})
+		} else {
+			m.msgs = append(m.msgs, ui.Message{Role: ui.RoleSystem, Content: fmt.Sprintf("Session exported: %s", filename), Timestamp: time.Now()})
+		}
+		m.updateViewport()
+		return true, nil
+
+	case "/diff":
+		result := tools.Execute("git_diff", `{"path":"."}`)
+		m.msgs = append(m.msgs, ui.Message{Role: ui.RoleSystem, Content: result, Timestamp: time.Now()})
+		m.updateViewport()
+		return true, nil
+
+	case "/compact":
+		beforeLen := len(m.history)
+		m.history = llm.Compact(m.history)
+		afterLen := len(m.history)
+		m.msgs = append(m.msgs, ui.Message{
+			Role:    ui.RoleSystem,
+			Content: fmt.Sprintf("Compacted: %d → %d messages", beforeLen, afterLen),
+			Timestamp: time.Now(),
+		})
+		m.updateViewport()
+		return true, nil
+
+	case "/init":
+		profile := tools.GenerateProjectProfile(".")
+		if err := os.WriteFile(".hanimo.md", []byte(profile), 0644); err != nil {
+			m.msgs = append(m.msgs, ui.Message{Role: ui.RoleSystem, Content: fmt.Sprintf("Failed to write .hanimo.md: %v", err), Timestamp: time.Now()})
+		} else {
+			m.projectCtx = "\n\n## Project Context (.hanimo.md)\n" + profile
+			if len(m.history) > 0 {
+				m.history[0].Content = llm.SystemPrompt(llm.Mode(m.activeTab)) + m.projectCtx
+			}
+			lines := strings.Count(profile, "\n")
+			m.msgs = append(m.msgs, ui.Message{
+				Role:    ui.RoleSystem,
+				Content: fmt.Sprintf(".hanimo.md generated (%d lines). Project context loaded.", lines),
+				Timestamp: time.Now(),
+			})
+		}
+		m.updateViewport()
+		return true, nil
+
+	case "/forget":
+		m.msgs = append(m.msgs, ui.Message{Role: ui.RoleSystem, Content: "/forget is not yet implemented.", Timestamp: time.Now()})
+		m.updateViewport()
+		return true, nil
+
+	case "/commands":
+		cmds := tools.LoadCustomCommands()
+		if len(cmds) == 0 {
+			m.msgs = append(m.msgs, ui.Message{
+				Role:    ui.RoleSystem,
+				Content: "No custom commands. Add .md files to .hanimo/commands/ or ~/.hanimo/commands/",
+				Timestamp: time.Now(),
+			})
+		} else {
+			var lines []string
+			lines = append(lines, "Custom commands:")
+			for name := range cmds {
+				lines = append(lines, fmt.Sprintf("  /%s", name))
+			}
+			m.msgs = append(m.msgs, ui.Message{
+				Role: ui.RoleSystem, Content: strings.Join(lines, "\n"), Timestamp: time.Now(),
+			})
+		}
+		m.updateViewport()
+		return true, nil
+
+	case "/exit", "/quit":
+		return true, tea.Quit
+
+	case "/undo":
+		count := 1
+		if arg != "" {
+			if arg == "list" {
+				list := tools.FormatSnapshotList(20)
+				m.msgs = append(m.msgs, ui.Message{
+					Role: ui.RoleSystem, Content: "Snapshots:\n" + list, Timestamp: time.Now(),
+				})
+				m.updateViewport()
+				return true, nil
+			}
+			fmt.Sscanf(arg, "%d", &count)
+		}
+		result := tools.UndoLast(count)
+		m.msgs = append(m.msgs, ui.Message{
+			Role: ui.RoleSystem, Content: result, Timestamp: time.Now(),
+		})
+		m.updateViewport()
+		return true, nil
+
+	case "/mcp":
+		m.msgs = append(m.msgs, ui.Message{
+			Role: ui.RoleSystem, Content: "[MCP] No MCP servers configured. Check config.yaml mcp.servers section.", Timestamp: time.Now(),
+		})
+		m.updateViewport()
+		return true, nil
+
+	case "/multi":
+		m.msgs = append(m.msgs, ui.Message{
+			Role: ui.RoleSystem, Content: "[MULTI] Multi-agent system available. Use: /multi [on|off|review|consensus|scan|auto]", Timestamp: time.Now(),
+		})
 		m.updateViewport()
 		return true, nil
 	}
