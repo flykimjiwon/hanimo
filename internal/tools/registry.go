@@ -4,15 +4,26 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 
 	openai "github.com/sashabaranov/go-openai"
 
 	"github.com/flykimjiwon/hanimo/internal/config"
 	"github.com/flykimjiwon/hanimo/internal/knowledge"
+	"github.com/flykimjiwon/hanimo/internal/lsp"
+)
+
+// activeClients caches running LSP server connections keyed by server name.
+var (
+	activeClients   = map[string]*lsp.Client{}
+	activeClientsMu sync.Mutex
+	serverAvailCache   = map[string]bool{}
+	serverAvailCacheMu sync.Mutex
 )
 
 type paramSchema struct {
@@ -476,6 +487,68 @@ func AllTools() []openai.Tool {
 						"path":  {Type: "string", Description: "Directory to search (default: current directory)"},
 					},
 					Required: []string{"query"},
+				},
+			},
+		},
+		{
+			Type: openai.ToolTypeFunction,
+			Function: &openai.FunctionDefinition{
+				Name:        "lsp_definition",
+				Description: "Go to definition of a symbol at a given position using a language server (LSP). Returns the file and line where the symbol is defined. Requires a language server (gopls, typescript-language-server, pyright-langserver) to be installed.",
+				Parameters: paramSchema{
+					Type: "object",
+					Properties: map[string]propertySchema{
+						"path":      {Type: "string", Description: "File path containing the symbol"},
+						"line":      {Type: "string", Description: "Line number (0-based)"},
+						"character": {Type: "string", Description: "Character offset (0-based)"},
+					},
+					Required: []string{"path", "line", "character"},
+				},
+			},
+		},
+		{
+			Type: openai.ToolTypeFunction,
+			Function: &openai.FunctionDefinition{
+				Name:        "lsp_references",
+				Description: "Find all references to a symbol at a given position using a language server (LSP). Returns all locations where the symbol is used. Requires a language server to be installed.",
+				Parameters: paramSchema{
+					Type: "object",
+					Properties: map[string]propertySchema{
+						"path":      {Type: "string", Description: "File path containing the symbol"},
+						"line":      {Type: "string", Description: "Line number (0-based)"},
+						"character": {Type: "string", Description: "Character offset (0-based)"},
+					},
+					Required: []string{"path", "line", "character"},
+				},
+			},
+		},
+		{
+			Type: openai.ToolTypeFunction,
+			Function: &openai.FunctionDefinition{
+				Name:        "lsp_hover",
+				Description: "Get type information and documentation for a symbol at a given position using a language server (LSP). Requires a language server to be installed.",
+				Parameters: paramSchema{
+					Type: "object",
+					Properties: map[string]propertySchema{
+						"path":      {Type: "string", Description: "File path containing the symbol"},
+						"line":      {Type: "string", Description: "Line number (0-based)"},
+						"character": {Type: "string", Description: "Character offset (0-based)"},
+					},
+					Required: []string{"path", "line", "character"},
+				},
+			},
+		},
+		{
+			Type: openai.ToolTypeFunction,
+			Function: &openai.FunctionDefinition{
+				Name:        "lsp_symbols",
+				Description: "List all symbols (functions, types, variables) in a file using a language server (LSP). Requires a language server to be installed.",
+				Parameters: paramSchema{
+					Type: "object",
+					Properties: map[string]propertySchema{
+						"path": {Type: "string", Description: "File path to list symbols for"},
+					},
+					Required: []string{"path"},
 				},
 			},
 		},
@@ -1176,8 +1249,215 @@ func executeInner(name string, argsJSON string) string {
 		}
 		return fmt.Sprintf("OK: generated .hanimo.md (%d bytes)\n\n%s", len(profile), profile)
 
+	case "lsp_definition":
+		path, _ := args["path"].(string)
+		line, _ := args["line"].(string)
+		char, _ := args["character"].(string)
+		if path == "" || line == "" || char == "" {
+			return "Error: path, line, and character are required"
+		}
+		lineN, charN := 0, 0
+		fmt.Sscanf(line, "%d", &lineN)
+		fmt.Sscanf(char, "%d", &charN)
+		return lspDefinition(path, lineN, charN)
+
+	case "lsp_references":
+		path, _ := args["path"].(string)
+		line, _ := args["line"].(string)
+		char, _ := args["character"].(string)
+		if path == "" || line == "" || char == "" {
+			return "Error: path, line, and character are required"
+		}
+		lineN, charN := 0, 0
+		fmt.Sscanf(line, "%d", &lineN)
+		fmt.Sscanf(char, "%d", &charN)
+		return lspReferences(path, lineN, charN)
+
+	case "lsp_hover":
+		path, _ := args["path"].(string)
+		line, _ := args["line"].(string)
+		char, _ := args["character"].(string)
+		if path == "" || line == "" || char == "" {
+			return "Error: path, line, and character are required"
+		}
+		lineN, charN := 0, 0
+		fmt.Sscanf(line, "%d", &lineN)
+		fmt.Sscanf(char, "%d", &charN)
+		return lspHover(path, lineN, charN)
+
+	case "lsp_symbols":
+		path, _ := args["path"].(string)
+		if path == "" {
+			return "Error: path is required"
+		}
+		return lspSymbols(path)
+
 	default:
 		config.DebugLog("[TOOL-ERR] unknown tool '%s'", name)
 		return fmt.Sprintf("Error: unknown tool '%s'", name)
 	}
+}
+
+// --- LSP tool helpers ---
+
+func pathToURI(path string) string {
+	abs, err := filepath.Abs(path)
+	if err != nil {
+		abs = path
+	}
+	return "file://" + abs
+}
+
+func uriToPath(uri string) string {
+	if u, err := url.Parse(uri); err == nil && u.Scheme == "file" {
+		return u.Path
+	}
+	return strings.TrimPrefix(uri, "file://")
+}
+
+func formatLocations(locs []lsp.Location) string {
+	if len(locs) == 0 {
+		return "No results found."
+	}
+	var sb strings.Builder
+	for _, loc := range locs {
+		p := uriToPath(loc.URI)
+		sb.WriteString(fmt.Sprintf("%s:%d:%d\n", p, loc.Range.Start.Line+1, loc.Range.Start.Character+1))
+	}
+	return strings.TrimRight(sb.String(), "\n")
+}
+
+func isServerAvailCached(name string) bool {
+	serverAvailCacheMu.Lock()
+	defer serverAvailCacheMu.Unlock()
+	if v, ok := serverAvailCache[name]; ok {
+		return v
+	}
+	v := lsp.IsServerAvailable(name)
+	serverAvailCache[name] = v
+	return v
+}
+
+func installHint(sc *lsp.ServerConfig) string {
+	switch sc.Name {
+	case "gopls":
+		return fmt.Sprintf("%s not found. Install: go install golang.org/x/tools/gopls@latest", sc.Command)
+	case "typescript-language-server":
+		return fmt.Sprintf("%s not found. Install: npm install -g typescript-language-server typescript", sc.Command)
+	case "pyright-langserver":
+		return fmt.Sprintf("%s not found. Install: pip install pyright", sc.Command)
+	default:
+		return fmt.Sprintf("%s not found on PATH", sc.Command)
+	}
+}
+
+func getLSPClient(filePath string) (*lsp.Client, *lsp.ServerConfig, error) {
+	abs, err := filepath.Abs(filePath)
+	if err != nil {
+		return nil, nil, fmt.Errorf("invalid path: %w", err)
+	}
+	ext := strings.ToLower(filepath.Ext(abs))
+	sc := lsp.DetectServer(ext)
+	if sc == nil {
+		return nil, nil, fmt.Errorf("no known LSP server for %s files", ext)
+	}
+	if !isServerAvailCached(sc.Command) {
+		return nil, nil, fmt.Errorf("%s", installHint(sc))
+	}
+
+	activeClientsMu.Lock()
+	defer activeClientsMu.Unlock()
+
+	if client, ok := activeClients[sc.Name]; ok {
+		return client, sc, nil
+	}
+
+	client, err := lsp.NewClient(sc.Command, sc.Args...)
+	if err != nil {
+		return nil, nil, fmt.Errorf("start %s: %w", sc.Name, err)
+	}
+
+	// Find project root (directory containing go.mod, package.json, etc.)
+	rootDir := filepath.Dir(abs)
+	for _, marker := range []string{"go.mod", "package.json", "pyproject.toml", ".git"} {
+		dir := filepath.Dir(abs)
+		for dir != "/" && dir != "." {
+			if _, err := os.Stat(filepath.Join(dir, marker)); err == nil {
+				rootDir = dir
+				break
+			}
+			dir = filepath.Dir(dir)
+		}
+	}
+
+	if err := client.Initialize(pathToURI(rootDir)); err != nil {
+		client.Close()
+		return nil, nil, fmt.Errorf("initialize %s: %w", sc.Name, err)
+	}
+
+	activeClients[sc.Name] = client
+	return client, sc, nil
+}
+
+func lspDefinition(path string, line, char int) string {
+	client, _, err := getLSPClient(path)
+	if err != nil {
+		return fmt.Sprintf("Error: %v", err)
+	}
+	uri := pathToURI(path)
+	locs, err := client.Definition(uri, line, char)
+	if err != nil {
+		return fmt.Sprintf("Error: %v", err)
+	}
+	return formatLocations(locs)
+}
+
+func lspReferences(path string, line, char int) string {
+	client, _, err := getLSPClient(path)
+	if err != nil {
+		return fmt.Sprintf("Error: %v", err)
+	}
+	uri := pathToURI(path)
+	locs, err := client.References(uri, line, char)
+	if err != nil {
+		return fmt.Sprintf("Error: %v", err)
+	}
+	return formatLocations(locs)
+}
+
+func lspHover(path string, line, char int) string {
+	client, _, err := getLSPClient(path)
+	if err != nil {
+		return fmt.Sprintf("Error: %v", err)
+	}
+	uri := pathToURI(path)
+	text, err := client.Hover(uri, line, char)
+	if err != nil {
+		return fmt.Sprintf("Error: %v", err)
+	}
+	if text == "" {
+		return "No hover information available."
+	}
+	return text
+}
+
+func lspSymbols(path string) string {
+	client, _, err := getLSPClient(path)
+	if err != nil {
+		return fmt.Sprintf("Error: %v", err)
+	}
+	uri := pathToURI(path)
+	syms, err := client.DocumentSymbols(uri)
+	if err != nil {
+		return fmt.Sprintf("Error: %v", err)
+	}
+	if len(syms) == 0 {
+		return "No symbols found."
+	}
+	var sb strings.Builder
+	for _, s := range syms {
+		p := uriToPath(s.Location.URI)
+		sb.WriteString(fmt.Sprintf("%s:%d [kind=%d] %s\n", p, s.Location.Range.Start.Line+1, s.Kind, s.Name))
+	}
+	return strings.TrimRight(sb.String(), "\n")
 }
