@@ -6,7 +6,9 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"sort"
 	"strings"
+	"time"
 
 	"github.com/flykimjiwon/hanimo/internal/config"
 )
@@ -35,10 +37,19 @@ var binaryExts = map[string]bool{
 }
 
 const (
-	maxGrepMatches = 100
-	maxGrepBytes   = 30000
-	maxGlobFiles   = 500
+	maxGrepMatches = 300
+	maxGrepBytes   = 60000
+	maxGlobFiles   = 5000
+	maxLineChars   = 2000
 )
+
+func truncateLine(line string) string {
+	runes := []rune(line)
+	if len(runes) > maxLineChars {
+		return string(runes[:maxLineChars]) + "..."
+	}
+	return line
+}
 
 // GrepSearch searches file contents by regex pattern.
 // Returns matches in "file:line:content" format.
@@ -105,7 +116,7 @@ func GrepSearch(pattern, basePath, glob string, ignoreCase bool, contextLines in
 		if err != nil {
 			return nil
 		}
-		if info.Size() > 1024*1024 {
+		if info.Size() > 5*1024*1024 {
 			return nil
 		}
 
@@ -169,7 +180,7 @@ func searchFile(absPath, relPath string, re *regexp.Regexp, contextLines int) ([
 	var results []string
 	if contextLines <= 0 {
 		for _, ln := range matchLineNums {
-			results = append(results, fmt.Sprintf("%s:%d:%s", relPath, ln, allLines[ln-1]))
+			results = append(results, fmt.Sprintf("%s:%d:%s", relPath, ln, truncateLine(allLines[ln-1])))
 		}
 	} else {
 		// With context lines, group nearby matches
@@ -189,7 +200,7 @@ func searchFile(absPath, relPath string, re *regexp.Regexp, contextLines int) ([
 					if i == ln {
 						prefix = ">"
 					}
-					results = append(results, fmt.Sprintf("%s:%d:%s %s", relPath, i, prefix, allLines[i-1]))
+					results = append(results, fmt.Sprintf("%s:%d:%s %s", relPath, i, prefix, truncateLine(allLines[i-1])))
 					shown[i] = true
 				}
 			}
@@ -219,7 +230,11 @@ func GlobSearch(pattern, basePath string) (string, error) {
 		return "", fmt.Errorf("invalid glob pattern: %w", err)
 	}
 
-	var matches []string
+	type globEntry struct {
+		rel   string
+		mtime time.Time
+	}
+	var matches []globEntry
 
 	walkErr := filepath.WalkDir(absBase, func(path string, d os.DirEntry, err error) error {
 		if err != nil {
@@ -235,7 +250,11 @@ func GlobSearch(pattern, basePath string) (string, error) {
 		rel, _ := filepath.Rel(absBase, path)
 		rel = filepath.ToSlash(rel)
 		if globRe.MatchString(rel) {
-			matches = append(matches, rel)
+			mtime := time.Time{}
+			if info, err := d.Info(); err == nil {
+				mtime = info.ModTime()
+			}
+			matches = append(matches, globEntry{rel: rel, mtime: mtime})
 			if len(matches) >= maxGlobFiles {
 				return fmt.Errorf("limit reached")
 			}
@@ -251,7 +270,17 @@ func GlobSearch(pattern, basePath string) (string, error) {
 		return "No files matched.", nil
 	}
 
-	result := strings.Join(matches, "\n")
+	// Sort by mtime descending (most recently modified first)
+	sort.Slice(matches, func(i, j int) bool {
+		return matches[i].mtime.After(matches[j].mtime)
+	})
+
+	var names []string
+	for _, m := range matches {
+		names = append(names, m.rel)
+	}
+
+	result := strings.Join(names, "\n")
 	if len(matches) >= maxGlobFiles {
 		result += fmt.Sprintf("\n... (truncated at %d files)", maxGlobFiles)
 	}

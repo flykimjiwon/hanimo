@@ -166,6 +166,9 @@ type Model struct {
 	multiEnabled  bool
 	multiStrategy multi.Strategy
 	multiAuto     bool
+
+	// Mouse toggle
+	mouseEnabled bool
 }
 
 // ResumeSession loads a saved session's messages into an already-
@@ -299,6 +302,7 @@ func NewModel(cfg config.Config, initialMode int, needsSetup bool) Model {
 		inSetup:      needsSetup,
 		setupCfg:     config.DefaultConfig(),
 		setupInput:   setupTa,
+		mouseEnabled: true,
 	}
 
 	m.gitInfo = gitinfo.Fetch(".")
@@ -472,7 +476,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.updateViewport()
 				}
 				return m, nil
-			case "shift+enter":
+			case "shift+enter", "ctrl+j", "ctrl+enter":
 				m.textarea.InsertString("\n")
 				return m, nil
 			case "tab":
@@ -552,6 +556,18 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			return m, nil
 
+		case "ctrl+b":
+			m.mouseEnabled = !m.mouseEnabled
+			label := "ON (scroll)"
+			if !m.mouseEnabled {
+				label = "OFF (text select enabled)"
+			}
+			m.msgs = append(m.msgs, ui.Message{
+				Role: ui.RoleSystem, Content: fmt.Sprintf("Mouse: %s", label), Timestamp: time.Now(),
+			})
+			m.updateViewport()
+			return m, nil
+
 		case "tab":
 			// If an intent hint is active, accept it by jumping directly
 			// to the recommended tab instead of cycling.
@@ -569,8 +585,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.applyModeSwitch()
 			return m, tea.ClearScreen
 
-		case "shift+enter":
-			// Shift+Enter = newline
+		case "shift+enter", "ctrl+j", "ctrl+enter":
+			// Shift+Enter / Ctrl+J / Ctrl+Enter = newline
 			m.textarea.InsertString("\n")
 			lines := strings.Count(m.textarea.Value(), "\n") + 1
 			if lines > m.textarea.Height() && lines <= 10 {
@@ -2052,7 +2068,9 @@ func (m Model) View() tea.View {
 
 	v := tea.NewView(content)
 	v.AltScreen = true
-	v.MouseMode = tea.MouseModeCellMotion
+	if m.mouseEnabled {
+		v.MouseMode = tea.MouseModeCellMotion
+	}
 	return v
 }
 
