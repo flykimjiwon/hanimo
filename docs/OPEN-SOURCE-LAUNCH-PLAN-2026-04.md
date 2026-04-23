@@ -202,7 +202,7 @@ A parallel table lives at `/web` for hanimo Web vs. Lovable / v0 / Bolt.new / Co
 1. **Dual-surface** — one team, one design system, one MCP backbone, two products (Code + Web). Nobody else ships both under one brand.
 2. **Hash-anchored edits** — the only agent that refuses to write to a file whose content hash drifted mid-turn. Ends the "agent overwrote my change" nightmare.
 3. **Model-agnostic by design** — LiteLLM router + Ollama + vLLM under the hood. Swap providers without changing config.
-4. **Modol lineage** — not a student project. Carries 2+ years of battle-tested design system (ModolAI) and RAG pipeline (ModolRAG).
+4. **Modol lineage** — not a student project. Carries 2+ years of battle-tested design system (hanimo-webui) and RAG pipeline (hanimo-rag).
 
 ### 5.3 Things NOT to say on the landing page
 
@@ -313,7 +313,7 @@ A parallel table lives at `/web` for hanimo Web vs. Lovable / v0 / Bolt.new / Co
 1. **Buy all three domains** (hanimo.dev + modol.app + modol.dev) — ~$60/yr total
 2. **Create `hanimo-dev` GitHub organization**, reserve repo names
 3. **Reserve handles**: X/Twitter `@hanimo_dev`, Discord vanity, Hugging Face org, npm `@hanimo`
-4. **Scaffold `hanimo.dev` repo** with Next.js 15 + Fumadocs (copy shadcn/ui from ModolAI)
+4. **Scaffold `hanimo.dev` repo** with Next.js 15 + Fumadocs (copy shadcn/ui from hanimo-webui)
 5. **Draft the `/compare` matrix** in MDX using content from `COMPETITIVE-LANDSCAPE-2026-04.md`
 6. **Write `README.md` v0** for both product repos — lead with the matrix, not the install command
 7. **Apply for GitHub Sponsors** (takes 1-2 weeks to approve)

@@ -38,11 +38,11 @@
 |------------------|----------------------------------|----------------------|----------------------------------|
 | **hanimo code**  | Terminal AI coding agent         | ✅ Live v0.1.1       | Go, Bubble Tea                   |
 | **hanimo webui** | Web-based AI interface           | 🗓️ Planned Q2 2026   | TBD (Next.js or SvelteKit)       |
-| **hanimo rag**   | RAG / knowledge engine           | 🗓️ Planned Q3 2026   | Python (ModolRAG base) or Go     |
+| **hanimo rag**   | RAG / knowledge engine           | 🗓️ Planned Q3 2026   | Python (hanimo-rag base) or Go     |
 | **hanimo.dev**   | Landing + docs hub               | 🗓️ Planned           | Astro or Next.js                 |
 | **TECHAI_CODE**  | Closed-network enterprise fork   | 🔒 Internal (Shinhan) | Go                               |
 
-Related (separate but connected): **ModolAI** (Next.js chat platform), **ModolRAG** (Python RAG engine).
+Related (separate but connected): **hanimo-webui** (Next.js chat platform), **hanimo-rag** (Python RAG engine).
 
 ---
 
@@ -97,8 +97,8 @@ Reuse the Go backend by running hanimo code in **headless mode** with a JSON-RPC
 - Provider / model switcher
 - Shareable session links
 
-**Relation to ModolAI:**
-ModolAI (the existing Next.js chat platform) may either (a) contribute patterns and components to hanimo webui, or (b) be gradually replaced by hanimo webui as the primary chat surface. Decision deferred until v0.2.0 ships.
+**Relation to hanimo-webui:**
+hanimo-webui (the existing Next.js chat platform) may either (a) contribute patterns and components to hanimo webui, or (b) be gradually replaced by hanimo webui as the primary chat surface. Decision deferred until v0.2.0 ships.
 
 ---
 
@@ -108,7 +108,7 @@ ModolAI (the existing Next.js chat platform) may either (a) contribute patterns 
 
 **Options:**
 
-1. **Start from ModolRAG** — Python, PostgreSQL + pgvector, fastest path. Keeps existing ingestion pipelines.
+1. **Start from hanimo-rag** — Python, PostgreSQL + pgvector, fastest path. Keeps existing ingestion pipelines.
 2. **Rewrite in Go** — single-binary integration with hanimo code, simpler deployment, but more engineering cost.
 
 **MCP server mode:**
@@ -171,7 +171,7 @@ A full brand spec (logo variants, color tokens, typography scale, mascot usage) 
 3. Ship a first version of hanimo.dev landing page
 4. Lock the v0.2.0 feature list and milestone
 5. Decide the tech stack for hanimo webui (Next.js vs SvelteKit)
-6. Evaluate ModolRAG as the base for hanimo rag (or scope a Go rewrite)
+6. Evaluate hanimo-rag as the base for hanimo rag (or scope a Go rewrite)
 
 ---
 

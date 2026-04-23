@@ -21,7 +21,7 @@
 | 영역 | AgentRank 현재 | PLATFORM-PLAN v2 ⑤ Community 요구 | 갭 |
 |---|---|---|---|
 | 프레임워크 | Next.js 16.2 + React 19 + Tailwind v4 | Next.js 15+ | ✅ 오히려 앞섬 |
-| 디자인 시스템 | 자체 토큰 (`--accent-cyan/green/amber/rose`) + grid-bg | ModolAI 계승 | ⚠️ 토큰 통합 필요 |
+| 디자인 시스템 | 자체 토큰 (`--accent-cyan/green/amber/rose`) + grid-bg | hanimo-webui 계승 | ⚠️ 토큰 통합 필요 |
 | 페이지 scaffold | 15개 (홈·리더보드·agents·community·trends·arena·kr-bench·mcp-tools·pricing·newsletter…) | 7 모듈 | ✅ 이미 초과 달성 |
 | Bench Arena | `/leaderboard` + `/arena` (Mock) | 필요 | ⬜ 실데이터 연결만 |
 | News Wire | `/trends` + 크롤러 **계획** | 필요 | ⬜ 크롤러 구현 |
@@ -122,14 +122,14 @@ hanimo-dev/hanimo.dev       (사이트)
 
 ## 5. 디자인 토큰 통합 계획
 
-AgentRank는 자체 토큰(`--accent-cyan` 등)을 쓰고, hanimo code/web은 ModolAI 계승이 예정되어 있습니다. 세 제품이 따로 놀면 브랜드 파편화가 시작됩니다.
+AgentRank는 자체 토큰(`--accent-cyan` 등)을 쓰고, hanimo code/web은 hanimo-webui 계승이 예정되어 있습니다. 세 제품이 따로 놀면 브랜드 파편화가 시작됩니다.
 
 ### 단계적 통합
 
 | Stage | 작업 | 시점 |
 |---|---|---|
 | **S1: 스냅샷** | AgentRank 현재 토큰 전체 추출 → `tokens.json` | Week 1 |
-| **S2: 매핑** | ModolAI shadcn 토큰과 cross-map 테이블 작성 | Week 2 |
+| **S2: 매핑** | hanimo-webui shadcn 토큰과 cross-map 테이블 작성 | Week 2 |
 | **S3: 공용 패키지** | `@hanimo/tokens` npm 패키지 (3 제품 공용) | Week 3-4 |
 | **S4: 제품별 테마** | `--accent-cyan` = AgentRank 테마, `--accent-violet` = Code 테마, `--accent-emerald` = Web 테마 | Week 5 |
 | **S5: 공용 컴포넌트** | `@hanimo/ui` (Button, Card, Table, Badge) 승격 | Week 6+ |

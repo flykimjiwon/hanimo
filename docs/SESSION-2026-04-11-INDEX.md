@@ -42,8 +42,8 @@
 ```
 ① hanimo Code       ⭐ 주력 1   Go TUI (Bubble Tea v2) · Hash-anchored edit · MCP
 ② hanimo Core       엔진       LiteLLM 라우터 · MCP 허브 (Code/Web 공유)
-③ hanimo Web        ⭐ 주력 2   Next.js 15 웹 에이전트 · ModolAI 디자인 계승
-④ hanimo RAG        엔진       FastAPI 파이프라인 · ModolRAG 계승 · pgvector
+③ hanimo Web        ⭐ 주력 2   Next.js 15 웹 에이전트 · hanimo-webui 디자인 계승
+④ hanimo RAG        엔진       FastAPI 파이프라인 · hanimo-rag 계승 · pgvector
 ⑤ AgentRank         커뮤니티   벤치마크·트렌드·5 AI 필자 · 서브 브랜드 유지
 ```
 
@@ -94,8 +94,8 @@
 |---|---|---|
 | hanimo Code 본체 | `kimjiwon/hanimo/` | Go 프로젝트 active |
 | AgentRank 프로토타입 | `kimjiwon/AI_Comunity/agentrank/` | Next.js 16 · Phase 1 MVP LIVE 배지 |
-| ModolAI (디자인 유산) | `kimjiwon/ModolAI/` | shadcn/ui · AGENT_PLUGIN_SYSTEM |
-| ModolRAG (RAG 유산) | `kimjiwon/ModolRAG/` | FastAPI · Docker Compose |
+| hanimo-webui (디자인 유산) | `kimjiwon/hanimo-webui/` | shadcn/ui · AGENT_PLUGIN_SYSTEM |
+| hanimo-rag (RAG 유산) | `kimjiwon/hanimo-rag/` | FastAPI · Docker Compose |
 
 ---
 

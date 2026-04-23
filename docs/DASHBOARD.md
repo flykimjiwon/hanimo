@@ -231,7 +231,7 @@ docs/research/
 - [ ] hanimo.dev 랜딩 배포
 - [ ] hanimo-core Go 모듈 추출 (TECHAI와 공유)
 - [ ] hanimo webui (Wails 또는 Next.js)
-- [ ] hanimo rag (ModolRAG 기반)
+- [ ] hanimo rag (hanimo-rag 기반)
 - [ ] VS Code Extension
 
 ---

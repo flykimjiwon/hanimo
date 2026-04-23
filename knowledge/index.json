@@ -175,7 +175,7 @@
     },
     {
       "path": "knowledge/docs/database/sql-ddl-design.md",
-      "title": "SQL DDL & Schema Design Reference",
+      "title": "SQL DDL \u0026 Schema Design Reference",
       "tier": 2,
       "keywords": [
         "database",
@@ -299,6 +299,16 @@
         "test"
       ],
       "tokens": 3326
+    },
+    {
+      "path": "knowledge/docs/java/spring.md",
+      "title": "Spring Boot",
+      "tier": 2,
+      "keywords": [
+        "java",
+        "spring"
+      ],
+      "tokens": 497
     },
     {
       "path": "knowledge/docs/javascript/es2024.md",
@@ -559,7 +569,7 @@
     },
     {
       "path": "knowledge/docs/terminal/windows.md",
-      "title": "Windows PowerShell & CMD Reference",
+      "title": "Windows PowerShell \u0026 CMD Reference",
       "tier": 1,
       "os": "windows",
       "keywords": [

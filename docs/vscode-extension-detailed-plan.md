@@ -347,7 +347,7 @@ Embed modol as a terminal panel inside VS Code. Users type in the terminal, modo
   "icon": "resources/icon.png",
   "repository": {
     "type": "git",
-    "url": "https://github.com/modolai/modol"
+    "url": "https://github.com/hanimo-webui/modol"
   },
   "engines": {
     "vscode": "^1.85.0"
@@ -1940,11 +1940,11 @@ Cost:      $(hubot) ollama/qwen3:8b | $0.003
 
 1. Go to https://dev.azure.com
 2. Click "New organization" (or use existing)
-3. Organization name: `modolai`
+3. Organization name: `hanimo-webui`
 4. Go to User Settings (top right) -> Personal access tokens
 5. Click "New Token"
    - Name: `vscode-marketplace`
-   - Organization: `modolai`
+   - Organization: `hanimo-webui`
    - Expiration: Custom (set to 1 year)
    - Scopes: Click "Show all scopes" -> Marketplace -> check **Manage**
 6. Click "Create" and **save the token immediately** (shown only once)
@@ -2059,13 +2059,13 @@ In `package.json`:
   },
   "badges": [
     {
-      "url": "https://img.shields.io/github/stars/modolai/modol?style=social",
-      "href": "https://github.com/modolai/modol",
+      "url": "https://img.shields.io/github/stars/hanimo-webui/modol?style=social",
+      "href": "https://github.com/hanimo-webui/modol",
       "description": "GitHub Stars"
     },
     {
-      "url": "https://img.shields.io/github/license/modolai/modol",
-      "href": "https://github.com/modolai/modol/blob/main/LICENSE",
+      "url": "https://img.shields.io/github/license/hanimo-webui/modol",
+      "href": "https://github.com/hanimo-webui/modol/blob/main/LICENSE",
       "description": "License"
     }
   ]
@@ -2236,7 +2236,7 @@ The CI/CD pipeline in Section 5.7 already handles both marketplaces. Store:
 [![Installs](https://img.shields.io/visual-studio-marketplace/i/modol.modol)](https://marketplace.visualstudio.com/items?itemName=modol.modol)
 [![Rating](https://img.shields.io/visual-studio-marketplace/r/modol.modol)](https://marketplace.visualstudio.com/items?itemName=modol.modol)
 [![Open VSX](https://img.shields.io/open-vsx/v/modol/modol?label=Open%20VSX)](https://open-vsx.org/extension/modol/modol)
-[![License](https://img.shields.io/github/license/modolai/modol)](LICENSE)
+[![License](https://img.shields.io/github/license/hanimo-webui/modol)](LICENSE)
 ```
 
 ### 7.3 Social Media Strategy

@@ -156,7 +156,7 @@ qwen3-coder:30b  →  qwen2.5-coder:32b  →  devstral-small-2  →  qwen3:8b  �
 
 **Phase 5 — 확장성**
 1. Groq / DeepSeek / Cerebras / Bedrock 신규 프로바이더
-2. 에이전트 매니페스트 (ModolAI 이식)
+2. 에이전트 매니페스트 (hanimo-webui 이식)
 3. 세션 fork/replay, 헤드리스 모드
 
 ---

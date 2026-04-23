@@ -2,14 +2,14 @@
 
 > **한 문서로 보는 hanimo "플랫폼" 전략**
 > 작성일: 2026-04-11 · 개정: v2
-> 전제: hanimo = **Modol 계보 계승** (ModolAI + ModolRAG DNA) + AI 코딩 에이전트 → **AI 네이티브 플랫폼**.
+> 전제: hanimo = **Modol 계보 계승** (hanimo-webui + hanimo-rag DNA) + AI 코딩 에이전트 → **AI 네이티브 플랫폼**.
 > 주력: **① hanimo Code (CLI)** + **③ hanimo WebUI (Next.js)** 두 축.
 
 ---
 
 ## 0. TL;DR
 
-- hanimo는 **Modol 라인의 후계자**. ModolAI(Next.js UI)·ModolRAG(Python RAG) 의 철학을 계승하고 코딩 에이전트 DNA를 얹는다.
+- hanimo는 **Modol 라인의 후계자**. hanimo-webui(Next.js UI)·hanimo-rag(Python RAG) 의 철학을 계승하고 코딩 에이전트 DNA를 얹는다.
 - **5개 서피스**로 단순화: Code / Core / WebUI / RAG / **Community**.
 - **주력 2개** — ① Code (CLI/TUI) 와 ③ WebUI (Next.js). 나머지는 이 둘을 받치는 엔진·자료원.
 - **Community = "AI 피트니스 / AI 연대"**: AI 에이전트가 **유저이자 조사관·운영자**, 사람과 섞여 최신 벤치·뉴스·스킬·오픈소스 라이브러리 벤치를 한 곳에 집결.
@@ -21,7 +21,7 @@
 ## 1. Modol 계보와 hanimo의 정체성
 
 ```
-  ModolAI (Next.js · shadcn · OCR · AI 앱)
+  hanimo-webui (Next.js · shadcn · OCR · AI 앱)
          ＼
           → 디자인·UX 계승
            ＼
@@ -29,16 +29,16 @@
            ／
           → RAG 엔진 계승
          ／
-  ModolRAG (Python · FastAPI · Docker · RAG 파이프라인)
+  hanimo-rag (Python · FastAPI · Docker · RAG 파이프라인)
 ```
 
 ### 1.1 무엇을 계승하는가
 
 | Modol 자산 | hanimo에서의 역할 |
 |---|---|
-| **ModolAI** 의 Next.js + shadcn + 디자인 시스템 (`MODOLAI_PATTERNS.md`, `DESIGN_SYSTEM.md`) | hanimo WebUI의 디자인 기반 |
-| **ModolAI** 의 에이전트 플러그인 시스템 (`AGENT_PLUGIN_SYSTEM.md`) | hanimo Core의 도구/스킬 인터페이스 참고 |
-| **ModolRAG** 의 파이프라인·대시보드·compose | hanimo RAG 서피스의 **본체 그대로 흡수** |
+| **hanimo-webui** 의 Next.js + shadcn + 디자인 시스템 (`MODOLAI_PATTERNS.md`, `DESIGN_SYSTEM.md`) | hanimo WebUI의 디자인 기반 |
+| **hanimo-webui** 의 에이전트 플러그인 시스템 (`AGENT_PLUGIN_SYSTEM.md`) | hanimo Core의 도구/스킬 인터페이스 참고 |
+| **hanimo-rag** 의 파이프라인·대시보드·compose | hanimo RAG 서피스의 **본체 그대로 흡수** |
 | Modol 시리즈의 한국어 친화 톤 | hanimo의 clarify-first / intent 감지 |
 
 ### 1.2 이름이 말해주는 포지셔닝
@@ -71,7 +71,7 @@
 │            ▼                                 ▼                  │
 │  ┌───────────────────┐          ┌──────────────────────────┐    │
 │  │  ④ hanimo RAG     │          │  ⑤ hanimo Community       │    │
-│  │ (ModolRAG 계승)   │          │  (AI 피트니스 / 연대)       │    │
+│  │ (hanimo-rag 계승)   │          │  (AI 피트니스 / 연대)       │    │
 │  │ Python + FastAPI  │          │ Next.js + DB + Agents    │    │
 │  │ 하이브리드 검색    │          │ Human + Agent 공존        │    │
 │  └───────────────────┘          └──────────────────────────┘    │
@@ -83,7 +83,7 @@
 | ① | **hanimo Code** | Go + Bubble Tea v2 | 🔥 PRIMARY |
 | ② | hanimo Core | Go HTTP/SSE 서버 | 🟡 Enabler |
 | ③ | **hanimo WebUI** | Next.js 15 + shadcn | 🔥 PRIMARY |
-| ④ | hanimo RAG | Python (ModolRAG fork) | 🟢 Engine |
+| ④ | hanimo RAG | Python (hanimo-rag fork) | 🟢 Engine |
 | ⑤ | **hanimo Community** | Next.js + Postgres + Agents | 🟣 Vision |
 
 ### 2.1 명시적으로 뺀 것들 (v1 대비)
@@ -154,7 +154,7 @@ hanimo/web/
 │   ├── chat/       # SSE streaming
 │   ├── diff/       # Monaco diff (hashline_edit 가시화)
 │   ├── repomap/    # PageRank graph (d3/cytoscape)
-│   └── ui/         # shadcn (ModolAI 패턴 계승)
+│   └── ui/         # shadcn (hanimo-webui 패턴 계승)
 └── lib/theme.ts    # 다크/라이트
 ```
 
@@ -165,13 +165,13 @@ hanimo/web/
 - Certified Model Tier 배지
 - Community 피드 카드 (벤치·뉴스·스킬)
 
-### 3.4 ④ hanimo RAG — ModolRAG 계승
+### 3.4 ④ hanimo RAG — hanimo-rag 계승
 
-**ModolRAG 디렉토리를 그대로 `hanimo/rag/` 로 승계**. 브랜딩만 변경.
+**hanimo-rag 디렉토리를 그대로 `hanimo/rag/` 로 승계**. 브랜딩만 변경.
 
 ```
 hanimo/rag/
-├── modolrag/            # 내부 패키지는 유지 (호환)
+├── hanimo-rag/            # 내부 패키지는 유지 (호환)
 ├── Dockerfile
 ├── docker-compose.yml
 └── hanimo-rag.sh
@@ -340,7 +340,7 @@ hanimo/community/
 
 ### Phase 3 — RAG 통합 (Week 7-9)
 
-- [ ] ModolRAG → `hanimo/rag/` 흡수·브랜딩.
+- [ ] hanimo-rag → `hanimo/rag/` 흡수·브랜딩.
 - [ ] `hanimo rag up/index/ask/serve`.
 - [ ] Core `rag_search` 도구 등록.
 - [ ] 언어 인식 청킹 (tree-sitter).
@@ -390,8 +390,8 @@ hanimo/
 ├── web/                     # ③ Next.js 15 WebUI
 │   ├── app/ · components/
 │   └── package.json
-├── rag/                     # ④ ModolRAG 흡수
-│   ├── modolrag/
+├── rag/                     # ④ hanimo-rag 흡수
+│   ├── hanimo-rag/
 │   └── docker-compose.yml
 ├── community/               # ⑤
 │   ├── web/                 # Next.js
@@ -412,13 +412,13 @@ hanimo/
 
 | Modol 자산 | 이식 방식 | 위치 |
 |---|---|---|
-| ModolRAG 전체 | 디렉토리 복사 + 브랜딩 | `hanimo/rag/` |
-| ModolRAG 대시보드 | 컴포넌트 일부 → WebUI | `hanimo/web/components/rag/` |
-| ModolAI `DESIGN_SYSTEM.md` | 디자인 토큰 채택 | `hanimo/web/lib/theme.ts` |
-| ModolAI `MODOLAI_PATTERNS.md` | 컴포넌트 패턴 참조 | `hanimo/web/components/` |
-| ModolAI `AGENT_PLUGIN_SYSTEM.md` | 도구 인터페이스 힌트 | `hanimo/core/plugins.go` |
-| ModolAI shadcn 설정 (`components.json`) | 그대로 복사 | `hanimo/web/components.json` |
-| ModolAI 한국어 UX 톤 | 카피·i18n 계승 | `hanimo/web/messages/ko.json` |
+| hanimo-rag 전체 | 디렉토리 복사 + 브랜딩 | `hanimo/rag/` |
+| hanimo-rag 대시보드 | 컴포넌트 일부 → WebUI | `hanimo/web/components/rag/` |
+| hanimo-webui `DESIGN_SYSTEM.md` | 디자인 토큰 채택 | `hanimo/web/lib/theme.ts` |
+| hanimo-webui `MODOLAI_PATTERNS.md` | 컴포넌트 패턴 참조 | `hanimo/web/components/` |
+| hanimo-webui `AGENT_PLUGIN_SYSTEM.md` | 도구 인터페이스 힌트 | `hanimo/core/plugins.go` |
+| hanimo-webui shadcn 설정 (`components.json`) | 그대로 복사 | `hanimo/web/components.json` |
+| hanimo-webui 한국어 UX 톤 | 카피·i18n 계승 | `hanimo/web/messages/ko.json` |
 
 ---
 
@@ -463,7 +463,7 @@ hanimo/
 1. 🔥 `hanimo/core/` Go 패키지 스켈레톤 + `hanimo serve` 스텁 (1일)
 2. 🔥 `hanimo/web/` Next.js 15 초기화 + shadcn (Modol 디자인) (1일)
 3. ⭐ WebUI SSE 스트리밍 채팅 PoC (2일)
-4. ⭐ ModolRAG → `hanimo/rag/` 흡수 + 브랜딩 (1일)
+4. ⭐ hanimo-rag → `hanimo/rag/` 흡수 + 브랜딩 (1일)
 5. Core `rag_search` 도구 등록 (1일)
 6. Monaco diff viewer + hashline 앵커 (2일)
 7. Certified Model Tier JSON + WebUI 배지 (1일)
