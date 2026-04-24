@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react'
 import { Palette, X } from 'lucide-react'
 
 const themes = [
-  { id: '', name: 'Slate', dot: 'linear-gradient(135deg,#3b82f6,#10b981)', dark: true },
+  { id: '', name: 'Honey', dot: 'linear-gradient(135deg,#f5a623,#e8a317)', dark: true },
+  { id: 't-slate', name: 'Slate', dot: 'linear-gradient(135deg,#3b82f6,#10b981)', dark: true },
   { id: 't-cursor', name: 'Cursor', dot: '#f54e00', dark: true },
   { id: 't-linear', name: 'Linear', dot: '#7c3aed', dark: true },
   { id: 't-github', name: 'GitHub Dark', dot: '#58a6ff', dark: true },

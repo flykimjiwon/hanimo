@@ -1,6 +1,44 @@
 /* Fonts — system fallback only (no CDN dependency for air-gapped networks) */
 
+/* ── Honey (hanimo default) — amber + cream + deep brown ── */
 :root {
+  --bg-base: #1a1410;
+  --bg-activity: #14100d;
+  --bg-sidebar: #1f1813;
+  --bg-editor: #1a1410;
+  --bg-panel: #221a14;
+  --bg-terminal: #14100d;
+  --bg-hover: rgba(245,166,35,0.06);
+  --bg-active: rgba(245,166,35,0.1);
+  --bg-input: #1a1410;
+  --border: rgba(245,166,35,0.1);
+  --border-focus: #f5a623;
+  --fg-primary: #f4ecd8;
+  --fg-secondary: #c9b890;
+  --fg-muted: #8a7858;
+  --fg-dim: #554532;
+  --accent: #f5a623;
+  --accent-glow: rgba(245,166,35,0.22);
+  --success: #6cae75;
+  --warning: #e8a317;
+  --error: #e06666;
+  --status-bg: #f5a623;
+  --status-fg: #1a1410;
+  --code-keyword: #e8a317;
+  --code-function: #c9b890;
+  --code-string: #98c379;
+  --code-number: #e4a65e;
+  --code-comment: #6e5d42;
+  --code-type: #f5c76e;
+  --code-variable: #d9a65b;
+  --code-operator: #c9b890;
+  --code-text: #a89a78;
+  --font-ui: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Malgun Gothic', system-ui, sans-serif;
+  --font-code: 'Cascadia Code', 'Consolas', 'SF Mono', 'Menlo', monospace;
+}
+
+/* ── Slate (previous default, preserved) ── */
+body.t-slate {
   --bg-base: #0a0a0c;
   --bg-activity: #08080a;
   --bg-sidebar: #0e0e11;
@@ -32,8 +70,6 @@
   --code-variable: #c08088;
   --code-operator: #7fa8b0;
   --code-text: #7e8590;
-  --font-ui: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Malgun Gothic', system-ui, sans-serif;
-  --font-code: 'Cascadia Code', 'Consolas', 'SF Mono', 'Menlo', monospace;
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
