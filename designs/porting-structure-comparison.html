@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>hanimo ↔ TECHAI 구조 비교 + 포팅 실시간 추산</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Geist:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:#1a1410; --bg2:#221a14; --bg3:#14100d;
+    --fg:#f4ecd8; --fg2:#c9b890; --fg3:#8a7858;
+    --accent:#f5a623; --accent-dim:rgba(245,166,35,0.18);
+    --ok:#6cae75; --warn:#e8a317; --err:#e06666; --info:#7fb3d5;
+    --border:rgba(245,166,35,0.15);
+    --hanimo:#f5a623; --techai:#bd93f9; --common:#6cae75; --ide:#7fb3d5;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:'Geist','Pretendard',sans-serif;background:var(--bg);color:var(--fg);padding:32px;line-height:1.6;max-width:1400px;margin:0 auto;-webkit-font-smoothing:antialiased}
+  h1{font-size:28px;font-weight:700;margin-bottom:8px;letter-spacing:-.02em}
+  h1 .honey{color:var(--accent)}
+  h2{font-size:19px;margin:36px 0 12px;color:var(--accent);border-bottom:1px solid var(--border);padding-bottom:6px;font-weight:600}
+  h3{font-size:15px;margin:20px 0 8px;color:var(--fg2);font-weight:600}
+  p{margin-bottom:10px;color:var(--fg2)}
+  code{font-family:'JetBrains Mono',monospace;background:var(--bg2);padding:1px 6px;border-radius:3px;color:var(--accent);font-size:12.5px}
+  strong{color:var(--fg)}
+  em{color:var(--accent);font-style:normal;font-weight:500}
+
+  .sub{color:var(--fg3);font-size:13px;margin-bottom:22px}
+
+  /* KPI Cards */
+  .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:20px 0}
+  .kpi{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:14px 16px}
+  .kpi .label{font-size:11px;color:var(--fg3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px}
+  .kpi .value{font-size:24px;font-weight:700;color:var(--accent);font-family:'JetBrains Mono',monospace}
+  .kpi .delta{font-size:11px;color:var(--ok);margin-top:2px}
+  .kpi .delta.warn{color:var(--warn)}
+
+  /* Side-by-side tree */
+  .trees{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:16px 0}
+  .tree{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:14px 16px;font-family:'JetBrains Mono',monospace;font-size:12px;line-height:1.75;overflow-x:auto}
+  .tree .h{font-family:'Geist',sans-serif;font-size:13px;color:var(--fg3);margin-bottom:8px;display:flex;align-items:center;gap:6px;font-weight:600}
+  .tree .h .dot{width:8px;height:8px;border-radius:50%}
+  .tree.hanimo .h .dot{background:var(--hanimo)}
+  .tree.techai .h .dot{background:var(--techai)}
+  .tree.ide .h .dot{background:var(--ide)}
+  .tree .dir{color:var(--accent)}
+  .tree .file{color:var(--fg2)}
+  .tree .only-hanimo{color:var(--hanimo);font-weight:600}
+  .tree .only-techai{color:var(--techai);font-weight:600}
+  .tree .new-v2{color:var(--info);font-weight:600}
+  .tree .common{color:var(--common)}
+  .tree .plus{color:var(--ok);font-weight:700}
+  .tree .minus{color:var(--err);font-weight:700}
+  .tree .count{float:right;color:var(--fg3);font-size:11px}
+
+  /* Diff table */
+  table{width:100%;border-collapse:collapse;margin:12px 0;background:var(--bg2);border:1px solid var(--border);border-radius:8px;overflow:hidden;font-size:13px}
+  th{text-align:left;padding:10px 14px;background:var(--bg3);color:var(--accent);font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid var(--border)}
+  td{padding:10px 14px;border-bottom:1px solid rgba(245,166,35,0.04);vertical-align:top;color:var(--fg2)}
+  td.mono{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--accent)}
+  tr:last-child td{border-bottom:none}
+  tr:hover td{background:rgba(245,166,35,0.03)}
+
+  .tag{display:inline-block;font-size:10px;font-weight:700;padding:2px 6px;border-radius:3px;margin-right:4px;text-transform:uppercase;letter-spacing:.04em}
+  .tag.ok{background:rgba(108,174,117,0.18);color:var(--ok)}
+  .tag.hanimo{background:rgba(245,166,35,0.18);color:var(--hanimo)}
+  .tag.techai{background:rgba(189,147,249,0.18);color:var(--techai)}
+  .tag.warn{background:rgba(232,163,23,0.2);color:var(--warn)}
+  .tag.err{background:rgba(224,102,102,0.2);color:var(--err)}
+  .tag.info{background:rgba(127,179,213,0.2);color:var(--info)}
+
+  /* Timeline */
+  .timeline{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:18px;margin:12px 0}
+  .tl-row{display:grid;grid-template-columns:180px 1fr 90px 90px;gap:16px;padding:9px 0;border-bottom:1px dashed var(--border);align-items:center}
+  .tl-row:last-child{border-bottom:none;padding-top:12px;font-weight:700;color:var(--accent)}
+  .tl-task{color:var(--fg)}
+  .tl-desc{color:var(--fg2);font-size:13px}
+  .tl-cell{font-family:'JetBrains Mono',monospace;font-size:12px;text-align:right}
+  .tl-old{color:var(--fg3);text-decoration:line-through}
+  .tl-new{color:var(--ok);font-weight:600}
+
+  /* Legend */
+  .legend{display:flex;gap:20px;flex-wrap:wrap;font-size:12px;margin:10px 0 20px;color:var(--fg3)}
+  .legend .item{display:flex;align-items:center;gap:6px}
+  .legend .dot{width:10px;height:10px;border-radius:50%}
+  .dot-hanimo{background:var(--hanimo)}
+  .dot-techai{background:var(--techai)}
+  .dot-common{background:var(--common)}
+  .dot-ide{background:var(--ide)}
+
+  .callout{background:rgba(245,166,35,0.06);border-left:3px solid var(--accent);padding:10px 14px;border-radius:4px;margin:10px 0;font-size:13.5px;color:var(--fg2)}
+  .callout.green{background:rgba(108,174,117,0.06);border-left-color:var(--ok)}
+  .callout.red{background:rgba(224,102,102,0.06);border-left-color:var(--err)}
+  .callout strong{color:var(--fg)}
+</style>
+</head>
+<body>
+
+<h1>hanimo <span class="honey">↔</span> TECHAI 구조 비교</h1>
+<p class="sub">실측 2026-04-24 · 정직한 포팅 비용 재추산</p>
+
+<div class="callout red"><strong>제가 틀린 부분:</strong> 방금 writing-plans 스킬로 만든 플랜(781줄)에서 Part 2를 "반나절", Part 3를 "0.5일"로 추정했는데, 실제 구조 비교 결과 <em>복사 + sed 치환이 본질</em>이라 훨씬 짧습니다. 아래 근거와 재추산입니다.</p>
+
+<h2>1. 전체 LOC 규모 (실측)</h2>
+
+<div class="kpis">
+  <div class="kpi">
+    <div class="label">hanimo CLI</div>
+    <div class="value">21,109</div>
+    <div class="delta">+1,785 vs TECHAI · LSP·coverage·imports·quality·replacer 추가</div>
+  </div>
+  <div class="kpi">
+    <div class="label">TECHAI CLI</div>
+    <div class="value">19,324</div>
+    <div class="delta warn">사내 하드닝·bxm·scrape-bxm</div>
+  </div>
+  <div class="kpi">
+    <div class="label">techai-ide Go</div>
+    <div class="value">2,813</div>
+    <div class="delta">Wails 백엔드 (v0.2.0)</div>
+  </div>
+  <div class="kpi">
+    <div class="label">techai-ide Frontend</div>
+    <div class="value">3,644</div>
+    <div class="delta">React + TS (v0.2.0)</div>
+  </div>
+</div>
+
+<h2>2. CLI 레이어 구조 비교 — 거의 동일</h2>
+
+<div class="legend">
+  <div class="item"><span class="dot dot-common"></span>공통 (양쪽 동일 또는 유사)</div>
+  <div class="item"><span class="dot dot-hanimo"></span>hanimo 전용 (외부망)</div>
+  <div class="item"><span class="dot dot-techai"></span>TECHAI 전용 (폐쇄망)</div>
+</div>
+
+<div class="trees">
+  <div class="tree hanimo">
+    <div class="h"><span class="dot"></span>hanimo-code / internal / (16 dirs · 21,109 LOC)</div>
+<div><span class="dir">agents/</span> <span class="count">5 files</span></div>
+<div><span class="dir">app/</span> <span class="count">1 file</span></div>
+<div><span class="dir">companion/</span> <span class="count">5 files</span></div>
+<div><span class="dir">config/</span> <span class="count">3 files</span></div>
+<div><span class="dir">exec/</span> <span class="count">1 file</span></div>
+<div><span class="dir">gitinfo/</span> <span class="count">1 file</span></div>
+<div><span class="dir">hooks/</span> <span class="count">1 file</span></div>
+<div><span class="dir">knowledge/</span> <span class="count">4 files</span></div>
+<div><span class="dir">llm/</span> <span class="count">8 + providers/</span></div>
+<div><span class="only-hanimo">▸ lsp/ </span><span class="count">3 files — 오직 hanimo</span></div>
+<div><span class="dir">mcp/</span> + <span class="only-hanimo">transport_sse / stdio</span></div>
+<div><span class="dir">multi/</span> <span class="count">4 files</span></div>
+<div><span class="dir">session/</span> + <span class="only-hanimo">db.go · memory.go</span></div>
+<div><span class="dir">skills/</span> + <span class="only-hanimo">loader_test.go</span></div>
+<div><span class="dir">tools/</span> + <span class="only-hanimo">coverage·imports·quality·replacer·smartctx·symbols·snapshot</span> <span class="count">20 files</span></div>
+<div><span class="dir">ui/</span> + <span class="only-hanimo">askuser·i18n·persona</span></div>
+  </div>
+  <div class="tree techai">
+    <div class="h"><span class="dot"></span>TECHAI_CODE / internal / (15 dirs · 19,324 LOC)</div>
+<div><span class="dir">agents/</span> <span class="count">5 files</span></div>
+<div><span class="dir">app/</span> <span class="count">1 file</span></div>
+<div><span class="dir">companion/</span> <span class="count">5 files</span></div>
+<div><span class="dir">config/</span> <span class="count">3 files</span></div>
+<div><span class="dir">exec/</span> <span class="count">1 file</span></div>
+<div><span class="dir">gitinfo/</span> <span class="count">1 file</span></div>
+<div><span class="dir">hooks/</span> + <span class="only-techai">hooks_test.go</span></div>
+<div><span class="dir">knowledge/</span> <span class="count">4 files + bxm 13팩</span></div>
+<div><span class="dir">llm/</span> + <span class="only-techai">capabilities_test · client_test</span></div>
+<div style="opacity:.4">— <span style="color:var(--err)">no lsp/</span></div>
+<div><span class="dir">mcp/</span> (단일 client만)</div>
+<div><span class="dir">multi/</span> <span class="count">4 files</span></div>
+<div><span class="dir">session/</span> (store만)</div>
+<div><span class="dir">skills/</span> (loader만)</div>
+<div><span class="dir">tools/</span> + <span class="only-techai">memory.go (JSON 스토어)</span> <span class="count">15 files</span></div>
+<div><span class="dir">ui/</span> (공통만, i18n 없음)</div>
+  </div>
+</div>
+
+<h3>디렉토리 일치율</h3>
+<div class="callout green">16 중 <strong>15개 완전 일치</strong>. hanimo의 <code>lsp/</code>만 TECHAI에 없음. 파일 단위로도 <strong>95% 이상 동일 이름</strong>. 양방향 포팅이 이미 10회 이상 진행되어 이 정도로 수렴.</div>
+
+<h2>3. 파일 단위 차이점 — 포팅 후보만</h2>
+
+<table>
+<thead><tr><th>방향</th><th>파일</th><th>LOC</th><th>본질 검증</th><th>조치</th></tr></thead>
+<tbody>
+<tr><td><span class="tag techai">TECHAI → hanimo</span></td><td class="mono">tools/memory.go</td><td>~200</td><td><span class="tag ok">범용</span> JSON 기반 /remember 스토어</td><td>복사 + sed 치환만</td></tr>
+<tr><td><span class="tag techai">TECHAI → hanimo</span></td><td class="mono">hooks/hooks_test.go</td><td>~120</td><td><span class="tag ok">회귀 방어</span></td><td>복사만</td></tr>
+<tr><td><span class="tag techai">TECHAI → hanimo</span></td><td class="mono">llm/capabilities_test.go · client_test.go</td><td>~300</td><td><span class="tag ok">회귀 방어</span></td><td>복사만</td></tr>
+<tr><td><span class="tag techai">TECHAI → hanimo</span></td><td class="mono">toolparse.go (엣지)</td><td>~50줄 diff</td><td><span class="tag ok">Qwen3 프록시 호환</span></td><td>커밋 3개 cherry-pick</td></tr>
+<tr><td><span class="tag hanimo">hanimo → TECHAI</span></td><td class="mono">lsp/ 전체</td><td>505</td><td><span class="tag ok">로컬만</span></td><td>복사만 (폐쇄망도 OK)</td></tr>
+<tr><td><span class="tag hanimo">hanimo → TECHAI</span></td><td class="mono">tools/imports·coverage·quality·replacer·smartctx</td><td>~800</td><td><span class="tag ok">파일시스템만</span></td><td>복사만</td></tr>
+<tr><td><span class="tag err">금지</span></td><td class="mono">tgc/knowledge/bxm 13팩</td><td>~3,000</td><td><span class="tag err">사내 전용</span></td><td>오픈소스 절대 금지</td></tr>
+<tr><td><span class="tag err">금지</span></td><td class="mono">cmd/scrape-bxm</td><td>~400</td><td><span class="tag err">사내 전용</span></td><td>포팅 금지</td></tr>
+<tr><td><span class="tag err">금지</span></td><td class="mono">llm/providers/ (14개)</td><td>—</td><td><span class="tag err">폐쇄망 도달 불가</span></td><td>hanimo만 유지</td></tr>
+<tr><td><span class="tag err">금지</span></td><td class="mono">llm/cache.go (Anthropic)</td><td>—</td><td><span class="tag err">API 미지원</span></td><td>hanimo만 유지</td></tr>
+</tbody>
+</table>
+
+<h2>4. IDE 레이어 — TECHAI에만 존재 (hanimo에서는 신규)</h2>
+
+<div class="trees">
+  <div class="tree ide">
+    <div class="h"><span class="dot"></span>TECHAI_CODE / techai-ide / (Go 2,813 + Frontend 3,644 = 6,457 LOC)</div>
+<div><span class="dir">techai-ide/</span></div>
+<div>├─ <span class="file">app.go · chat.go · config.go</span></div>
+<div>├─ <span class="file">git.go · knowledge.go · main.go</span></div>
+<div>├─ <span class="new-v2">session.go (v0.2.0 신규)</span></div>
+<div>├─ <span class="file">settings.go · toolparse.go</span></div>
+<div>├─ <span class="file">terminal.go</span> + <span class="new-v2">terminal_unix.go / terminal_windows.go (신규)</span></div>
+<div>├─ 테스트 5: <span class="new-v2">app_test · config_test · git_test · knowledge_test · toolparse_test</span></div>
+<div>├─ <span class="dir">frontend/src/components/</span> (18개)</div>
+<div>│  ├─ App·ActivityBar·ChatPanel·CodeEditor</div>
+<div>│  ├─ Editor·FileTree·Terminal·ThemePicker</div>
+<div>│  └─ <span class="new-v2">DiffView (v0.2.0 신규)</span></div>
+<div>├─ <span class="dir">build/</span> (아이콘: darwin/windows)</div>
+<div>└─ <span class="dir">scripts/</span> gen-icon.go</div>
+  </div>
+  <div class="tree hanimo">
+    <div class="h"><span class="dot"></span>hanimo-code / hanimo-code-desktop /</div>
+<div style="color:var(--fg3);font-style:italic">아직 존재하지 않음 — 이번 포팅 대상</div>
+<div style="margin-top:12px">예상 변경 항목:</div>
+<div>├─ <span class="plus">+</span> sed 치환 <span class="file">techai→hanimo · .tgc→.hanimo</span></div>
+<div>├─ <span class="plus">+</span> <span class="file">config.go 기본값 → Ollama localhost</span></div>
+<div>├─ <span class="minus">-</span> <span class="file">bxm 팩 13개</span></div>
+<div>├─ <span class="plus">+</span> <span class="file">style.css에 Honey :root 블록</span></div>
+<div>├─ <span class="plus">+</span> <span class="file">ThemePicker에 Honey 한 줄</span></div>
+<div>└─ <span class="plus">+</span> <span class="file">App.tsx 초기 theme state</span></div>
+  </div>
+</div>
+
+<div class="callout">
+<strong>핵심:</strong> IDE 전체가 <em>6,457줄</em>. 그중 실제로 <em>변경</em>해야 하는 건 sed 일괄 치환 대상 키워드 10개 + config.go 상수 2개 + knowledge.go bxm 블록 1개 + CSS 변수 블록 1개 + ThemePicker 배열에 한 줄. 나머지 <strong>99%는 그대로 복사</strong>.
+</div>
+
+<h2>5. 실제 소요 시간 재추산</h2>
+
+<div class="timeline">
+  <div class="tl-row" style="border-bottom-style:solid;border-bottom-color:var(--accent)">
+    <div class="tl-task" style="color:var(--accent);font-weight:600">Task</div>
+    <div class="tl-desc" style="color:var(--accent);font-weight:600">실제 작업</div>
+    <div class="tl-cell" style="color:var(--fg3)">제가 말한</div>
+    <div class="tl-cell" style="color:var(--ok)">실제</div>
+  </div>
+
+  <div class="tl-row">
+    <div class="tl-task">Part 1 — cli 역포팅</div>
+    <div class="tl-desc">memory.go 1 + 테스트 3 + toolparse diff 3개 cp</div>
+    <div class="tl-cell tl-old">1시간</div>
+    <div class="tl-cell tl-new">15~30분</div>
+  </div>
+
+  <div class="tl-row">
+    <div class="tl-task">Part 2.1 — 복사 + sed</div>
+    <div class="tl-desc">cp -R + sed 일괄 치환 (Go + Frontend)</div>
+    <div class="tl-cell tl-old">—</div>
+    <div class="tl-cell tl-new">5분</div>
+  </div>
+
+  <div class="tl-row">
+    <div class="tl-task">Part 2.2 — config/knowledge 수정</div>
+    <div class="tl-desc">기본 엔드포인트 교체 + bxm 13 제거</div>
+    <div class="tl-cell tl-old">—</div>
+    <div class="tl-cell tl-new">10분</div>
+  </div>
+
+  <div class="tl-row">
+    <div class="tl-task">Part 2.3 — 빌드 검증</div>
+    <div class="tl-desc">go mod tidy + npm install + wails build</div>
+    <div class="tl-cell tl-old">—</div>
+    <div class="tl-cell tl-new">10~15분</div>
+  </div>
+
+  <div class="tl-row">
+    <div class="tl-task">Part 2.4 — 빌드 오류 수정</div>
+    <div class="tl-desc">sed가 놓친 잔존 + import 시그니처</div>
+    <div class="tl-cell tl-old">—</div>
+    <div class="tl-cell tl-new">10~30분 (운)</div>
+  </div>
+
+  <div class="tl-row">
+    <div class="tl-task">Part 2 — 합계</div>
+    <div class="tl-desc">Phase 0 (스켈레톤 + 빌드 성공)</div>
+    <div class="tl-cell tl-old">반나절</div>
+    <div class="tl-cell tl-new">35~60분</div>
+  </div>
+
+  <div class="tl-row">
+    <div class="tl-task">Part 3 — Honey 테마</div>
+    <div class="tl-desc">CSS :root 블록 1개 + Picker 한 줄 + App.tsx 한 줄</div>
+    <div class="tl-cell tl-old">0.5일</div>
+    <div class="tl-cell tl-new">20~30분</div>
+  </div>
+
+  <div class="tl-row">
+    <div class="tl-task">🔥 전체 (Part 1+2+3)</div>
+    <div class="tl-desc">cli 포팅 + desktop Phase 0 + Honey 브랜드</div>
+    <div class="tl-cell tl-old">1.5일</div>
+    <div class="tl-cell tl-new">1.5~2.5시간</div>
+  </div>
+</div>
+
+<h2>6. 왜 이렇게 빠른가 — 3가지 이유</h2>
+
+<table>
+<thead><tr><th>이유</th><th>근거</th></tr></thead>
+<tbody>
+<tr><td>🪞 <strong>양쪽 CLI가 거의 같음</strong></td><td>internal/* 16 vs 15 디렉토리, 그중 15개 동명. 파일 이름 95% 일치. 이미 여러 차례 양방향 포팅 해왔음 (sync-tracker 참조).</td></tr>
+<tr><td>🔧 <strong>IDE는 단일 Wails 앱</strong></td><td>techai-ide = 단일 Go 모듈 (2,813 LOC) + 단일 React 앱 (3,644 LOC). monorepo 없음. 복사 후 sed만 통과하면 빌드 성공.</td></tr>
+<tr><td>🎨 <strong>Honey 테마는 CSS 변수</strong></td><td>이미 designs/hanimo-desktop-v1.html에 완성된 CSS 블록 있음 (54 lines). 복붙 + Picker 한 줄 + App.tsx 한 줄.</td></tr>
+</tbody>
+</table>
+
+<h2>7. 시간이 더 걸릴 수 있는 유일한 리스크</h2>
+
+<div class="callout red">
+<strong>1.</strong> go module 이름 충돌 — <code>module techai-ide</code>가 다른 패키지에 import 될 경우 (<code>github.com/kimjiwon/tgc/internal/*</code>를 참조). 현재 <code>techai-ide/go.mod</code>는 <strong>독립 모듈</strong>이고 cli 쪽 internal을 import 하지 않음 → 문제 없음.<br>
+<strong>2.</strong> Wails 바인딩 재생성 — <code>wailsjs/go/main/App.d.ts</code>가 TECHAI 쪽 타입을 참조할 수 있음 → <code>wails dev</code> 한 번 돌리면 재생성됨. 5분.<br>
+<strong>3.</strong> knowledge embed 리팩터링 — <code>//go:embed knowledge/docs</code> 경로가 techai 의 bxm 포함이라면 수동 교정 필요. 10~15분.
+</div>
+
+<h2>8. 결론 — 지금 바로 시작해도 2시간 안에 끝</h2>
+
+<div class="callout green">
+기존 플랜(<code>docs/superpowers/plans/2026-04-24-hanimo-code-desktop-porting.md</code>)의 <em>단계 구성은 유효</em>하지만 시간 추정이 과장. 실제 실행은 <strong>inline execution</strong>으로 충분. 한 번에 <code>Part 1 → Part 2 → Part 3</code> 순서 연속 실행.
+</div>
+
+<div class="kpis" style="margin-top:20px">
+  <div class="kpi" style="grid-column:span 2">
+    <div class="label">권장 실행 방식</div>
+    <div class="value" style="font-size:15px;color:var(--fg);font-family:var(--font-ui)">Inline 연속 실행 · 1.5~2.5h</div>
+    <div class="delta">Task별 subagent 파견은 오버헤드 &gt; 이득</div>
+  </div>
+  <div class="kpi" style="grid-column:span 2">
+    <div class="label">권장 체크포인트</div>
+    <div class="value" style="font-size:15px;color:var(--fg);font-family:var(--font-ui)">Part 마지막마다 빌드 + 커밋</div>
+    <div class="delta">3 커밋 · rollback 단위 명확</div>
+  </div>
+</div>
+
+</body>
+</html>
