@@ -21,6 +21,8 @@ import CommandPalette from './components/CommandPalette'
 import ModeSwitcher, { Mode } from './components/ModeSwitcher'
 import ProviderChip from './components/ProviderChip'
 import ProblemsStrip from './components/ProblemsStrip'
+import KnowledgePanel from './components/KnowledgePanel'
+import SessionsPanel from './components/SessionsPanel'
 
 function App() {
   const [activePanel, setActivePanel] = useState('files')
@@ -64,7 +66,7 @@ function App() {
     setActivePanel(prev => prev === panel ? '' : panel)
   }
 
-  const sidebarOpen = activePanel === 'files' || activePanel === 'search' || activePanel === 'git'
+  const sidebarOpen = ['files', 'search', 'git', 'knowledge', 'sessions'].includes(activePanel)
 
   const resizeSidebar = useCallback((d: number) => setSidebarWidth(w => Math.max(160, Math.min(400, w + d))), [])
   const resizeTerminal = useCallback((d: number) => setTerminalHeight(h => Math.max(80, Math.min(500, h - d))), [])
@@ -182,6 +184,8 @@ function App() {
               {activePanel === 'files' && <FileTree onFileSelect={setSelectedFile} selectedFile={selectedFile || ''} />}
               {activePanel === 'search' && <SearchPanel onFileSelect={setSelectedFile} />}
               {activePanel === 'git' && <GitPanel onFileSelect={(path) => setDiffFile(path)} />}
+              {activePanel === 'knowledge' && <KnowledgePanel />}
+              {activePanel === 'sessions' && <SessionsPanel />}
             </div>
             <ResizeHandle direction="horizontal" onResize={resizeSidebar} />
           </>
