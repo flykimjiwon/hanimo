@@ -23,6 +23,8 @@ import ProviderChip from './components/ProviderChip'
 import ProblemsStrip from './components/ProblemsStrip'
 import KnowledgePanel from './components/KnowledgePanel'
 import SessionsPanel from './components/SessionsPanel'
+import PlaceholderPanel from './components/PlaceholderPanel'
+import { PlugZap, Sparkle as SkillIcon, Share2, ShieldCheck, TriangleAlert, Play } from 'lucide-react'
 
 function App() {
   const [activePanel, setActivePanel] = useState('files')
@@ -63,10 +65,18 @@ function App() {
   function handlePanelSelect(panel: string) {
     if (panel === 'settings') { setShowTheme(true); return }
     if (panel === 'account') { setShowSettings(true); return }
+    if (panel === 'webpreview') {
+      setPreviewUrl(prev => prev ? null : 'http://localhost:3000')
+      return
+    }
     setActivePanel(prev => prev === panel ? '' : panel)
   }
 
-  const sidebarOpen = ['files', 'search', 'git', 'knowledge', 'sessions'].includes(activePanel)
+  const sidebarOpen = [
+    'files', 'search', 'git',
+    'knowledge', 'sessions',
+    'problems', 'skills', 'mcp', 'subagents', 'permissions', 'run',
+  ].includes(activePanel)
 
   const resizeSidebar = useCallback((d: number) => setSidebarWidth(w => Math.max(160, Math.min(400, w + d))), [])
   const resizeTerminal = useCallback((d: number) => setTerminalHeight(h => Math.max(80, Math.min(500, h - d))), [])
@@ -186,6 +196,84 @@ function App() {
               {activePanel === 'git' && <GitPanel onFileSelect={(path) => setDiffFile(path)} />}
               {activePanel === 'knowledge' && <KnowledgePanel />}
               {activePanel === 'sessions' && <SessionsPanel />}
+              {activePanel === 'problems' && (
+                <PlaceholderPanel
+                  title="LSP Problems"
+                  Icon={TriangleAlert}
+                  shortDesc="현재 파일의 진단(에러·경고·힌트)을 모아 보는 패널입니다. ProblemsStrip은 이미 활성화되어 있어 카운트는 에디터 하단에서 즉시 확인 가능합니다."
+                  bullets={[
+                    'gopls · tsserver · pyright 자동 감지',
+                    '파일 변경 시 3초 polling',
+                    '클릭 시 해당 라인으로 점프',
+                  ]}
+                  comingIn="Phase 6"
+                />
+              )}
+              {activePanel === 'skills' && (
+                <PlaceholderPanel
+                  title="Skills"
+                  Icon={SkillIcon}
+                  shortDesc="SKILL.md 파일을 lazy-load해서 채팅에서 /skill name 또는 Command Palette로 호출하는 hanimo의 스킬 시스템."
+                  bullets={[
+                    '$ARGUMENTS 치환 + inline !shell 실행',
+                    'learned-skill: 성공한 도구 흐름 자동 추출',
+                    '.hanimo/skills/ + ~/.hanimo/skills/ 경로',
+                  ]}
+                  comingIn="Phase 7"
+                />
+              )}
+              {activePanel === 'mcp' && (
+                <PlaceholderPanel
+                  title="MCP Servers"
+                  Icon={PlugZap}
+                  shortDesc="Model Context Protocol 서버를 통해 Jira·Slack·Figma 같은 외부 도구를 채팅에서 직접 호출."
+                  bullets={[
+                    'stdio + SSE transport 지원',
+                    '서버별 enable/disable 토글',
+                    '도구 목록 + 인자 스키마 미리보기',
+                  ]}
+                  comingIn="Phase 7"
+                />
+              )}
+              {activePanel === 'subagents' && (
+                <PlaceholderPanel
+                  title="Subagents"
+                  Icon={Share2}
+                  shortDesc="컨텍스트 분기 + 요약 반환. 큰 작업을 여러 서브에이전트로 분할해 토큰 폭주를 막고 병렬 진행."
+                  bullets={[
+                    '실행 중 서브에이전트 라이브 스트림',
+                    'git worktree로 동시 실험',
+                    '결과 머지 / 충돌 해소',
+                  ]}
+                  comingIn="Phase 8"
+                />
+              )}
+              {activePanel === 'permissions' && (
+                <PlaceholderPanel
+                  title="Permissions"
+                  Icon={ShieldCheck}
+                  shortDesc="5-mode 퍼미션 엔진 + 학습형 yaml 룰. dangerous 명령은 차단, ask 모드는 매번 묻기, allow 모드는 자동 승인."
+                  bullets={[
+                    'Shift+Tab 으로 모드 순환',
+                    'permissions.yaml 로 학습 규칙 누적',
+                    'credential scrubbing + sandbox 기반',
+                  ]}
+                  comingIn="Phase 8"
+                />
+              )}
+              {activePanel === 'run' && (
+                <PlaceholderPanel
+                  title="Run / Debug"
+                  Icon={Play}
+                  shortDesc="현재 프로젝트의 스크립트(npm run · go test · make · python -m)를 한 클릭으로 실행하고 결과를 터미널에 띄우는 패널."
+                  bullets={[
+                    'package.json scripts · Makefile targets 자동 감지',
+                    '환경변수 패널과 연동',
+                    'Debug Adapter 통합 (DAP) — 장기',
+                  ]}
+                  comingIn="Phase 9"
+                />
+              )}
             </div>
             <ResizeHandle direction="horizontal" onResize={resizeSidebar} />
           </>
