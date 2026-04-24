@@ -1,10 +1,34 @@
 import { useState, useEffect, useRef } from 'react'
-import { Search, Files, GitBranch, Settings, Palette, Terminal, BookOpen, Download, Trash2, FolderOpen, SplitSquareHorizontal, Globe } from 'lucide-react'
+import {
+  Search,
+  Files,
+  GitBranch,
+  Settings,
+  Palette,
+  Terminal,
+  BookOpen,
+  Download,
+  Trash2,
+  FolderOpen,
+  SplitSquareHorizontal,
+  Globe,
+  Sparkles,
+  BrainCircuit,
+  Lock,
+  Undo2,
+  TriangleAlert,
+  Sparkle,
+  PlugZap,
+  Share2,
+  History,
+  ShieldCheck,
+} from 'lucide-react'
 import { modKey } from '../utils'
 
 interface Command {
   id: string
   label: string
+  group?: string
   shortcut?: string
   icon: any
   action: () => void
@@ -26,6 +50,9 @@ interface Props {
     openFolder: () => void
     toggleSplit: () => void
     openPreview?: (url: string) => void
+    setMode?: (mode: 'super' | 'deep' | 'plan') => void
+    undoLastEdit?: () => void
+    showPanel?: (panel: string) => void
   }
 }
 
@@ -35,26 +62,49 @@ export default function CommandPalette({ open, onClose, actions }: Props) {
   const inputRef = useRef<HTMLInputElement>(null)
 
   const commands: Command[] = [
-    { id: 'quick-open', label: 'Go to File', shortcut: `${modKey}+P`, icon: Search, action: () => { onClose(); actions.openQuickOpen() } },
-    { id: 'open-folder', label: 'Open Folder', shortcut: `${modKey}+O`, icon: FolderOpen, action: () => { onClose(); actions.openFolder() } },
-    { id: 'explorer', label: 'Show Explorer', shortcut: `${modKey}+1`, icon: Files, action: () => { onClose(); actions.openFiles() } },
-    { id: 'search', label: 'Search in Files', shortcut: `${modKey}+Shift+F`, icon: Search, action: () => { onClose(); actions.openSearch() } },
-    { id: 'git', label: 'Show Git', shortcut: `${modKey}+3`, icon: GitBranch, action: () => { onClose(); actions.openGit() } },
-    { id: 'terminal', label: 'Toggle Terminal', shortcut: `${modKey}+J`, icon: Terminal, action: () => { onClose(); actions.toggleTerminal() } },
-    { id: 'split', label: 'Split Editor', shortcut: `${modKey}+\\`, icon: SplitSquareHorizontal, action: () => { onClose(); actions.toggleSplit() } },
-    { id: 'theme', label: 'Change Theme', shortcut: `${modKey}+,`, icon: Palette, action: () => { onClose(); actions.openTheme() } },
-    { id: 'settings', label: 'Open Settings', icon: Settings, action: () => { onClose(); actions.openSettings() } },
-    { id: 'preview', label: 'Open Preview (localhost:3000)', icon: Globe, action: () => {
-      onClose()
-      actions.openPreview?.('http://localhost:3000')
-    }},
-    { id: 'export-chat', label: 'Export Chat', icon: Download, action: () => { onClose(); actions.exportChat() } },
-    { id: 'clear-chat', label: 'Clear Chat', icon: Trash2, action: () => { onClose(); actions.clearChat() } },
+    // ── Navigation ──────────────────────────────────────────────────────
+    { id: 'quick-open', label: 'Go to File', group: 'Navigate', shortcut: `${modKey}+P`, icon: Search, action: () => { onClose(); actions.openQuickOpen() } },
+    { id: 'open-folder', label: 'Open Folder', group: 'Navigate', shortcut: `${modKey}+O`, icon: FolderOpen, action: () => { onClose(); actions.openFolder() } },
+    { id: 'explorer', label: 'Show Explorer', group: 'Navigate', shortcut: `${modKey}+1`, icon: Files, action: () => { onClose(); actions.openFiles() } },
+    { id: 'search', label: 'Search in Files', group: 'Navigate', shortcut: `${modKey}+Shift+F`, icon: Search, action: () => { onClose(); actions.openSearch() } },
+    { id: 'git', label: 'Show Git', group: 'Navigate', shortcut: `${modKey}+3`, icon: GitBranch, action: () => { onClose(); actions.openGit() } },
+    { id: 'terminal', label: 'Toggle Terminal', group: 'Navigate', shortcut: `${modKey}+J`, icon: Terminal, action: () => { onClose(); actions.toggleTerminal() } },
+    { id: 'split', label: 'Split Editor', group: 'Navigate', shortcut: `${modKey}+\\`, icon: SplitSquareHorizontal, action: () => { onClose(); actions.toggleSplit() } },
+
+    // ── Agent ───────────────────────────────────────────────────────────
+    { id: 'mode-super', label: 'Set Mode: Super (가벼운 코딩)', group: 'Agent', icon: Sparkles, action: () => { onClose(); actions.setMode?.('super') } },
+    { id: 'mode-deep', label: 'Set Mode: Deep (자율 200회)', group: 'Agent', icon: BrainCircuit, action: () => { onClose(); actions.setMode?.('deep') } },
+    { id: 'mode-plan', label: 'Set Mode: Plan (읽기 전용)', group: 'Agent', icon: Lock, action: () => { onClose(); actions.setMode?.('plan') } },
+    { id: 'undo-edit', label: 'Undo Last AI Edit (↺)', group: 'Agent', icon: Undo2, action: () => { onClose(); actions.undoLastEdit?.() } },
+
+    // ── Activity panels (Phase 5+ contents) ─────────────────────────────
+    { id: 'panel-problems', label: 'Show LSP Problems', group: 'Panels', icon: TriangleAlert, action: () => { onClose(); actions.showPanel?.('problems') } },
+    { id: 'panel-knowledge', label: 'Show Knowledge Packs', group: 'Panels', icon: BookOpen, action: () => { onClose(); actions.showPanel?.('knowledge') } },
+    { id: 'panel-skills', label: 'Show Skills', group: 'Panels', icon: Sparkle, action: () => { onClose(); actions.showPanel?.('skills') } },
+    { id: 'panel-mcp', label: 'Show MCP Servers', group: 'Panels', icon: PlugZap, action: () => { onClose(); actions.showPanel?.('mcp') } },
+    { id: 'panel-subagents', label: 'Show Subagents', group: 'Panels', icon: Share2, action: () => { onClose(); actions.showPanel?.('subagents') } },
+    { id: 'panel-sessions', label: 'Show Sessions', group: 'Panels', icon: History, action: () => { onClose(); actions.showPanel?.('sessions') } },
+    { id: 'panel-permissions', label: 'Show Permissions', group: 'Panels', icon: ShieldCheck, action: () => { onClose(); actions.showPanel?.('permissions') } },
+
+    // ── Workspace ───────────────────────────────────────────────────────
+    { id: 'theme', label: 'Change Theme', group: 'Workspace', shortcut: `${modKey}+,`, icon: Palette, action: () => { onClose(); actions.openTheme() } },
+    { id: 'settings', label: 'Open Settings', group: 'Workspace', icon: Settings, action: () => { onClose(); actions.openSettings() } },
+    { id: 'preview', label: 'Open Preview (localhost:3000)', group: 'Workspace', icon: Globe, action: () => { onClose(); actions.openPreview?.('http://localhost:3000') } },
+    { id: 'export-chat', label: 'Export Chat', group: 'Workspace', icon: Download, action: () => { onClose(); actions.exportChat() } },
+    { id: 'clear-chat', label: 'Clear Chat', group: 'Workspace', icon: Trash2, action: () => { onClose(); actions.clearChat() } },
   ]
 
-  const filtered = query
-    ? commands.filter(c => c.label.toLowerCase().includes(query.toLowerCase()))
-    : commands
+  // Multi-token AND fuzzy: every whitespace-separated token must appear in the label.
+  // Lets users type "set deep" or "show mcp" without ordering the words exactly.
+  const filtered = (() => {
+    const q = query.trim().toLowerCase()
+    if (!q) return commands
+    const tokens = q.split(/\s+/)
+    return commands.filter(c => {
+      const haystack = (c.label + ' ' + (c.group || '')).toLowerCase()
+      return tokens.every(t => haystack.includes(t))
+    })
+  })()
 
   useEffect(() => {
     if (open) { setQuery(''); setSelected(0); setTimeout(() => inputRef.current?.focus(), 50) }

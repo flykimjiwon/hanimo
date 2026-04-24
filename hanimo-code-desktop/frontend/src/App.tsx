@@ -313,6 +313,24 @@ function App() {
           openFolder: () => { import('../wailsjs/go/main/App').then(m => m.OpenFolder().then(d => { if(d) window.location.reload() })) },
           toggleSplit: () => setSplitFile(prev => prev ? null : selectedFile),
           openPreview: (url: string) => setPreviewUrl(url),
+          setMode: (m: 'super' | 'deep' | 'plan') => setMode(m),
+          undoLastEdit: async () => {
+            try {
+              const mod: any = await import('../wailsjs/go/main/App')
+              if (typeof mod.UndoLastEdit !== 'function') {
+                const t = await import('./components/Toast')
+                t.showToast('Undo binding pending — Wails dev required', 'info')
+                return
+              }
+              const path = await mod.UndoLastEdit()
+              const t = await import('./components/Toast')
+              t.showToast(`Reverted ${path}`, 'success')
+            } catch (e: any) {
+              const t = await import('./components/Toast')
+              t.showToast(`Undo failed: ${e?.message || 'no edit to undo'}`, 'info')
+            }
+          },
+          showPanel: (panel: string) => setActivePanel(panel),
         }}
       />
     </div>
