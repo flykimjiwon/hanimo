@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import { Hexagon } from 'lucide-react'
 import { EventsOn } from '../wailsjs/runtime/runtime'
 import ActivityBar from './components/ActivityBar'
 import FileTree from './components/FileTree'
@@ -17,6 +18,8 @@ import DiffView from './components/DiffView'
 import ToastContainer from './components/Toast'
 import AboutDialog from './components/AboutDialog'
 import CommandPalette from './components/CommandPalette'
+import ModeSwitcher, { Mode } from './components/ModeSwitcher'
+import ProviderChip from './components/ProviderChip'
 
 function App() {
   const [activePanel, setActivePanel] = useState('files')
@@ -29,6 +32,23 @@ function App() {
   const [showCommandPalette, setShowCommandPalette] = useState(false)
   const [splitFile, setSplitFile] = useState<string | null>(null)
   const [diffFile, setDiffFile] = useState<string | null>(null)
+  const [mode, setMode] = useState<Mode>(() => (localStorage.getItem('hanimo-mode') as Mode) || 'super')
+  const [currentModel, setCurrentModel] = useState<string>('qwen3:8b')
+
+  useEffect(() => { localStorage.setItem('hanimo-mode', mode) }, [mode])
+
+  // Pull current model name from Go config on startup (best-effort)
+  useEffect(() => {
+    import('../wailsjs/go/main/App').then(m => {
+      const g = (m as any).GetConfig
+      if (typeof g === 'function') {
+        g().then((cfg: any) => {
+          const name = cfg?.Models?.Super || cfg?.Models?.Dev || cfg?.models?.super
+          if (typeof name === 'string' && name) setCurrentModel(name)
+        }).catch(() => {})
+      }
+    }).catch(() => {})
+  }, [])
 
   // Resizable panel sizes
   const [sidebarWidth, setSidebarWidth] = useState(240)
@@ -94,10 +114,51 @@ function App() {
 
   return (
     <div style={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>
-      {/* macOS traffic light spacing — hide on Windows */}
-      {navigator.platform.includes('Mac') && (
-        <div style={{ height: 28, background: 'var(--bg-activity)', borderBottom: '1px solid var(--border)' }} />
-      )}
+      {/* Top Ribbon — Brand · Mode · Model chip · Theme */}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 10,
+          background: 'var(--bg-activity)',
+          borderBottom: '1px solid var(--border)',
+          padding: '0 10px',
+          minHeight: 38,
+          paddingLeft: navigator.platform.includes('Mac') ? 80 : 10,
+          userSelect: 'none',
+          fontFamily: 'var(--font-ui)',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 700, fontSize: 13, letterSpacing: '-0.01em' }}>
+          <Hexagon size={16} style={{ color: 'var(--accent)' }} />
+          <span>hanimo</span>
+          <span style={{ fontSize: 10.5, color: 'var(--fg-muted)', fontWeight: 500, letterSpacing: '0.04em' }}>
+            desktop
+          </span>
+        </div>
+        <div style={{ width: 1, height: 18, background: 'var(--border)' }} />
+        <ModeSwitcher mode={mode} onChange={setMode} />
+        <div style={{ flex: 1 }} />
+        <ProviderChip model={currentModel} />
+        <button
+          type="button"
+          onClick={() => setShowTheme(true)}
+          title="Theme (Cmd+,)"
+          style={{
+            background: 'var(--bg-base)',
+            border: '1px solid var(--border)',
+            borderRadius: 6,
+            padding: '4px 8px',
+            color: 'var(--fg-muted)',
+            cursor: 'pointer',
+            fontSize: 11,
+            fontFamily: 'var(--font-ui)',
+          }}
+        >
+          🎨
+        </button>
+      </div>
+
 
       <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
         <ActivityBar active={activePanel} onSelect={handlePanelSelect} />
