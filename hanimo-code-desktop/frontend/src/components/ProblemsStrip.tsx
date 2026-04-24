@@ -1,12 +1,18 @@
+import { useEffect, useState } from 'react'
 import { Bug, CircleX, TriangleAlert, Info, Lock } from 'lucide-react'
 
 interface Problem {
   severity: 'error' | 'warning' | 'hint'
   message?: string
+  line?: number
+  col?: number
 }
 
 interface Props {
+  /** Optional explicit problems (skips internal polling). */
   problems?: Problem[]
+  /** When set, the component polls GetProblems(filePath) every 3s. */
+  filePath?: string | null
   /** Active hash-anchor indicator — shows which line/anchor is currently locked for edit. */
   anchor?: { line: number; hash: string } | null
   /** LSP server label, e.g. 'gopls' · 'tsserver' · null if not attached. */
@@ -19,10 +25,33 @@ interface Props {
  * Shows LSP diagnostic counts (errors/warnings/hints) and the currently locked
  * hash-anchor. Empty state "0 problems" when no diagnostics.
  */
-export default function ProblemsStrip({ problems = [], anchor = null, lspServer = null, onClick }: Props) {
-  const errorCount = problems.filter(p => p.severity === 'error').length
-  const warnCount = problems.filter(p => p.severity === 'warning').length
-  const hintCount = problems.filter(p => p.severity === 'hint').length
+export default function ProblemsStrip({ problems, filePath = null, anchor = null, lspServer = null, onClick }: Props) {
+  const [polled, setPolled] = useState<Problem[]>([])
+
+  // Poll Go GetProblems(filePath) every 3s when no explicit problems prop.
+  useEffect(() => {
+    if (problems !== undefined) return
+    if (!filePath) { setPolled([]); return }
+    let cancelled = false
+    const fetch = () => {
+      import('../../wailsjs/go/main/App').then(mod => {
+        const fn = (mod as any).GetProblems
+        if (typeof fn !== 'function') return
+        fn(filePath).then((res: Problem[] | null) => {
+          if (cancelled) return
+          setPolled(Array.isArray(res) ? res : [])
+        }).catch(() => {})
+      }).catch(() => {})
+    }
+    fetch()
+    const id = setInterval(fetch, 3000)
+    return () => { cancelled = true; clearInterval(id) }
+  }, [filePath, problems])
+
+  const list = problems ?? polled
+  const errorCount = list.filter(p => p.severity === 'error').length
+  const warnCount = list.filter(p => p.severity === 'warning').length
+  const hintCount = list.filter(p => p.severity === 'hint').length
 
   const pill = (severity: 'error' | 'warning' | 'hint', count: number, Icon: typeof CircleX, color: string) => {
     const active = count > 0

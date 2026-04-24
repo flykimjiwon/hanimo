@@ -255,7 +255,7 @@ function App() {
             )}
           </div>
           {/* Problems Strip — LSP diagnostics + hash-anchor status */}
-          <ProblemsStrip />
+          <ProblemsStrip filePath={selectedFile} />
           {/* Terminal toggle bar */}
           <div onClick={() => setShowTerminal(t => !t)} style={{
             height: 22, background: 'var(--bg-activity)', borderTop: '1px solid var(--border)',

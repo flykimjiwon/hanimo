@@ -242,6 +242,9 @@ func (a *App) WriteFile(path, content string) error {
 	if err := os.MkdirAll(dir, 0755); err != nil {
 		return err
 	}
+	// Snapshot the previous contents so the chat panel's ↺ undo button can
+	// roll back this edit. Errors are non-fatal.
+	backupBeforeWrite(path)
 	return os.WriteFile(path, []byte(content), 0644)
 }
 

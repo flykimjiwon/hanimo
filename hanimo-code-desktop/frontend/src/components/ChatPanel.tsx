@@ -20,7 +20,23 @@ export default function ChatPanel() {
   const [packs, setPacks] = useState<{ id: string; name: string; category: string; enabled: boolean }[]>([])
   const [inputHistory, setInputHistory] = useState<string[]>([])
   const [historyIdx, setHistoryIdx] = useState(-1)
+  const [metrics, setMetrics] = useState<any>(null)
   const chatRef = useRef<HTMLDivElement>(null)
+
+  // Poll Go GetMetrics every 4s to keep MetricsRow live.
+  useEffect(() => {
+    let cancelled = false
+    const fetchMetrics = () => {
+      import('../../wailsjs/go/main/App').then(mod => {
+        const fn = (mod as any).GetMetrics
+        if (typeof fn !== 'function') return
+        fn().then((m: any) => { if (!cancelled) setMetrics(m) }).catch(() => {})
+      }).catch(() => {})
+    }
+    fetchMetrics()
+    const id = setInterval(fetchMetrics, 4000)
+    return () => { cancelled = true; clearInterval(id) }
+  }, [])
 
   useEffect(() => {
     GetModel().then(setModel).catch(() => {})
@@ -213,7 +229,18 @@ export default function ChatPanel() {
       </div>
 
       {/* Metrics Row — Context · Cache · Iter · Provider */}
-      <MetricsRow provider={model || undefined} />
+      <MetricsRow
+        provider={metrics?.provider || model || undefined}
+        contextPct={metrics?.contextPct}
+        contextTokens={metrics?.contextTokens}
+        contextMax={metrics?.contextMax}
+        cacheHitPct={metrics?.cacheHitPct}
+        cacheSavedUsd={metrics?.cacheSavedUSD}
+        iter={metrics?.iter}
+        iterMax={metrics?.iterMax}
+        iterLabel={metrics?.iterLabel}
+        tier={metrics?.tier || undefined}
+      />
 
       {/* Messages */}
       <div ref={chatRef} style={{
