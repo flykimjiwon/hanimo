@@ -162,6 +162,26 @@ export namespace main {
 	        this.path = source["path"];
 	    }
 	}
+	export class KoreaMCPEntry {
+	    name: string;
+	    category: string;
+	    description: string;
+	    url: string;
+	    stack: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new KoreaMCPEntry(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.name = source["name"];
+	        this.category = source["category"];
+	        this.description = source["description"];
+	        this.url = source["url"];
+	        this.stack = source["stack"];
+	    }
+	}
 	export class Metrics {
 	    contextPct: number;
 	    contextTokens: number;

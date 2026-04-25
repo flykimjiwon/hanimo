@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Settings, X, Save, Check, Key, EyeOff, Eye, ExternalLink } from 'lucide-react'
+import { Settings, X, Save, Check, Key, EyeOff, Eye, ExternalLink, Flag } from 'lucide-react'
 import { GetSettings, SaveSettings, SetLanguage } from '../../wailsjs/go/main/App'
 
 interface Props {
@@ -27,6 +27,8 @@ export default function SettingsPanel({ open, onClose }: Props) {
   const [providers, setProviders] = useState<ProviderEntry[]>([])
   const [providerKeys, setProviderKeys] = useState<Record<string, string>>({})
   const [showKey, setShowKey] = useState<Record<string, boolean>>({})
+  const [koreaMCP, setKoreaMCP] = useState<{ name: string; category: string; description: string; url: string; stack: string }[]>([])
+  const [koreaMCPFilter, setKoreaMCPFilter] = useState('')
 
   function reloadProviders() {
     import('../../wailsjs/go/main/App').then((mod: any) => {
@@ -51,6 +53,14 @@ export default function SettingsPanel({ open, onClose }: Props) {
       }).catch(() => {})
       reloadProviders()
       setProviderKeys({})
+      // Korea MCP catalog (Phase 19)
+      import('../../wailsjs/go/main/App').then((mod: any) => {
+        if (typeof mod.GetKoreaMCPCatalog === 'function') {
+          mod.GetKoreaMCPCatalog().then((rows: any[] | null) => {
+            setKoreaMCP(Array.isArray(rows) ? rows : [])
+          }).catch(() => {})
+        }
+      }).catch(() => {})
     }
   }, [open])
 
@@ -267,6 +277,108 @@ export default function SettingsPanel({ open, onClose }: Props) {
                 </div>
               )}
             </div>
+          </Section>
+
+          {/* Phase 19 — Korea MCP catalog */}
+          <Section
+            title={`🇰🇷 Korea MCP catalog (${koreaMCP.length})`}
+            hint="한국 시장 특화 MCP 서버 모음 (법률/공공데이터/금융/부동산/지도/관광/기상/한국어 NLP 등). 각 항목은 별도 GitHub 레포 — README의 install/env 따라 ~/.hanimo/config.yaml의 mcp.servers에 추가하면 채팅에서 바로 호출됩니다."
+          >
+            <input
+              value={koreaMCPFilter}
+              onChange={e => setKoreaMCPFilter(e.target.value)}
+              placeholder="카테고리/이름/설명으로 검색…"
+              style={{
+                width: '100%', padding: '6px 10px', borderRadius: 6,
+                background: 'var(--bg-base)', border: '1px solid var(--border)',
+                color: 'var(--fg-primary)', fontSize: 12, fontFamily: 'var(--font-ui)', outline: 'none',
+              }}
+            />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxHeight: 280, overflowY: 'auto', paddingRight: 4 }}>
+              {(() => {
+                const f = koreaMCPFilter.trim().toLowerCase()
+                const filtered = f ? koreaMCP.filter(e =>
+                  (e.name + ' ' + e.category + ' ' + e.description).toLowerCase().includes(f)
+                ) : koreaMCP
+                const groups: Record<string, typeof koreaMCP> = {}
+                for (const e of filtered) (groups[e.category] ??= []).push(e)
+                return Object.keys(groups).map(cat => (
+                  <div key={cat}>
+                    <div style={{
+                      fontSize: 9.5, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em',
+                      color: 'var(--fg-dim)', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 4,
+                    }}>
+                      <Flag size={10} />
+                      {cat} <span style={{ color: 'var(--fg-dim)', fontWeight: 500 }}>· {groups[cat].length}</span>
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 3, marginBottom: 8 }}>
+                      {groups[cat].map(e => (
+                        <a
+                          key={e.name}
+                          href={e.url}
+                          target="_blank"
+                          rel="noreferrer"
+                          title={e.description}
+                          style={{
+                            display: 'flex', alignItems: 'center', gap: 6,
+                            padding: '4px 8px',
+                            background: 'var(--bg-base)',
+                            border: '1px solid var(--border)',
+                            borderRadius: 4,
+                            textDecoration: 'none',
+                            color: 'var(--fg-secondary)',
+                            transition: 'border-color 0.1s, color 0.1s',
+                          }}
+                          onMouseEnter={ev => {
+                            (ev.currentTarget as HTMLAnchorElement).style.borderColor = 'var(--accent)'
+                            ;(ev.currentTarget as HTMLAnchorElement).style.color = 'var(--fg-primary)'
+                          }}
+                          onMouseLeave={ev => {
+                            (ev.currentTarget as HTMLAnchorElement).style.borderColor = 'var(--border)'
+                            ;(ev.currentTarget as HTMLAnchorElement).style.color = 'var(--fg-secondary)'
+                          }}
+                        >
+                          <span style={{
+                            fontSize: 11.5, fontFamily: 'var(--font-code)', fontWeight: 500,
+                            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                            flex: '0 1 auto',
+                          }}>
+                            {e.name}
+                          </span>
+                          <span style={{
+                            fontSize: 9, fontWeight: 700, background: 'var(--bg-active)', color: 'var(--fg-muted)',
+                            padding: '1px 4px', borderRadius: 2, textTransform: 'uppercase',
+                          }}>
+                            {e.stack}
+                          </span>
+                          <span style={{
+                            fontSize: 11, color: 'var(--fg-muted)', flex: 1, minWidth: 0,
+                            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                          }}>
+                            {e.description}
+                          </span>
+                          <ExternalLink size={10} style={{ color: 'var(--fg-dim)', flexShrink: 0 }} />
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                ))
+              })()}
+              {koreaMCP.length === 0 && (
+                <div style={{ fontSize: 11, color: 'var(--fg-dim)', padding: '6px 4px' }}>Loading catalog…</div>
+              )}
+            </div>
+            <a
+              href="https://github.com/darjeeling/awesome-mcp-korea"
+              target="_blank"
+              rel="noreferrer"
+              style={{
+                fontSize: 10.5, color: 'var(--accent)', textDecoration: 'none', display: 'inline-flex',
+                alignItems: 'center', gap: 4, marginTop: 4,
+              }}
+            >
+              <ExternalLink size={10} /> 전체 목록 (awesome-mcp-korea)
+            </a>
           </Section>
 
           {/* Language */}

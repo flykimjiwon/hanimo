@@ -155,8 +155,48 @@ Phase 19 단위로 분리.
 
 ---
 
-## 8. 한 줄로 다시
+## 8. Simplicity 6축 (2026-04-25 보강)
+
+> "앞으로는 AI agent 시대라 고급 커스텀 기능은 필요 없고 단순 지금같은
+> 심플한게 오히려 먹힐거라 생각함. 브라우저 내장도 그중 하나. 점점 이걸
+> 사용하도록, 각자가 결제한 API를 여기서 쓰도록 활성화시키자!"
+> — 사용자 (Phase 19 진행 중)
+
+비전 5축에 **6축: simplicity-first** 추가. 모든 신규 Phase 시작 전 검증.
+
+### 6.1 simplicity 게이트 (신규 기능 추가 전)
+
+| 추가 OK | 추가 보류 |
+|---|---|
+| 사용자가 매일 쓰는 흐름에 직접 도움 | 한 달에 한 번 쓸까 말까 |
+| 기존 패턴 복제 (Skills/MCP/Run/Korea MCP) | 새 customization 모드 |
+| BYOK 강화 (새 프로바이더 / 키 관리) | hanimo 자체 LLM 호스팅 |
+| 외부 링크 / 카탈로그 / 안내 | 자동 설치 + 상태 추적 |
+| 브라우저 내장 활용 | 별도 native 윈도우 |
+| 한국어 UX 강화 | 다국어 i18n 시스템 풀구현 |
+
+### 6.2 BYOK 패턴 — 사용자가 결제한 API 그대로 사용
+
+- hanimo 자체 수익 모델 0 (정책 §1 일치)
+- OpenAI / Anthropic / Novita / OpenRouter / DeepSeek / Mistral / Groq /
+  Together — 모두 사용자가 직접 계약, hanimo 는 라우팅만
+- "한 도구로 모든 모델" → 키 관리 부담 ↓ → 매일 사용 ↑
+
+### 6.3 브라우저 내장 활용
+
+- 외부 링크는 항상 새 탭 (target="_blank")
+- WebPreview / iframe / SSE 가 이미 브라우저 내장의 일부 — 추가 native 윈도우 X
+- 향후 모바일 (Capacitor) 도 같은 WebView 재사용 — 한 frontend 코드베이스
+
+### 6.4 Phase 19 의 simplicity 적용
+
+awesome-mcp-korea 35+ MCP 자동 설치 ❌. 카탈로그 + 외부 GitHub 링크만 ✅.
+사용자가 직접 README 따라 yaml 편집 — hanimo 는 발견/안내만 담당.
+
+---
+
+## 9. 한 줄로 다시
 
 > **"hanimo 생태계는 이제 시작일 뿐이다."** — 사용자 (2026-04-25)
-> All models. All devices. Fully open. Korean-first. Closed-net capable.
+> All models. All devices. Fully open. Korean-first. Closed-net capable. **Simple.**
 > 시장에 없는 자리, 우리가 채운다.

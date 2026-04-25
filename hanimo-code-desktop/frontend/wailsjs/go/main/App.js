@@ -70,6 +70,14 @@ export function GetKnowledgePacks() {
   return window['go']['main']['App']['GetKnowledgePacks']();
 }
 
+export function GetKoreaMCPCatalog() {
+  return window['go']['main']['App']['GetKoreaMCPCatalog']();
+}
+
+export function GetKoreaMCPCategories() {
+  return window['go']['main']['App']['GetKoreaMCPCategories']();
+}
+
 export function GetMCPServers() {
   return window['go']['main']['App']['GetMCPServers']();
 }

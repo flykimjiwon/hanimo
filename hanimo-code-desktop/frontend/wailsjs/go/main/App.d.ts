@@ -36,6 +36,10 @@ export function GetGitInfo():Promise<main.GitInfo>;
 
 export function GetKnowledgePacks():Promise<Array<main.KnowledgePack>>;
 
+export function GetKoreaMCPCatalog():Promise<Array<main.KoreaMCPEntry>>;
+
+export function GetKoreaMCPCategories():Promise<Array<string>>;
+
 export function GetMCPServers():Promise<Array<main.mcpServerStatus>>;
 
 export function GetMetrics():Promise<main.Metrics>;
