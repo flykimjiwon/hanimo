@@ -11,14 +11,16 @@
 ## 1. 30초 컨텍스트 복구
 
 - **프로젝트**: `hanimo-code-desktop` (Wails IDE, hanimo-code 서브디렉토리)
-- **레포 상태**: `origin/main = 9d95ea4` (Phase 13 + 리뷰픽스 푸시 완료)
-- **누적 진척**: Phase 0~13 + 리뷰픽스 1라운드 완성 — 디자인 v1 mock의 Cache·MCP·Skills 모두 실값화
-- **빌드 검증**: vite 1532.45 KiB · go test 49/49 · TS clean (기존 navigator.platform 경고 1건)
-- **다음 자연스러운 단계**: 큰 작업 3종(LSP / Subagents / Permissions) 중 택1, 또는 후속 마이크로 픽스
+- **레포 상태**: `origin/main = d431f6e` · **첫 정식 release tag = `v0.2.0`** (GH Actions 4 platform 자동 빌드 트리거됨)
+- **누적 진척**: Phase 0~19 + 리뷰픽스 2라운드 완성 — 멀티 프로바이더 자동 라우팅 + macOS/Windows/Linux 빌드 + 한국 MCP 35 카탈로그
+- **빌드 검증**: vite ~1548 KiB · go test ok · macOS .app + Windows .exe 로컬 검증 OK
+- **비전**: `docs/strategy/VISION-2026-04-25-MULTI-MODEL-MULTI-DEVICE.md` — 6축 (모든 모델 · 모든 디바이스 · 완전 OSS · IDE 풀패널 · sync · **simplicity-first**)
+- **다음 자연스러운 단계**: Phase 15b2 (Anthropic transport) · Phase 21 (Capacitor 모바일) · GH Actions 첫 빌드 결과 검증 중 택1
 - **사용자 정책 (반드시 준수)**:
   - hanimo-code/desktop = **완전 무료 OSS** · 유료화 금지 (목적: 명성)
-  - 5-surface 중 Code + Desktop만 집중 (WebUI/RAG/Community/Spark는 보류)
+  - 5-surface 중 Code + Desktop만 집중 — Code+IDE+Mobile 같은 코드베이스 (WebUI/RAG/Community/Spark는 보류)
   - Honey 팔레트가 브랜드 기본 테마
+  - **Simplicity 6축** — customization bloat 거부, BYOK 패턴, 브라우저 내장 활용
 
 ---
 
@@ -48,52 +50,54 @@ cd frontend && npm run build 2>&1 | tail -5
 
 ---
 
-## 3. 다음 큰 작업 후보 (우선도 순)
+## 3. 다음 큰 작업 후보 (우선도 순 — 2026-04-25 마감 시점)
 
-### 🥇 Option A: LSP 서버 통합 (中~大복잡도 · 1~2일)
+### 🥇 Option A: GH Actions 첫 빌드 결과 검증 (즉시 · 5-30분)
 
-**왜**: ProblemsStrip이 진짜 진단을 표시 → Brand promise 강화 (hash anchor + LSP가 같은 라인을 참조). hanimo CLI에 `internal/lsp` 자산 이미 존재.
+**왜**: v0.2.0 tag push 후 4 platform native 빌드가 자동 실행 중. 첫 release라 yaml 문법/의존성/runner 환경 이슈가 있을 수 있음. 다음 세션 시작 시 가장 먼저 확인.
 
-**입구 파일**:
-- `internal/lsp/` (CLI 자산 — desktop은 별도 모듈이라 포팅 필요)
-- `hanimo-code-desktop/bindings_phase3.go` GetProblems (현재 빈 슬라이스 반환)
-- `frontend/src/components/ProblemsStrip.tsx` — UI는 이미 있음
+**확인 명령**:
+```bash
+gh run list --workflow=desktop-release.yml --limit 5
+gh run view <id> --log-failed   # 실패 시
+gh release view v0.2.0           # 성공 시 산출물 4개 확인
+```
 
-**작업 단위 (예상)**:
-1. `hanimo-code-desktop/lsp.go` 신규 — gopls/tsserver 프로세스 관리
-2. App.GetLSPDiagnostics(filePath) 바인딩
-3. textDocument/didOpen + textDocument/publishDiagnostics 구독
-4. GetProblems가 실 진단 반환
-5. 빌드 + 커밋 + 푸시
+**예상 이슈**:
+- Wails CLI 설치가 매트릭스 모든 OS에서 잘 되는지
+- ubuntu의 libgtk/libwebkit2gtk 패키지 이름 호환성
+- Windows runner에서 npm/go cross-compile
 
-**리스크**: 프로세스 라이프사이클 + LSP 프로토콜 + textDocument sync. 별도 세션 강력 권장.
+수정 시 desktop-release.yml 한 줄 패치 후 v0.2.1 tag 재트리거.
 
-### 🥈 Option B: Subagents 패널 (大 · 큰 작업)
+### 🥈 Option B: Phase 15b2 — Anthropic transport switch (中~大 · 4~6시간)
 
-**왜**: hanimo CLI의 `internal/agents/auto.go`/`plan.go` 자산을 IDE에서 실시간 시각화. 컨텍스트 분기 + 요약 반환, git worktree 동시 실험.
-
-**입구**:
-- `internal/agents/` (CLI 자산)
-- `frontend/src/components/PlaceholderPanel.tsx` (현재 subagents 분기)
-
-**복잡도 ↑**: 라이브 스트림 + 결과 머지 UI. 별도 세션.
-
-### 🥉 Option C: Permissions 엔진 (大 · 큰 작업)
-
-**왜**: 5-mode 퍼미션 (allow/ask/deny + dangerous block + learning yaml). credential scrubbing 기반.
+**왜**: Phase 15a 카탈로그에 Anthropic 모델은 있지만 호출 시점 깨짐 (OpenAI SDK가 messages API 못 씀). Claude Sonnet 4.6/4.7 활성화 = "모든 모델" 비전 핵심.
 
 **입구**:
-- 새로 작성 (CLI에도 미포팅)
-- `frontend/src/components/PlaceholderPanel.tsx` (permissions 분기)
+- `hanimo-code-desktop/chat.go` newChatEngine + streamResponse — provider == "anthropic" 분기
+- 신규: `hanimo-code-desktop/anthropic.go` — messages API streaming + tool_use 변환
+- Anthropic-go SDK 또는 직접 SSE 파서
+
+**복잡도**: tool_calls 형식 변환, streaming 패러다임 다름.
+
+### 🥉 Option C: Phase 21 — Capacitor 모바일 wrap 1차 (大 · 1~2일)
+
+**왜**: 비전 5축 중 "All Devices 모바일 축" 진입. frontend는 100% 재사용, native API만 Capacitor.
+
+**입구**:
+- `hanimo-code-desktop/frontend/dist` → `npx cap init` → iOS/Android 프로젝트 생성
+- 별도 sub-디렉토리 또는 별도 레포 (`hanimo-code-mobile`?) 결정 필요
+
+**리스크**: terminal/PTY는 모바일에서 native 안 됨 → web SSH 또는 hanimo-code-server (별도 surface) 도입 검토.
 
 ### 🏅 Option D: 후속 마이크로 픽스 (小 · 30분~1시간)
 
-리뷰에서 "보류" 분류된 항목들:
-- M2 — ensureMCP 락 밖 spawn (서버 수 증가 시 UX 개선)
-- M3 — chat.history mutex (Wails v3 마이그레이션 대비)
-- M4 — LoadTGCConfig 캐시 (4초 polling 비용 미세 절감)
+이전 리뷰에서 보류된 M1 (sync.Once 경합 race) 등 안전성 강화. 큰 작업 사이의 워밍업.
 
-서버 수가 적고 Wails v2 직렬화에 의존하는 한 안전 — 큰 작업 사이의 워밍업으로 적합.
+### 🏵 Option E: Phase 16 LSP / Phase 17 Subagents / Phase 15b3 Google
+
+각각 1-2일 단위 별도 세션. 비전 §4 Phase 매핑 참고.
 
 ---
 

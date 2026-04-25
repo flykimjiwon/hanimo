@@ -165,3 +165,71 @@ hanimo-code-desktop/
 3. **Permissions** (큰 작업) — 5-mode 엔진 + permissions.yaml 학습 룰
 
 세 옵션 모두 1-2시간 초과 — 별도 세션 권장.
+
+---
+
+## 8. 같은 세션 마라톤 — Phase 14a/14b/15a/15b1/18/19 + 비전 천명 + v0.2.0
+
+> 위 §7까지가 두 번째 라운드. Phase 13 + 리뷰픽스 직후 사용자가 "이어서
+> 진행" + "더 가성비" + "비전 천명" + "ㄱㄱ해" 연쇄 요청 → 한 세션 내에서
+> Phase 19 + 첫 정식 릴리스까지 마무리.
+
+### 8.1 추가 커밋 (시간순)
+
+| # | 커밋 | Phase | 핵심 산출 |
+|:-:|---|:-:|---|
+| 25 | `7621126` | **14a** | Run/Permissions 패널 실 데이터 + MCP M2/M4 픽스 |
+| 26 | `09ca27e` | **14b** | Mode 위치 ChatPanel 헤더 / Model sync / Hanimo 아이콘 |
+| 27 | `9d95ea4` | review fix | M2/M3/L2 즉시 픽스 |
+| 28 | `8f4f741` | docs | **VISION 2026-04-25** 천명 (5축 비전 + 시장 매트릭스 13개) |
+| 29 | `59438c5` | **15a** | 멀티 프로바이더 자동 라우팅 (10개 카탈로그) |
+| 30 | `d0410fe` | **15b1** | SettingsPanel Provider keys 입력 UI |
+| 31 | `10bcec6` | **18** | 멀티-OS 빌드 검증 + GH Actions desktop-release.yml |
+| 32 | `d431f6e` | **19** | 한국 MCP 35종 카탈로그 + Simplicity 6축 비전 보강 |
+| tag | `v0.2.0` | release | 첫 정식 릴리스 — GH Actions 4 platform 자동 트리거 |
+
+### 8.2 비전 5축 → 6축 (Simplicity 보강)
+
+비전 문서: `docs/strategy/VISION-2026-04-25-MULTI-MODEL-MULTI-DEVICE.md`
+
+1. 모든 모델 (Phase 15a 자동 라우팅 + 15b1 키 UI ✅)
+2. 모든 디바이스 (Phase 18 macOS/Windows/Linux ✅, iOS/Android Phase 21+)
+3. 완전 OSS (정책 그대로)
+4. IDE 풀패널 (Phase 12-19로 99% 채움)
+5. Sync (Phase 26+)
+6. **Simplicity-first** (Phase 19 + feedback memory) — customization bloat 거부, BYOK, 브라우저 내장
+
+### 8.3 시장 매트릭스 13개 제품 검증
+
+`oh-my-claudecode:document-specialist` 패턴으로 4개 WebSearch 병렬:
+- Chatbox: 4축 채움 but chat-only (IDE 풀패널 X)
+- OpenCode (140K stars): 코딩+멀티+OSS 3축, 모바일 X
+- AionUi: 가장 비슷 but PWA wrapper, 한국 MCP 통합 0
+- LibreChat/Jan/Msty/Cherry/Lobe/AnythingLLM: chat 또는 RAG 중심
+→ **모바일 IDE 풀패널 + 코딩 에이전트 + 멀티프로바이더 + OSS** = 시장 0건
+
+### 8.4 다음 세션 (RESUME 갱신본)
+
+**Option A — GH Actions 첫 빌드 검증** (즉시, 5-30분)
+- `gh run list --workflow=desktop-release.yml`
+- 실패 시 yaml 패치 → v0.2.1 재태그
+
+**Option B — Phase 15b2 Anthropic transport** (4~6시간)
+- chat.go에 provider 분기 + 신규 `anthropic.go`
+
+**Option C — Phase 21 Capacitor 모바일 wrap** (1~2일)
+- frontend 100% 재사용 + 별도 mobile 디렉토리 또는 레포
+
+**Option D — 마이크로 픽스 / Option E — LSP/Subagents/Google** 별도 세션.
+
+### 8.5 최종 빌드 상태
+
+| 영역 | 결과 |
+|---|---|
+| Desktop go build/test | ok |
+| Frontend npm build | ~1548 KiB (Phase 19 + Korea MCP) |
+| macOS .app | ✅ build/bin/hanimo-code-desktop.app |
+| Windows .exe | ✅ build/bin/hanimo-code-desktop.exe (14MB, cross from macOS) |
+| Linux | GH Actions native runner에서만 |
+| `origin/main` | `d431f6e` |
+| Tags | `v0.2.0` (first formal release) |
