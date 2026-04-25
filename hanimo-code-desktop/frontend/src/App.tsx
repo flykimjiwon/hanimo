@@ -24,10 +24,11 @@ import ProblemsStrip from './components/ProblemsStrip'
 import KnowledgePanel from './components/KnowledgePanel'
 import SessionsPanel from './components/SessionsPanel'
 import SkillsPanel from './components/SkillsPanel'
+import MCPPanel from './components/MCPPanel'
 import { setHashAnchors, type HashAnchor } from './components/hashAnchorGutter'
 import type { EditorView } from '@codemirror/view'
 import PlaceholderPanel from './components/PlaceholderPanel'
-import { PlugZap, Share2, ShieldCheck, TriangleAlert, Play } from 'lucide-react'
+import { Share2, ShieldCheck, TriangleAlert, Play } from 'lucide-react'
 
 function App() {
   const [activePanel, setActivePanel] = useState('files')
@@ -247,19 +248,7 @@ function App() {
                 />
               )}
               {activePanel === 'skills' && <SkillsPanel />}
-              {activePanel === 'mcp' && (
-                <PlaceholderPanel
-                  title="MCP Servers"
-                  Icon={PlugZap}
-                  shortDesc="Model Context Protocol 서버를 통해 Jira·Slack·Figma 같은 외부 도구를 채팅에서 직접 호출."
-                  bullets={[
-                    'stdio + SSE transport 지원',
-                    '서버별 enable/disable 토글',
-                    '도구 목록 + 인자 스키마 미리보기',
-                  ]}
-                  comingIn="Phase 7"
-                />
-              )}
+              {activePanel === 'mcp' && <MCPPanel />}
               {activePanel === 'subagents' && (
                 <PlaceholderPanel
                   title="Subagents"

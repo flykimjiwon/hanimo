@@ -28,6 +28,11 @@ type App struct {
 	term        *termSession
 	shellPath   string
 	watcherDone chan struct{}
+
+	// Phase 12 — MCP clients (lazy spawn on first GetMCPServers)
+	mcpMu       sync.Mutex
+	mcpStarted  bool
+	mcpRuntimes []*mcpServerRuntime
 }
 
 func NewApp() *App {
@@ -118,6 +123,7 @@ func (a *App) shutdown(ctx context.Context) {
 		close(a.watcherDone)
 	}
 	a.StopTerminal()
+	a.StopMCP()
 }
 
 // OpenFolder opens a native folder picker and switches the project.
