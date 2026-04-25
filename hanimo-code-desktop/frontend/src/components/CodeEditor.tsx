@@ -1,5 +1,6 @@
 import { useEffect, useRef, useCallback } from 'react'
 import { EditorView, keymap, lineNumbers, highlightActiveLine, highlightActiveLineGutter, drawSelection, rectangularSelection, crosshairCursor, dropCursor, highlightSpecialChars, scrollPastEnd } from '@codemirror/view'
+import { hashAnchorGutter } from './hashAnchorGutter'
 import { EditorState, Compartment } from '@codemirror/state'
 import { defaultKeymap, indentWithTab, history, historyKeymap } from '@codemirror/commands'
 import { searchKeymap, highlightSelectionMatches } from '@codemirror/search'
@@ -138,6 +139,7 @@ export default function CodeEditor({ content, filename, onChange, onCursorChange
       doc: content,
       extensions: [
         lineNumbers(),
+        hashAnchorGutter(),
         highlightActiveLine(),
         highlightActiveLineGutter(),
         highlightSelectionMatches(),
