@@ -23,10 +23,11 @@ import ProviderChip from './components/ProviderChip'
 import ProblemsStrip from './components/ProblemsStrip'
 import KnowledgePanel from './components/KnowledgePanel'
 import SessionsPanel from './components/SessionsPanel'
+import SkillsPanel from './components/SkillsPanel'
 import { setHashAnchors, type HashAnchor } from './components/hashAnchorGutter'
 import type { EditorView } from '@codemirror/view'
 import PlaceholderPanel from './components/PlaceholderPanel'
-import { PlugZap, Sparkle as SkillIcon, Share2, ShieldCheck, TriangleAlert, Play } from 'lucide-react'
+import { PlugZap, Share2, ShieldCheck, TriangleAlert, Play } from 'lucide-react'
 
 function App() {
   const [activePanel, setActivePanel] = useState('files')
@@ -245,19 +246,7 @@ function App() {
                   comingIn="Phase 6"
                 />
               )}
-              {activePanel === 'skills' && (
-                <PlaceholderPanel
-                  title="Skills"
-                  Icon={SkillIcon}
-                  shortDesc="SKILL.md 파일을 lazy-load해서 채팅에서 /skill name 또는 Command Palette로 호출하는 hanimo의 스킬 시스템."
-                  bullets={[
-                    '$ARGUMENTS 치환 + inline !shell 실행',
-                    'learned-skill: 성공한 도구 흐름 자동 추출',
-                    '.hanimo/skills/ + ~/.hanimo/skills/ 경로',
-                  ]}
-                  comingIn="Phase 7"
-                />
-              )}
+              {activePanel === 'skills' && <SkillsPanel />}
               {activePanel === 'mcp' && (
                 <PlaceholderPanel
                   title="MCP Servers"
