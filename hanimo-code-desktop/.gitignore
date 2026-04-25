@@ -7,7 +7,9 @@ frontend/dist
 /hanimo-code-desktop
 /build/windows/*.exe
 /build/darwin/*.app
-/build/darwin/*.icns
+
+# scratch iconset used to generate appicon.icns
+AppIcon.iconset/
 
 # logs
 *.log

@@ -1,8 +1,15 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { Sparkles, Send, Trash2, BookOpen, Download } from 'lucide-react'
-import { SendMessage, ClearChat, GetModel, GetKnowledgePacks, ToggleKnowledgePack, ExportChat, SaveSession, ListSessions, LoadSession } from '../../wailsjs/go/main/App'
+import { SendMessage, ClearChat, GetKnowledgePacks, ToggleKnowledgePack, ExportChat, SaveSession, ListSessions, LoadSession } from '../../wailsjs/go/main/App'
 import { EventsOn } from '../../wailsjs/runtime/runtime'
 import MetricsRow from './MetricsRow'
+import ModeSwitcher, { type Mode } from './ModeSwitcher'
+
+interface Props {
+  mode: Mode
+  onModeChange: (m: Mode) => void
+  model: string
+}
 
 interface Message {
   role: 'user' | 'ai' | 'tool'
@@ -11,11 +18,10 @@ interface Message {
   time?: string
 }
 
-export default function ChatPanel() {
+export default function ChatPanel({ mode, onModeChange, model }: Props) {
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
   const [streaming, setStreaming] = useState(false)
-  const [model, setModel] = useState('')
   const [showPacks, setShowPacks] = useState(false)
   const [packs, setPacks] = useState<{ id: string; name: string; category: string; enabled: boolean }[]>([])
   const [inputHistory, setInputHistory] = useState<string[]>([])
@@ -39,7 +45,8 @@ export default function ChatPanel() {
   }, [])
 
   useEffect(() => {
-    GetModel().then(setModel).catch(() => {})
+    // model is now provided by App.tsx (single source of truth — keeps the
+    // top ribbon ProviderChip and this header label in sync after SwitchModel).
     GetKnowledgePacks().then(setPacks).catch(() => {})
 
     // Listen to Wails events from Go backend.
@@ -130,9 +137,7 @@ export default function ChatPanel() {
         }).catch(() => {})
         break
       case '/model':
-        GetModel().then(m => {
-          setMessages(prev => [...prev, { role: 'tool', content: `Current model: ${m}` }])
-        })
+        setMessages(prev => [...prev, { role: 'tool', content: `Current model: ${model || '(loading)'}` }])
         break
       case '/save':
         SaveSession(parts.slice(1).join(' ')).then(id => {
@@ -198,7 +203,7 @@ export default function ChatPanel() {
         display: 'flex', alignItems: 'center', gap: 8
       }}>
         <Sparkles size={18} style={{ color: 'var(--accent)' }} />
-        <span style={{ fontWeight: 600, fontSize: 14 }}>hanimo</span>
+        <ModeSwitcher mode={mode} onChange={onModeChange} />
         <span style={{
           background: 'var(--accent-glow)', color: 'var(--accent)',
           padding: '1px 7px', borderRadius: 4, fontSize: 9, fontWeight: 700,

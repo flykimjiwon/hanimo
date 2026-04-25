@@ -162,6 +162,94 @@ export namespace main {
 	        this.path = source["path"];
 	    }
 	}
+	export class Metrics {
+	    contextPct: number;
+	    contextTokens: number;
+	    contextMax: number;
+	    cacheHitPct: number;
+	    cacheSavedUSD: number;
+	    iter: number;
+	    iterMax: number;
+	    iterLabel: string;
+	    provider: string;
+	    tier: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new Metrics(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.contextPct = source["contextPct"];
+	        this.contextTokens = source["contextTokens"];
+	        this.contextMax = source["contextMax"];
+	        this.cacheHitPct = source["cacheHitPct"];
+	        this.cacheSavedUSD = source["cacheSavedUSD"];
+	        this.iter = source["iter"];
+	        this.iterMax = source["iterMax"];
+	        this.iterLabel = source["iterLabel"];
+	        this.provider = source["provider"];
+	        this.tier = source["tier"];
+	    }
+	}
+	export class ModelOption {
+	    id: string;
+	    label: string;
+	    provider: string;
+	    tier: string;
+	    group: string;
+	    hint: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new ModelOption(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.label = source["label"];
+	        this.provider = source["provider"];
+	        this.tier = source["tier"];
+	        this.group = source["group"];
+	        this.hint = source["hint"];
+	    }
+	}
+	export class Problem {
+	    severity: string;
+	    message: string;
+	    line: number;
+	    col: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new Problem(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.severity = source["severity"];
+	        this.message = source["message"];
+	        this.line = source["line"];
+	        this.col = source["col"];
+	    }
+	}
+	export class RunTarget {
+	    name: string;
+	    description: string;
+	    command: string;
+	    source: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new RunTarget(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.name = source["name"];
+	        this.description = source["description"];
+	        this.command = source["command"];
+	        this.source = source["source"];
+	    }
+	}
 	export class SearchResult {
 	    file: string;
 	    line: number;
@@ -177,6 +265,82 @@ export namespace main {
 	        this.line = source["line"];
 	        this.content = source["content"];
 	    }
+	}
+	export class SkillEntry {
+	    name: string;
+	    description: string;
+	    path: string;
+	    source: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new SkillEntry(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.name = source["name"];
+	        this.description = source["description"];
+	        this.path = source["path"];
+	        this.source = source["source"];
+	    }
+	}
+	export class mcpTool {
+	    name: string;
+	    description: string;
+	    inputSchema: Record<string, any>;
+	
+	    static createFrom(source: any = {}) {
+	        return new mcpTool(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.name = source["name"];
+	        this.description = source["description"];
+	        this.inputSchema = source["inputSchema"];
+	    }
+	}
+	export class mcpServerStatus {
+	    name: string;
+	    transport: string;
+	    command?: string;
+	    url?: string;
+	    connected: boolean;
+	    error?: string;
+	    tools: mcpTool[];
+	
+	    static createFrom(source: any = {}) {
+	        return new mcpServerStatus(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.name = source["name"];
+	        this.transport = source["transport"];
+	        this.command = source["command"];
+	        this.url = source["url"];
+	        this.connected = source["connected"];
+	        this.error = source["error"];
+	        this.tools = this.convertValues(source["tools"], mcpTool);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
 	}
 
 }

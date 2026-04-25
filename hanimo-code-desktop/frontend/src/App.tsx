@@ -18,7 +18,7 @@ import DiffView from './components/DiffView'
 import ToastContainer from './components/Toast'
 import AboutDialog from './components/AboutDialog'
 import CommandPalette from './components/CommandPalette'
-import ModeSwitcher, { Mode } from './components/ModeSwitcher'
+import type { Mode } from './components/ModeSwitcher'
 import ProviderChip from './components/ProviderChip'
 import ProblemsStrip from './components/ProblemsStrip'
 import KnowledgePanel from './components/KnowledgePanel'
@@ -48,13 +48,14 @@ function App() {
 
   useEffect(() => { localStorage.setItem('hanimo-mode', mode) }, [mode])
 
-  // Pull current model name from Go config on startup (best-effort)
+  // Pull current model name from chatEngine on startup. Using GetModel
+  // (not GetConfig) keeps App.tsx and ChatPanel reading the same source —
+  // otherwise SwitchModel updates the ribbon but the chat header lags.
   useEffect(() => {
     import('../wailsjs/go/main/App').then(m => {
-      const g = (m as any).GetConfig
+      const g = (m as any).GetModel
       if (typeof g === 'function') {
-        g().then((cfg: any) => {
-          const name = cfg?.Models?.Super || cfg?.Models?.Dev || cfg?.models?.super
+        g().then((name: string) => {
           if (typeof name === 'string' && name) setCurrentModel(name)
         }).catch(() => {})
       }
@@ -170,8 +171,6 @@ function App() {
             desktop
           </span>
         </div>
-        <div style={{ width: 1, height: 18, background: 'var(--border)' }} />
-        <ModeSwitcher mode={mode} onChange={setMode} />
         <div style={{ flex: 1 }} />
         <ProviderChip
           model={currentModel}
@@ -369,7 +368,7 @@ function App() {
           display: 'flex', flexDirection: 'column',
           boxShadow: '-4px 0 16px rgba(0,0,0,0.1)',
         }}>
-          <ChatPanel />
+          <ChatPanel mode={mode} onModeChange={setMode} model={currentModel} />
         </div>
       </div>
 
