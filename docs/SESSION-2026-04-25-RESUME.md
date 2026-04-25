@@ -1,7 +1,8 @@
-# 다음 세션 재개 가이드 — 2026-04-25 (Phase 13 + 리뷰픽스 마감 시점)
+# 다음 세션 재개 가이드 — 2026-04-25 (Phase 15a + 비전 천명 시점)
 
 > 이 문서를 새 세션에서 첫 번째로 읽으면 이전 맥락 100% 복구 가능.
 > 짝꿍 문서: `docs/SESSION-2026-04-25-INDEX.md` (이번 세션 산출 요약 — §7에 후속분 추가됨)
+> **비전 본문 (필독)**: `docs/strategy/VISION-2026-04-25-MULTI-MODEL-MULTI-DEVICE.md`
 > 상위 전략: `docs/strategy/REPUTATION-STRATEGY-2026-04-23.md`
 > 디자인 mock: `designs/hanimo-desktop-v1.html` (모든 Phase의 시각 기준)
 
