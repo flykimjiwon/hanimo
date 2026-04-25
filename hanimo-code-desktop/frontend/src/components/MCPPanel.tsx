@@ -22,7 +22,7 @@ export default function MCPPanel() {
   const [loading, setLoading] = useState(true)
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
 
-  const fetch = () => {
+  const loadServers = () => {
     setLoading(true)
     import('../../wailsjs/go/main/App').then(mod => {
       const fn = (mod as any).GetMCPServers
@@ -36,6 +36,9 @@ export default function MCPPanel() {
 
   const refresh = () => {
     setLoading(true)
+    // Drop expansion state — server set may have changed, stale keys would
+    // pin closed groups open against the wrong rows.
+    setExpanded(new Set())
     import('../../wailsjs/go/main/App').then((mod: any) => {
       const fn = mod.RefreshMCPServers || mod.GetMCPServers
       fn().then((res: MCPServer[] | null) => {
@@ -49,7 +52,7 @@ export default function MCPPanel() {
     }).catch(() => setLoading(false))
   }
 
-  useEffect(() => { fetch() }, [])
+  useEffect(() => { loadServers() }, [])
 
   function toggle(name: string) {
     setExpanded(prev => {

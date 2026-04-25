@@ -308,6 +308,14 @@ func (a *App) ClearChat() {
 	a.chat.history = []openai.ChatCompletionMessage{
 		{Role: openai.ChatMessageRoleSystem, Content: systemPrompt()},
 	}
+	// Reset live metrics so MetricsRow doesn't keep climbing iter / showing
+	// "thinking" after a fresh start. Cumulative cache/token counters stay —
+	// they're per-session, not per-conversation.
+	a.chat.metricsMu.Lock()
+	a.chat.iter = 0
+	a.chat.iterLabel = "idle"
+	a.chat.lastPromptTokens = 0
+	a.chat.metricsMu.Unlock()
 	runtime.EventsEmit(a.ctx, "chat:cleared")
 }
 

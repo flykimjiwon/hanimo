@@ -33,7 +33,7 @@ import (
 
 type mcpServerCfg struct {
 	Name      string            `yaml:"name"`
-	Transport string            `yaml:"transport"` // "stdio" | "sse" (only stdio implemented here)
+	Transport string            `yaml:"transport"` // "stdio" implemented · "sse" / "http" recognised but surfaced as not-supported
 	Command   string            `yaml:"command"`
 	Args      []string          `yaml:"args"`
 	URL       string            `yaml:"url"`
@@ -188,18 +188,29 @@ func (c *mcpClient) call(method string, params interface{}) (json.RawMessage, er
 	if err := c.transport.Send(data); err != nil {
 		return nil, err
 	}
-	respData, err := c.transport.Receive()
-	if err != nil {
-		return nil, err
+	// Drain until we see a response with our id. JSON-RPC 2.0 notifications
+	// (no id) and stale responses for prior requests can interleave; both
+	// must be skipped or the caller would receive the wrong payload.
+	for {
+		respData, err := c.transport.Receive()
+		if err != nil {
+			return nil, err
+		}
+		var resp mcpResponse
+		if err := json.Unmarshal(respData, &resp); err != nil {
+			return nil, fmt.Errorf("unmarshal response: %w", err)
+		}
+		if resp.ID == 0 {
+			continue // server-initiated notification — drop
+		}
+		if resp.ID != id {
+			continue // stale response from an earlier request — drop
+		}
+		if resp.Error != nil {
+			return nil, resp.Error
+		}
+		return resp.Result, nil
 	}
-	var resp mcpResponse
-	if err := json.Unmarshal(respData, &resp); err != nil {
-		return nil, fmt.Errorf("unmarshal response: %w", err)
-	}
-	if resp.Error != nil {
-		return nil, resp.Error
-	}
-	return resp.Result, nil
 }
 
 func (c *mcpClient) notify(method string, params interface{}) error {
