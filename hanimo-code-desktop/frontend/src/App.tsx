@@ -152,7 +152,26 @@ function App() {
         <div style={{ width: 1, height: 18, background: 'var(--border)' }} />
         <ModeSwitcher mode={mode} onChange={setMode} />
         <div style={{ flex: 1 }} />
-        <ProviderChip model={currentModel} />
+        <ProviderChip
+          model={currentModel}
+          onSelect={async (id) => {
+            try {
+              const mod: any = await import('../wailsjs/go/main/App')
+              if (typeof mod.SwitchModel !== 'function') {
+                const t = await import('./components/Toast')
+                t.showToast('SwitchModel binding pending — Wails dev required', 'info')
+                return
+              }
+              const newModel = await mod.SwitchModel(id)
+              setCurrentModel(newModel || id)
+              const t = await import('./components/Toast')
+              t.showToast(`Switched to ${newModel || id}`, 'success')
+            } catch (e: any) {
+              const t = await import('./components/Toast')
+              t.showToast(`Switch failed: ${e?.message || 'unknown'}`, 'info')
+            }
+          }}
+        />
         <button
           type="button"
           onClick={() => setShowTheme(true)}
