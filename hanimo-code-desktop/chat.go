@@ -10,6 +10,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/wailsapp/wails/v2/pkg/runtime"
@@ -29,6 +30,16 @@ type chatEngine struct {
 	model   string
 	history []openai.ChatCompletionMessage
 	app     *App // back-reference for Wails events + tool execution
+	baseURL string
+
+	// ── Phase 13 — live metrics for MetricsRow ──
+	metricsMu           sync.Mutex
+	lastPromptTokens    int     // most recent call's prompt_tokens (used as "context")
+	sessionPromptTokens int64   // cumulative across all requests
+	sessionCompTokens   int64   // cumulative completion tokens
+	sessionCachedTokens int64   // cumulative cached_tokens (from PromptTokensDetails)
+	iter                int     // current loop iteration within an in-flight request
+	iterLabel           string  // "idle" | "thinking" | "tool_use"
 }
 
 func newChatEngine(cfg TGCConfig, app *App) *chatEngine {
@@ -38,15 +49,50 @@ func newChatEngine(cfg TGCConfig, app *App) *chatEngine {
 	ocfg.BaseURL = strings.TrimRight(baseURL, "/")
 
 	return &chatEngine{
-		client: openai.NewClientWithConfig(ocfg),
-		model:  cfg.Models.Super,
-		app:    app,
+		client:    openai.NewClientWithConfig(ocfg),
+		model:     cfg.Models.Super,
+		app:       app,
+		baseURL:   ocfg.BaseURL,
+		iterLabel: "idle",
 		history: []openai.ChatCompletionMessage{
 			{
 				Role:    openai.ChatMessageRoleSystem,
 				Content: systemPrompt(),
 			},
 		},
+	}
+}
+
+// setIterLabel updates the MetricsRow "Iter" sub-label atomically.
+func (ce *chatEngine) setIterLabel(label string) {
+	ce.metricsMu.Lock()
+	ce.iterLabel = label
+	ce.metricsMu.Unlock()
+}
+
+// bumpIter increments the in-flight request counter. Caps at 999 so the
+// MetricsRow's `iter / iterMax` display never wraps weirdly.
+func (ce *chatEngine) bumpIter() {
+	ce.metricsMu.Lock()
+	if ce.iter < 999 {
+		ce.iter++
+	}
+	ce.metricsMu.Unlock()
+}
+
+// recordUsage folds an OpenAI Usage object into the session counters.
+// Safe to call from the stream loop. Missing fields are treated as zero.
+func (ce *chatEngine) recordUsage(u *openai.Usage) {
+	if u == nil {
+		return
+	}
+	ce.metricsMu.Lock()
+	defer ce.metricsMu.Unlock()
+	ce.lastPromptTokens = u.PromptTokens
+	ce.sessionPromptTokens += int64(u.PromptTokens)
+	ce.sessionCompTokens += int64(u.CompletionTokens)
+	if u.PromptTokensDetails != nil {
+		ce.sessionCachedTokens += int64(u.PromptTokensDetails.CachedTokens)
 	}
 }
 
@@ -285,12 +331,21 @@ func (ce *chatEngine) streamResponse() {
 		ce.history = append([]openai.ChatCompletionMessage{ce.history[0]}, ce.history[len(ce.history)-60:]...)
 	}
 
+	// Whole SendMessage call resets to idle on exit so MetricsRow doesn't get
+	// stuck on "thinking" after an error.
+	defer ce.setIterLabel("idle")
+
 	for iter := 0; iter < 15; iter++ {
+		ce.bumpIter()
+		ce.setIterLabel("thinking")
 		req := openai.ChatCompletionRequest{
 			Model:    ce.model,
 			Messages: ce.history,
 			Stream:   true,
 			Tools:    toolDefs(),
+			// Ask the server to include a final usage chunk so MetricsRow
+			// can show real context% + cache hit% + saved$.
+			StreamOptions: &openai.StreamOptions{IncludeUsage: true},
 		}
 
 		stream, err := ce.client.CreateChatCompletionStream(ce.app.ctx, req)
@@ -314,6 +369,12 @@ func (ce *chatEngine) streamResponse() {
 				runtime.EventsEmit(ce.app.ctx, "chat:error", err.Error())
 				stream.Close()
 				return
+			}
+
+			// The final chunk (with IncludeUsage=true) has an empty Choices
+			// array but a populated Usage field. Record it before continuing.
+			if resp.Usage != nil {
+				ce.recordUsage(resp.Usage)
 			}
 
 			if len(resp.Choices) == 0 {
@@ -379,6 +440,7 @@ func (ce *chatEngine) streamResponse() {
 
 		// If tool calls, execute them and loop
 		if len(toolCalls) > 0 {
+			ce.setIterLabel("tool_use")
 			// Add assistant message with tool calls to history
 			assistantMsg := openai.ChatCompletionMessage{
 				Role:    openai.ChatMessageRoleAssistant,

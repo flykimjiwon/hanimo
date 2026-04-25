@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"strings"
 	"sync"
 	"time"
 )
@@ -95,20 +96,90 @@ type Metrics struct {
 	Tier          string  `json:"tier"`
 }
 
-// GetMetrics returns current session metrics. Stub values today; chatEngine
-// hookup is Phase 4+.
+// GetMetrics returns current session metrics. Phase 13 — reads real token
+// usage off the chatEngine. ContextPct uses the latest request's prompt
+// tokens (so the bar relaxes after a /clear), while cache hit% and saved$
+// are session-cumulative so brief tool-only turns don't snap them to zero.
 func (a *App) GetMetrics() Metrics {
 	cfg := LoadTGCConfig()
 	provider := cfg.Models.Super
 	if provider == "" {
 		provider = "qwen3:8b"
 	}
-	return Metrics{
-		ContextMax: 32000,
-		IterMax:    200,
+
+	const contextMax = 32000
+	const iterMax = 200
+
+	m := Metrics{
+		ContextMax: contextMax,
+		IterMax:    iterMax,
 		IterLabel:  "idle",
 		Provider:   provider,
 	}
+
+	if a.chat == nil {
+		return m
+	}
+	a.chat.metricsMu.Lock()
+	promptLast := a.chat.lastPromptTokens
+	promptCum := a.chat.sessionPromptTokens
+	cachedCum := a.chat.sessionCachedTokens
+	iter := a.chat.iter
+	label := a.chat.iterLabel
+	baseURL := a.chat.baseURL
+	a.chat.metricsMu.Unlock()
+
+	m.ContextTokens = promptLast
+	if contextMax > 0 && promptLast > 0 {
+		pct := (promptLast * 100) / contextMax
+		if pct > 100 {
+			pct = 100
+		}
+		m.ContextPct = pct
+	}
+
+	if promptCum > 0 {
+		m.CacheHitPct = int((cachedCum * 100) / promptCum)
+	}
+	m.CacheSavedUSD = estimateSavedUSD(baseURL, cachedCum)
+
+	if iter > 0 {
+		m.Iter = iter
+	}
+	if label != "" {
+		m.IterLabel = label
+	}
+
+	return m
+}
+
+// estimateSavedUSD translates cumulative cached_tokens into a rough dollar
+// savings figure for the MetricsRow "saved $" line. Local providers (Ollama
+// / qwen on localhost) are free — return 0 so the UI doesn't claim fake
+// savings. For external APIs use a conservative $2.00/M input-token rate,
+// which is in the ballpark of GPT-4o/Claude Sonnet cache-hit pricing as of
+// 2026. Tighten this per-provider later if margin matters.
+func estimateSavedUSD(baseURL string, cachedTokens int64) float64 {
+	if cachedTokens <= 0 {
+		return 0
+	}
+	if isLocalBaseURL(baseURL) {
+		return 0
+	}
+	const ratePerMillion = 2.00
+	return float64(cachedTokens) / 1_000_000.0 * ratePerMillion
+}
+
+func isLocalBaseURL(u string) bool {
+	if u == "" {
+		return true
+	}
+	for _, needle := range []string{"localhost", "127.0.0.1", "0.0.0.0", "::1"} {
+		if strings.Contains(u, needle) {
+			return true
+		}
+	}
+	return false
 }
 
 // ── LSP Problems strip data ────────────────────────────────────────────────
