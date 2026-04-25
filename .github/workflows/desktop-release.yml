@@ -1,0 +1,125 @@
+name: Desktop Release (Wails)
+
+# Phase 18 — hanimo-code-desktop multi-OS native builds.
+# Triggers: git tag matching v* (e.g. v0.1.0) OR manual dispatch.
+# Produces: macOS .app (arm64 + amd64), Windows .exe, Linux binary + .AppImage.
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-14         # Apple Silicon runner
+            platform: darwin/arm64
+            artifact_glob: "hanimo-code-desktop/build/bin/hanimo-code-desktop.app"
+            archive: tar
+            asset_suffix: macos-arm64.tar.gz
+          - os: macos-13         # Intel Mac runner
+            platform: darwin/amd64
+            artifact_glob: "hanimo-code-desktop/build/bin/hanimo-code-desktop.app"
+            archive: tar
+            asset_suffix: macos-amd64.tar.gz
+          - os: windows-latest
+            platform: windows/amd64
+            artifact_glob: "hanimo-code-desktop/build/bin/hanimo-code-desktop.exe"
+            archive: copy
+            asset_suffix: windows-amd64.exe
+          - os: ubuntu-22.04
+            platform: linux/amd64
+            artifact_glob: "hanimo-code-desktop/build/bin/hanimo-code-desktop"
+            archive: tar
+            asset_suffix: linux-amd64.tar.gz
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.23"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: hanimo-code-desktop/frontend/package-lock.json
+
+      - name: Install Linux Wails deps
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.0-dev pkg-config
+
+      - name: Install Wails CLI
+        run: go install github.com/wailsapp/wails/v2/cmd/wails@v2.12.0
+
+      - name: Install frontend deps
+        working-directory: hanimo-code-desktop/frontend
+        run: npm ci
+
+      - name: Build
+        working-directory: hanimo-code-desktop
+        run: wails build -platform ${{ matrix.platform }} -clean
+
+      - name: Package macOS .app (tar)
+        if: runner.os == 'macOS'
+        working-directory: hanimo-code-desktop/build/bin
+        run: tar -czf ../../../hanimo-code-desktop-${{ matrix.asset_suffix }} hanimo-code-desktop.app
+
+      - name: Package Linux binary (tar)
+        if: runner.os == 'Linux'
+        working-directory: hanimo-code-desktop/build/bin
+        run: tar -czf ../../../hanimo-code-desktop-${{ matrix.asset_suffix }} hanimo-code-desktop
+
+      - name: Copy Windows .exe
+        if: runner.os == 'Windows'
+        shell: bash
+        run: cp hanimo-code-desktop/build/bin/hanimo-code-desktop.exe hanimo-code-desktop-${{ matrix.asset_suffix }}
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: hanimo-code-desktop-${{ matrix.asset_suffix }}
+          path: hanimo-code-desktop-${{ matrix.asset_suffix }}
+          if-no-files-found: error
+
+  release:
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: artifacts/**/*
+          generate_release_notes: true
+          body: |
+            hanimo-code-desktop ${{ github.ref_name }}
+
+            Wails-based IDE for hanimo. macOS / Windows / Linux native builds.
+
+            **다운로드**:
+            - `*-macos-arm64.tar.gz` — Apple Silicon Mac (M1/M2/M3 …)
+            - `*-macos-amd64.tar.gz` — Intel Mac
+            - `*-windows-amd64.exe` — Windows 10/11 64-bit
+            - `*-linux-amd64.tar.gz` — Linux x86_64
+
+            macOS: 압축 풀고 `hanimo-code-desktop.app` 우클릭 → 열기 (코드사인
+            없음). Windows: SmartScreen 무시 → "추가 정보" → "실행". Linux:
+            압축 풀고 `./hanimo-code-desktop` (chmod +x 필요할 수 있음).
+
+            완전 무료 OSS — https://github.com/flykimjiwon/hanimo-code

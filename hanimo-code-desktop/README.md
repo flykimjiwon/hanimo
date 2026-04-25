@@ -47,6 +47,17 @@ wails build  # → build/bin/hanimo-code-desktop.app
 기본 LLM endpoint는 `~/.hanimo/config.yaml`을 따른다 (CLI와 동일).
 설정 없으면 `localhost:11434/v1` (Ollama) + `qwen3:8b`.
 
+## 멀티-OS 빌드 (Phase 18 검증 완료)
+
+| 타겟 | 명령 | 비고 |
+|---|---|---|
+| macOS Apple Silicon | `wails build -platform darwin/arm64` | 기본 — `.app` 산출 |
+| macOS Intel | `wails build -platform darwin/amd64` | 같은 path에 덮어씀 |
+| Windows 64-bit | `wails build -platform windows/amd64` | macOS에서 cross-compile OK · `.exe` |
+| Linux x86_64 | `wails build -platform linux/amd64` | macOS cross-compile **불가** — Linux 머신 또는 GH Actions 필요 |
+
+자동 멀티-OS 릴리스는 `.github/workflows/desktop-release.yml` 가 처리한다. `git tag v0.1.0 && git push origin v0.1.0` 하면 4 platform native 빌드 + GitHub Release 자동 업로드.
+
 ---
 
 ## 현재 빌드 상태
