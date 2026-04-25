@@ -10,6 +10,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 
@@ -444,6 +445,9 @@ func (a *App) executeTool(name, argsJSON string) string {
 		}
 		// Notify frontend to refresh
 		runtime.EventsEmit(a.ctx, "file:changed", path)
+		// Flash hash anchors for the first 12 non-empty lines so the
+		// gutter visualises the brand promise. Auto-clears after 2s.
+		emitHashAnchorsFor(a, content, 12, 2*time.Second)
 		return fmt.Sprintf("OK: wrote %d bytes to %s", len(content), path)
 
 	case "grep_search", "search_files":
